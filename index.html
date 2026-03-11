@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Torrino DAO Voting</title>
+    <meta
+      name="description"
+      content="Demo frontend statica per il potere di voto della DAO basato sul possesso di NFT."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="bg"></div>
+    <div class="scanlines"></div>
+
+    <div class="page-shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <p class="eyebrow">Torrino DAO</p>
+          <h1 class="title">TORRINO DAO VOTING</h1>
+          <p class="tagline">
+            Interfaccia di governance per mostrare il potere di voto calcolato
+            in base agli NFT posseduti nel wallet.
+          </p>
+        </div>
+
+        <div class="topbar-actions">
+          <button id="connectButton" class="connect-button">
+            Collega Phantom Wallet
+          </button>
+          <p id="statusMessage" class="status-message">
+            Collega il wallet per leggere gli NFT posseduti e il potere di voto.
+          </p>
+        </div>
+      </header>
+
+      <section class="summary-grid">
+        <article class="summary-card">
+          <span class="label">Wallet</span>
+          <strong id="walletAddress" class="mono">Non collegato</strong>
+        </article>
+
+        <article class="summary-card">
+          <span class="label">NFT Torrino DAO</span>
+          <strong id="torrinoCount">0</strong>
+        </article>
+
+        <article class="summary-card">
+          <span class="label">NFT Solnauta</span>
+          <strong id="solnautaCount">0</strong>
+        </article>
+
+        <article class="summary-card accent-card">
+          <span class="label">Potere Di Voto</span>
+          <strong id="votingPower">0.0</strong>
+        </article>
+      </section>
+
+      <section class="weights-card">
+        <p class="proposal-tag">Peso Di Voto</p>
+        <h2>Come viene calcolato il potere di voto degli NFT</h2>
+        <p class="weights-copy">
+          Nel sistema di governance della DAO, il potere di voto dipende dagli
+          NFT posseduti.
+        </p>
+        <ul class="weights-list">
+          <li>
+            Ogni NFT della collezione Torrino DAO (Gen1) vale <strong>0,9</strong>
+            punti di voto.
+          </li>
+          <li>
+            Ogni NFT della collezione Solnauta (Gen2) vale <strong>0,1</strong>
+            punti di voto.
+          </li>
+        </ul>
+        <p class="weights-copy">
+          Il potere di voto totale e' la somma dei due valori calcolati sul wallet
+          collegato.
+        </p>
+      </section>
+
+      <main class="main-content">
+        <section class="proposal-card">
+          <p class="proposal-tag">Proposta #1</p>
+          <h2>
+            La DAO dovrebbe adottare un'interfaccia di voto proprietaria con
+            potere di voto pesato in base agli NFT detenuti nel wallet?
+          </h2>
+          <p class="proposal-copy">
+            Questa proposta demo mostra un flusso di governance in cui ogni NFT
+            supportato contribuisce con un peso predefinito al voto finale. I
+            pulsanti sono solo dimostrativi e non inviano alcuna transazione.
+          </p>
+
+          <div class="proposal-power">
+            <span>Il tuo potere di voto</span>
+            <strong id="proposalVotingPower">0.0</strong>
+          </div>
+
+          <div class="button-row">
+            <button type="button" class="vote-button yes-button">SI</button>
+            <button type="button" class="vote-button no-button">NO</button>
+          </div>
+        </section>
+
+        <aside class="transparency-card">
+          <h3>Trasparenza</h3>
+          <ul>
+            <li>Il wallet viene collegato solo per leggere l'indirizzo pubblico.</li>
+            <li>Non viene eseguita alcuna transazione blockchain.</li>
+            <li>Da questa pagina non possono essere mossi fondi o NFT.</li>
+            <li>Il potere di voto viene calcolato solo dagli NFT posseduti.</li>
+          </ul>
+          <div class="transparency-actions">
+            <button
+              id="openSecurityModal"
+              type="button"
+              class="chip chip--primary"
+              aria-controls="securityModal"
+              aria-expanded="false"
+            >
+              Vedi codice e sicurezza
+            </button>
+            <a
+              class="chip chip--ghost"
+              href="https://github.com/Happydao/torrino.dao.voting"
+              target="_blank"
+              rel="noopener"
+            >
+              Apri repository GitHub
+            </a>
+          </div>
+          <p class="security-note">
+            Il popup mostra direttamente il codice principale di collegamento al
+            wallet e di lettura NFT. Il repository pubblico resta disponibile
+            come verifica aggiuntiva.
+          </p>
+        </aside>
+      </main>
+
+      <footer class="footer-note">
+        Torrino DAO - Solo demo. Non viene inviato alcun voto e non viene
+        eseguita alcuna azione on-chain.
+      </footer>
+    </div>
+
+    <div
+      class="modal"
+      id="securityModal"
+      aria-hidden="true"
+      role="dialog"
+      aria-label="Trasparenza del codice"
+    >
+      <div class="modal__inner">
+        <button
+          class="modal__close"
+          type="button"
+          id="closeSecurityModal"
+          aria-label="Chiudi finestra trasparenza"
+        >
+          ✕
+        </button>
+        <div class="modal__content">
+          <h3 class="modal__title">Codice pubblico e verificabile</h3>
+          <p class="modal__lead">
+            Qui sotto vedi direttamente il blocco principale del codice usato
+            per collegare Phantom e leggere i dati pubblici del wallet.
+          </p>
+          <pre class="code-block"><code>const connection = new solanaWeb3.Connection(RPC_URL, "confirmed");
+
+async function connectWallet() {
+  const provider = getPhantomProvider();
+
+  if (!provider) {
+    setStatus(getMissingWalletMessage());
+    return;
+  }
+
+  const response = await window.solana.connect();
+  const walletAddress = response.publicKey.toString();
+  const counts = await getVotingCounts(walletAddress);
+  updateDashboard(walletAddress, counts);
+}
+
+async function getOwnedNftMints(walletAddress) {
+  const ownerPublicKey = new solanaWeb3.PublicKey(walletAddress);
+  const result = await connection.getParsedTokenAccountsByOwner(
+    ownerPublicKey,
+    { programId: TOKEN_PROGRAM_ID },
+    "confirmed"
+  );
+
+  return result.value
+    .filter((account) => {
+      const tokenAmount = account.account.data.parsed.info.tokenAmount;
+      return tokenAmount.amount === "1" && tokenAmount.decimals === 0;
+    })
+    .map((account) => account.account.data.parsed.info.mint);
+}</code></pre>
+          <ul class="modal-list">
+            <li>
+              La connessione al wallet avviene con
+              <span class="mono-inline">window.solana.connect()</span>.
+            </li>
+            <li>
+              Il codice legge solo l'indirizzo pubblico e gli NFT del wallet.
+            </li>
+            <li>
+              Non sono presenti
+              <span class="mono-inline">sendTransaction</span> o
+              <span class="mono-inline">signAndSendTransaction</span>.
+            </li>
+            <li>
+              Il potere di voto viene solo calcolato nel browser partendo dai
+              dati pubblici della blockchain.
+            </li>
+          </ul>
+          <div class="transparency-actions">
+            <a
+              class="chip chip--primary"
+              href="https://github.com/Happydao/torrino.dao.voting"
+              target="_blank"
+              rel="noopener"
+            >
+              Apri repository
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
