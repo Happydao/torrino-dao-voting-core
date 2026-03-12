@@ -50,11 +50,17 @@
         <article class="summary-card">
           <span class="label">NFT Torrino DAO</span>
           <strong id="torrinoCount">0</strong>
+          <ul id="torrinoNames" class="nft-list">
+            <li class="nft-list__empty">Nessun Torrino DAO NFT trovato.</li>
+          </ul>
         </article>
 
         <article class="summary-card">
           <span class="label">NFT Solnauta</span>
           <strong id="solnautaCount">0</strong>
+          <ul id="solnautaNames" class="nft-list">
+            <li class="nft-list__empty">Nessun Solnauta NFT trovato.</li>
+          </ul>
         </article>
 
         <article class="summary-card accent-card">
@@ -95,8 +101,9 @@
           </h2>
           <p class="proposal-copy">
             Questa proposta demo mostra un flusso di governance in cui ogni NFT
-            supportato contribuisce con un peso predefinito al voto finale. I
-            pulsanti sono solo dimostrativi e non inviano alcuna transazione.
+            supportato contribuisce con un peso predefinito al voto finale. Il
+            voto viene registrato off-chain nel backend e non invia alcuna
+            transazione blockchain.
           </p>
 
           <div class="proposal-power">
@@ -108,6 +115,7 @@
             <button type="button" class="vote-button yes-button">SI</button>
             <button type="button" class="vote-button no-button">NO</button>
           </div>
+          <p id="voteFeedback" class="vote-feedback" aria-live="polite"></p>
         </section>
 
         <aside class="transparency-card">
@@ -138,16 +146,61 @@
             </a>
           </div>
           <p class="security-note">
-            Il popup mostra direttamente il codice principale di collegamento al
-            wallet e di lettura NFT. Il repository pubblico resta disponibile
-            come verifica aggiuntiva.
+            Il popup mostra il flusso principale: collegamento wallet nel browser
+            e lettura NFT tramite endpoint backend. Il repository pubblico resta
+            disponibile come verifica aggiuntiva.
           </p>
         </aside>
       </main>
 
+      <section class="results-card" aria-live="polite">
+        <div class="results-header">
+          <p class="proposal-tag">Live Voting Results</p>
+          <h2>Dashboard risultati in tempo reale</h2>
+        </div>
+        <div class="results-grid">
+          <article class="results-stat">
+            <span class="label">Solnauta NFTs voted</span>
+            <strong id="solnautaVoted">0</strong>
+          </article>
+          <article class="results-stat">
+            <span class="label">Torrino DAO NFTs voted</span>
+            <strong id="torrinoVoted">0</strong>
+          </article>
+          <article class="results-stat results-stat--yes">
+            <span class="label">YES Power</span>
+            <strong id="yesPower">0.0</strong>
+          </article>
+          <article class="results-stat results-stat--no">
+            <span class="label">NO Power</span>
+            <strong id="noPower">0.0</strong>
+          </article>
+        </div>
+        <div class="results-bars">
+          <div class="results-row">
+            <div class="results-row__meta">
+              <span class="results-row__label">YES</span>
+              <strong id="yesPercent">0%</strong>
+            </div>
+            <div class="results-track">
+              <div id="yesBar" class="results-fill results-fill--yes" style="width: 0%"></div>
+            </div>
+          </div>
+          <div class="results-row">
+            <div class="results-row__meta">
+              <span class="results-row__label">NO</span>
+              <strong id="noPercent">0%</strong>
+            </div>
+            <div class="results-track">
+              <div id="noBar" class="results-fill results-fill--no" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <footer class="footer-note">
-        Torrino DAO - Solo demo. Non viene inviato alcun voto e non viene
-        eseguita alcuna azione on-chain.
+        Torrino DAO - Demo governance con registrazione off-chain del voto. Non
+        viene eseguita alcuna azione on-chain.
       </footer>
     </div>
 
@@ -171,9 +224,16 @@
           <h3 class="modal__title">Codice pubblico e verificabile</h3>
           <p class="modal__lead">
             Qui sotto vedi direttamente il blocco principale del codice usato
-            per collegare Phantom e leggere i dati pubblici del wallet.
+            per collegare Phantom e leggere i dati del wallet tramite backend.
           </p>
-          <pre class="code-block"><code>const connection = new solanaWeb3.Connection(RPC_URL, "confirmed");
+          <pre class="code-block"><code>const RPC = process.env.HELIUS_RPC;
+
+async function handleWalletNfts(requestUrl, res) {
+  const walletAddress = requestUrl.searchParams.get("address");
+  const assets = await getAllAssetsByOwner(walletAddress);
+  const summary = summarizeWalletAssets(assets);
+  sendJson(res, 200, summary);
+}
 
 async function connectWallet() {
   const provider = getPhantomProvider();
@@ -185,24 +245,11 @@ async function connectWallet() {
 
   const response = await window.solana.connect();
   const walletAddress = response.publicKey.toString();
-  const counts = await getVotingCounts(walletAddress);
-  updateDashboard(walletAddress, counts);
-}
-
-async function getOwnedNftMints(walletAddress) {
-  const ownerPublicKey = new solanaWeb3.PublicKey(walletAddress);
-  const result = await connection.getParsedTokenAccountsByOwner(
-    ownerPublicKey,
-    { programId: TOKEN_PROGRAM_ID },
-    "confirmed"
+  const responseData = await fetch(
+    "/api/wallet-nfts?address=" + encodeURIComponent(walletAddress)
   );
-
-  return result.value
-    .filter((account) => {
-      const tokenAmount = account.account.data.parsed.info.tokenAmount;
-      return tokenAmount.amount === "1" && tokenAmount.decimals === 0;
-    })
-    .map((account) => account.account.data.parsed.info.mint);
+  const walletData = await responseData.json();
+  updateDashboard(walletAddress, walletData);
 }</code></pre>
           <ul class="modal-list">
             <li>
@@ -210,7 +257,7 @@ async function getOwnedNftMints(walletAddress) {
               <span class="mono-inline">window.solana.connect()</span>.
             </li>
             <li>
-              Il codice legge solo l'indirizzo pubblico e gli NFT del wallet.
+              Il browser legge solo l'indirizzo pubblico del wallet.
             </li>
             <li>
               Non sono presenti
@@ -218,8 +265,8 @@ async function getOwnedNftMints(walletAddress) {
               <span class="mono-inline">signAndSendTransaction</span>.
             </li>
             <li>
-              Il potere di voto viene solo calcolato nel browser partendo dai
-              dati pubblici della blockchain.
+              L'RPC Helius e' sul backend e viene letto tramite
+              <span class="mono-inline">process.env.HELIUS_RPC</span>.
             </li>
           </ul>
           <div class="transparency-actions">
@@ -236,7 +283,6 @@ async function getOwnedNftMints(walletAddress) {
       </div>
     </div>
 
-    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

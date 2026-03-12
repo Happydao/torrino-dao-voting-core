@@ -1,23 +1,12 @@
-const RPC_URL = "https://mainnet.helius-rpc.com/?api-key=8b29b17a-cf4e-4de8-9a04-0dd54dacb302";
-const METADATA_PROGRAM_ID = new solanaWeb3.PublicKey(
-  "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
-);
-const TOKEN_PROGRAM_ID = new solanaWeb3.PublicKey(
-  "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-);
-const connection = new solanaWeb3.Connection(RPC_URL, "confirmed");
-
-const COLLECTIONS = {
-  torrino: {
-    name: "Torrino DAO",
-    address: "DKaSqu5ftJTkxr9yGyxCakooFZAi2X5aa6SGhs5yR81t",
-    weight: 0.9,
-  },
-  solnauta: {
-    name: "Solnauta",
-    address: "FSKamMRcYWVWxuCzKLofdVSDgwkZ1ufEy99Q9ig3SfG4",
-    weight: 0.1,
-  },
+const API_ENDPOINT = "/api/wallet-nfts";
+const VOTE_ENDPOINT = "/api/vote";
+const RESULTS_ENDPOINT = "/api/results";
+const textEncoder = new TextEncoder();
+const state = {
+  walletAddress: null,
+  walletData: null,
+  voteFeedbackTimeoutId: null,
+  resultsPollIntervalId: null,
 };
 
 const ui = {
@@ -26,8 +15,21 @@ const ui = {
   walletAddress: document.getElementById("walletAddress"),
   torrinoCount: document.getElementById("torrinoCount"),
   solnautaCount: document.getElementById("solnautaCount"),
+  torrinoNames: document.getElementById("torrinoNames"),
+  solnautaNames: document.getElementById("solnautaNames"),
   votingPower: document.getElementById("votingPower"),
   proposalVotingPower: document.getElementById("proposalVotingPower"),
+  yesButton: document.querySelector(".yes-button"),
+  noButton: document.querySelector(".no-button"),
+  voteFeedback: document.getElementById("voteFeedback"),
+  solnautaVoted: document.getElementById("solnautaVoted"),
+  torrinoVoted: document.getElementById("torrinoVoted"),
+  yesPower: document.getElementById("yesPower"),
+  noPower: document.getElementById("noPower"),
+  yesPercent: document.getElementById("yesPercent"),
+  noPercent: document.getElementById("noPercent"),
+  yesBar: document.getElementById("yesBar"),
+  noBar: document.getElementById("noBar"),
   securityModal: document.getElementById("securityModal"),
   openSecurityModal: document.getElementById("openSecurityModal"),
   closeSecurityModal: document.getElementById("closeSecurityModal"),
@@ -35,7 +37,10 @@ const ui = {
 
 initializeWalletStatus();
 initializeSecurityModal();
+initializeResultsPolling();
 ui.connectButton.addEventListener("click", connectWallet);
+ui.yesButton.addEventListener("click", () => submitVote("yes"));
+ui.noButton.addEventListener("click", () => submitVote("no"));
 
 async function connectWallet() {
   const provider = getPhantomProvider();
@@ -50,11 +55,13 @@ async function connectWallet() {
     const response = await window.solana.connect();
     const walletAddress = response.publicKey.toString();
 
+    state.walletAddress = walletAddress;
     ui.walletAddress.textContent = walletAddress;
-    setStatus("Wallet collegato. Lettura degli NFT posseduti su Solana...");
+    setStatus("Wallet collegato. Lettura NFT dal backend in corso...");
 
-    const counts = await getVotingCounts(walletAddress);
-    updateDashboard(walletAddress, counts);
+    const walletData = await getWalletNfts(walletAddress);
+    state.walletData = walletData;
+    updateDashboard(walletAddress, walletData);
     setStatus("NFT caricati correttamente. Non e' stata inviata alcuna transazione.");
   } catch (error) {
     console.error(error);
@@ -107,200 +114,154 @@ function getMissingWalletMessage() {
   return "Phantom wallet non e' stato rilevato in questo browser.";
 }
 
-async function getVotingCounts(walletAddress) {
-  const nftMints = await getOwnedNftMints(walletAddress);
+async function getWalletNfts(walletAddress) {
+  const response = await fetch(`${API_ENDPOINT}?address=${encodeURIComponent(walletAddress)}`);
+  const payload = await response.json().catch(() => null);
 
-  if (nftMints.length === 0) {
-    return { torrino: 0, solnauta: 0, votingPower: 0 };
+  if (!response.ok) {
+    throw new Error(payload && payload.error ? payload.error : "Errore durante la lettura NFT.");
   }
 
-  const metadataAddresses = nftMints.map((mint) => getMetadataAddress(mint).toBase58());
-  const metadataAccounts = await getMetadataAccounts(metadataAddresses);
+  return payload;
+}
 
-  let torrino = 0;
-  let solnauta = 0;
+async function submitVote(vote) {
+  const provider = getPhantomProvider();
 
-  for (const account of metadataAccounts) {
-    const collectionAddress = extractCollectionAddress(account);
-
-    if (collectionAddress === COLLECTIONS.torrino.address) {
-      torrino += 1;
-    } else if (collectionAddress === COLLECTIONS.solnauta.address) {
-      solnauta += 1;
-    }
+  if (!provider || !state.walletAddress || !state.walletData) {
+    setStatus("Collega prima il wallet per poter votare.");
+    showVoteFeedback("An error occurred while submitting the vote.", "error");
+    return;
   }
 
-  const votingPower =
-    torrino * COLLECTIONS.torrino.weight + solnauta * COLLECTIONS.solnauta.weight;
-
-  return { torrino, solnauta, votingPower };
-}
-
-async function getOwnedNftMints(walletAddress) {
-  const ownerPublicKey = new solanaWeb3.PublicKey(walletAddress);
-  const result = await connection.getParsedTokenAccountsByOwner(
-    ownerPublicKey,
-    { programId: TOKEN_PROGRAM_ID },
-    "confirmed"
-  );
-
-  return result.value
-    .filter((account) => {
-      const tokenAmount = account.account.data.parsed.info.tokenAmount;
-      return tokenAmount.amount === "1" && tokenAmount.decimals === 0;
-    })
-    .map((account) => account.account.data.parsed.info.mint);
-}
-
-async function getMetadataAccounts(metadataAddresses) {
-  const chunks = chunkArray(metadataAddresses, 100);
-  const results = [];
-
-  for (const chunk of chunks) {
-    const publicKeys = chunk.map((address) => new solanaWeb3.PublicKey(address));
-    const accounts = await connection.getMultipleAccountsInfo(publicKeys, "confirmed");
-    results.push(...accounts);
+  if ((state.walletData.gen1_count + state.walletData.gen2_count) === 0) {
+    setStatus("Il wallet collegato non possiede NFT validi per il voto.");
+    showVoteFeedback("An error occurred while submitting the vote.", "error");
+    return;
   }
 
-  return results;
-}
-
-function getMetadataAddress(mintAddress) {
-  const mintPublicKey = new solanaWeb3.PublicKey(mintAddress);
-  const [metadataAddress] = solanaWeb3.PublicKey.findProgramAddressSync(
-    [
-      new TextEncoder().encode("metadata"),
-      METADATA_PROGRAM_ID.toBytes(),
-      mintPublicKey.toBytes(),
-    ],
-    METADATA_PROGRAM_ID
-  );
-
-  return metadataAddress;
-}
-
-function extractCollectionAddress(accountInfo) {
-  if (!accountInfo || !accountInfo.data) {
-    return null;
-  }
-
-  const bytes = accountInfo.data instanceof Uint8Array
-    ? accountInfo.data
-    : Uint8Array.from(atob(accountInfo.data[0]), (char) => char.charCodeAt(0));
-
-  const candidates = [
-    parseCollectionFromMetadata(bytes, { tokenStandardPresent: true }),
-    parseCollectionFromMetadata(bytes, { tokenStandardPresent: false }),
-  ];
-
-  for (const candidate of candidates) {
-    if (
-      candidate === COLLECTIONS.torrino.address ||
-      candidate === COLLECTIONS.solnauta.address
-    ) {
-      return candidate;
-    }
-  }
-
-  return null;
-}
-
-function parseCollectionFromMetadata(bytes, options) {
   try {
-    let offset = 0;
+    clearVoteFeedback();
+    setVotingBusy(true, `Invio voto "${vote.toUpperCase()}" in corso...`);
+    const signature = await signVoteMessage(provider, vote);
+    const response = await fetch(VOTE_ENDPOINT, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        wallet: state.walletAddress,
+        vote,
+        signature,
+      }),
+    });
+    const payload = await response.json().catch(() => null);
 
-    offset += 1; // key
-    offset += 32; // update authority
-    offset += 32; // mint
-
-    offset = skipBorshString(bytes, offset); // name
-    offset = skipBorshString(bytes, offset); // symbol
-    offset = skipBorshString(bytes, offset); // uri
-    offset += 2; // seller fee basis points
-
-    const hasCreators = readU8(bytes, offset);
-    offset += 1;
-
-    if (hasCreators === 1) {
-      const creatorsLength = readU32(bytes, offset);
-      offset += 4 + creatorsLength * 34;
+    if (response.ok && payload && payload.success === true) {
+      setStatus(`Voto registrato. Potere di voto usato: ${formatVotingPower(payload.voting_power)}.`);
+      showVoteFeedback("Vote successfully recorded.", "success");
+      await refreshResults();
+      return;
     }
 
-    offset += 1; // primary sale happened
-    offset += 1; // is mutable
-
-    const hasEditionNonce = readU8(bytes, offset);
-    offset += 1;
-
-    if (hasEditionNonce === 1) {
-      offset += 1;
+    if (payload && payload.error === "NFT_ALREADY_VOTED") {
+      setStatus("Uno o piu' NFT risultano gia' utilizzati per il voto.");
+      showVoteFeedback("One or more of your NFTs have already voted.", "error");
+      return;
     }
 
-    if (options.tokenStandardPresent) {
-      const hasTokenStandard = readU8(bytes, offset);
-      offset += 1;
-
-      if (hasTokenStandard === 1) {
-        offset += 1;
-      }
-    }
-
-    const hasCollection = readU8(bytes, offset);
-    offset += 1;
-
-    if (hasCollection !== 1) {
-      return null;
-    }
-
-    offset += 1; // verified
-    const collectionBytes = bytes.slice(offset, offset + 32);
-
-    if (collectionBytes.length !== 32) {
-      return null;
-    }
-
-    return new solanaWeb3.PublicKey(collectionBytes).toBase58();
+    throw new Error(payload && payload.error ? payload.error : "SERVER_ERROR");
   } catch (error) {
-    return null;
+    console.error(error);
+    setStatus(getErrorMessage(error));
+    showVoteFeedback("An error occurred while submitting the vote.", "error");
+  } finally {
+    setVotingBusy(false);
   }
 }
 
-function skipBorshString(bytes, offset) {
-  const length = readU32(bytes, offset);
-  return offset + 4 + length;
-}
+function initializeResultsPolling() {
+  refreshResults();
 
-function readU8(bytes, offset) {
-  if (offset >= bytes.length) {
-    throw new Error("Unexpected end of metadata account");
+  if (state.resultsPollIntervalId) {
+    window.clearInterval(state.resultsPollIntervalId);
   }
 
-  return bytes[offset];
+  state.resultsPollIntervalId = window.setInterval(() => {
+    refreshResults();
+  }, 10000);
 }
 
-function readU32(bytes, offset) {
-  if (offset + 4 > bytes.length) {
-    throw new Error("Unexpected end of metadata account");
+async function refreshResults() {
+  try {
+    const response = await fetch(RESULTS_ENDPOINT);
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok || !payload) {
+      throw new Error("SERVER_ERROR");
+    }
+
+    updateResultsDashboard(payload);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+async function signVoteMessage(provider, vote) {
+  if (typeof provider.signMessage !== "function") {
+    return "not-signed";
   }
 
-  return (
-    bytes[offset] |
-    (bytes[offset + 1] << 8) |
-    (bytes[offset + 2] << 16) |
-    (bytes[offset + 3] << 24)
-  ) >>> 0;
+  const message = `Torrino DAO vote:${vote}:wallet:${state.walletAddress}:timestamp:${Date.now()}`;
+  const signatureBytes = await provider.signMessage(textEncoder.encode(message), "utf8");
+
+  if (!signatureBytes || !signatureBytes.signature) {
+    return "not-signed";
+  }
+
+  return bytesToBase58(signatureBytes.signature);
 }
 
-function updateDashboard(walletAddress, counts) {
+function updateDashboard(walletAddress, walletData) {
   ui.walletAddress.textContent = walletAddress;
-  ui.torrinoCount.textContent = String(counts.torrino);
-  ui.solnautaCount.textContent = String(counts.solnauta);
-  ui.votingPower.textContent = formatVotingPower(counts.votingPower);
-  ui.proposalVotingPower.textContent = formatVotingPower(counts.votingPower);
+  ui.torrinoCount.textContent = String(walletData.gen1_count);
+  ui.solnautaCount.textContent = String(walletData.gen2_count);
+  ui.votingPower.textContent = formatVotingPower(walletData.voting_power);
+  ui.proposalVotingPower.textContent = formatVotingPower(walletData.voting_power);
+
+  renderNames(ui.torrinoNames, walletData.gen1_names, "Nessun Torrino DAO NFT trovato.");
+  renderNames(ui.solnautaNames, walletData.gen2_names, "Nessun Solnauta NFT trovato.");
+}
+
+function updateResultsDashboard(results) {
+  ui.solnautaVoted.textContent = String(results.solnauta_voted || 0);
+  ui.torrinoVoted.textContent = String(results.torrino_voted || 0);
+  ui.yesPower.textContent = formatVotingPower(results.yes_power);
+  ui.noPower.textContent = formatVotingPower(results.no_power);
+  ui.yesPercent.textContent = `${Number(results.yes_percent || 0)}%`;
+  ui.noPercent.textContent = `${Number(results.no_percent || 0)}%`;
+  ui.yesBar.style.width = `${Number(results.yes_percent || 0)}%`;
+  ui.noBar.style.width = `${Number(results.no_percent || 0)}%`;
+}
+
+function renderNames(listElement, names, emptyMessage) {
+  listElement.replaceChildren();
+
+  if (!Array.isArray(names) || names.length === 0) {
+    const emptyItem = document.createElement("li");
+    emptyItem.className = "nft-list__empty";
+    emptyItem.textContent = emptyMessage;
+    listElement.appendChild(emptyItem);
+    return;
+  }
+
+  for (const name of names) {
+    const item = document.createElement("li");
+    item.textContent = name;
+    listElement.appendChild(item);
+  }
 }
 
 function formatVotingPower(value) {
-  return value.toFixed(1);
+  return Number(value || 0).toFixed(1);
 }
 
 function setBusy(isBusy, message) {
@@ -308,6 +269,19 @@ function setBusy(isBusy, message) {
   ui.connectButton.textContent = isBusy
     ? "Connessione..."
     : "Collega Phantom Wallet";
+  ui.yesButton.disabled = isBusy;
+  ui.noButton.disabled = isBusy;
+
+  if (message) {
+    setStatus(message);
+  }
+}
+
+function setVotingBusy(isBusy, message) {
+  ui.yesButton.disabled = isBusy;
+  ui.noButton.disabled = isBusy;
+  ui.yesButton.textContent = isBusy ? "Invio..." : "SI";
+  ui.noButton.textContent = isBusy ? "Invio..." : "NO";
 
   if (message) {
     setStatus(message);
@@ -318,26 +292,56 @@ function setStatus(message) {
   ui.statusMessage.textContent = message;
 }
 
+function showVoteFeedback(message, type) {
+  if (!ui.voteFeedback) {
+    return;
+  }
+
+  if (state.voteFeedbackTimeoutId) {
+    window.clearTimeout(state.voteFeedbackTimeoutId);
+  }
+
+  ui.voteFeedback.textContent = message;
+  ui.voteFeedback.classList.remove("is-success", "is-error");
+  ui.voteFeedback.classList.add("is-visible", type === "success" ? "is-success" : "is-error");
+
+  state.voteFeedbackTimeoutId = window.setTimeout(() => {
+    clearVoteFeedback();
+  }, 5000);
+}
+
+function clearVoteFeedback() {
+  if (!ui.voteFeedback) {
+    return;
+  }
+
+  if (state.voteFeedbackTimeoutId) {
+    window.clearTimeout(state.voteFeedbackTimeoutId);
+    state.voteFeedbackTimeoutId = null;
+  }
+
+  ui.voteFeedback.textContent = "";
+  ui.voteFeedback.classList.remove("is-visible", "is-success", "is-error");
+}
+
 function getErrorMessage(error) {
   if (error && typeof error.message === "string") {
     if (error.message.includes("User rejected")) {
       return "La connessione del wallet e' stata annullata dall'utente.";
     }
 
+    if (error.message === "NFT_ALREADY_VOTED") {
+      return "Uno o piu' NFT risultano gia' utilizzati per il voto.";
+    }
+
+    if (error.message === "SERVER_ERROR") {
+      return "Si e' verificato un errore durante la registrazione del voto.";
+    }
+
     return error.message;
   }
 
   return "Si e' verificato un errore imprevisto durante la lettura dei dati del wallet.";
-}
-
-function chunkArray(items, size) {
-  const chunks = [];
-
-  for (let index = 0; index < items.length; index += size) {
-    chunks.push(items.slice(index, index + size));
-  }
-
-  return chunks;
 }
 
 function initializeSecurityModal() {
@@ -372,4 +376,46 @@ function closeSecurityModal() {
   ui.securityModal.setAttribute("aria-hidden", "true");
   ui.openSecurityModal.setAttribute("aria-expanded", "false");
   document.body.style.overflow = "";
+}
+
+function bytesToBase58(bytes) {
+  const alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+
+  if (!(bytes instanceof Uint8Array) || bytes.length === 0) {
+    return "";
+  }
+
+  const digits = [0];
+
+  for (const byte of bytes) {
+    let carry = byte;
+
+    for (let index = 0; index < digits.length; index += 1) {
+      const value = digits[index] * 256 + carry;
+      digits[index] = value % 58;
+      carry = Math.floor(value / 58);
+    }
+
+    while (carry > 0) {
+      digits.push(carry % 58);
+      carry = Math.floor(carry / 58);
+    }
+  }
+
+  let result = "";
+
+  for (const byte of bytes) {
+    if (byte === 0) {
+      result += alphabet[0];
+      continue;
+    }
+
+    break;
+  }
+
+  for (let index = digits.length - 1; index >= 0; index -= 1) {
+    result += alphabet[digits[index]];
+  }
+
+  return result;
 }
