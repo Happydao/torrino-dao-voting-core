@@ -1,6 +1,8 @@
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
+const { execFile } = require("child_process");
+const { promisify } = require("util");
 const { URL } = require("url");
 
 loadEnvFile();
@@ -13,6 +15,7 @@ const DATA_DIR = path.join(__dirname, "data");
 const VOTES_CSV_PATH = path.join(DATA_DIR, "votes.csv");
 const USED_MINTS_PATH = path.join(DATA_DIR, "used-mints.json");
 const PROPOSAL_PATH = path.join(DATA_DIR, "proposal.json");
+const GIT_UPDATE_INTERVAL_MS = 10 * 60 * 1000;
 const COLLECTIONS = {
   torrino: {
     name: "Torrino DAO",
@@ -32,6 +35,13 @@ const MIME_TYPES = {
   ".json": "application/json; charset=utf-8",
   ".svg": "image/svg+xml; charset=utf-8",
   ".txt": "text/plain; charset=utf-8",
+};
+const execFileAsync = promisify(execFile);
+const voteSyncState = {
+  intervalId: null,
+  startTimeoutId: null,
+  endTimeoutId: null,
+  proposalId: null,
 };
 
 const server = http.createServer(async (req, res) => {
@@ -82,6 +92,7 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`Server in ascolto su http://localhost:${PORT}`);
+  configureVotingSyncTimers(readProposal());
 });
 
 async function handleWalletNfts(requestUrl, res) {
@@ -257,6 +268,7 @@ async function handleAdminProposal(req, res) {
     ensureDataDir();
     fs.writeFileSync(PROPOSAL_PATH, JSON.stringify(proposal, null, 2) + "\n", "utf8");
     initializeVoteStorageForProposal(proposal, ADMIN_WALLET);
+    configureVotingSyncTimers(proposal);
     sendJson(res, 200, { success: true, proposal });
   } catch (error) {
     console.error(error);
@@ -283,6 +295,8 @@ async function handleAdminReset(req, res) {
     if (fs.existsSync(PROPOSAL_PATH)) {
       fs.unlinkSync(PROPOSAL_PATH);
     }
+
+    stopVotingSyncTimers();
 
     sendJson(res, 200, { success: true });
   } catch (error) {
@@ -768,6 +782,125 @@ function getUsedNftState() {
     usedMints: readUsedMintsRegistry(),
     votedNames: readVotedNftNamesFromCsv(),
   };
+}
+
+function configureVotingSyncTimers(proposal) {
+  stopVotingSyncTimers();
+
+  if (!proposal) {
+    return;
+  }
+
+  voteSyncState.proposalId = proposal.proposal_id;
+  const nowMs = Date.now();
+  const startMs = Number(proposal.start_time) * 1000;
+  const endMs = Number(proposal.end_time) * 1000;
+
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= nowMs) {
+    scheduleFinalVotingCommit(proposal);
+    return;
+  }
+
+  if (startMs <= nowMs) {
+    startPeriodicVotingSync(proposal);
+  } else {
+    voteSyncState.startTimeoutId = setTimeout(() => {
+      startPeriodicVotingSync(proposal);
+    }, startMs - nowMs);
+  }
+
+  voteSyncState.endTimeoutId = setTimeout(() => {
+    scheduleFinalVotingCommit(proposal);
+  }, Math.max(endMs - nowMs, 0));
+}
+
+function startPeriodicVotingSync(proposal) {
+  if (!proposal || voteSyncState.proposalId !== proposal.proposal_id) {
+    return;
+  }
+
+  if (getProposalStatus(proposal) !== "active") {
+    return;
+  }
+
+  voteSyncState.intervalId = setInterval(() => {
+    if (getProposalStatus(proposal) !== "active") {
+      return;
+    }
+
+    commitVotesCsvToGit(`voting update ${Math.floor(Date.now() / 1000)}`).catch((error) => {
+      console.error("Errore sync Git periodico", error);
+    });
+  }, GIT_UPDATE_INTERVAL_MS);
+}
+
+function scheduleFinalVotingCommit(proposal) {
+  if (!proposal || voteSyncState.proposalId !== proposal.proposal_id) {
+    return;
+  }
+
+  stopVotingSyncTimers();
+  commitVotesCsvToGit(`final voting results ${Math.floor(Date.now() / 1000)}`).catch((error) => {
+    console.error("Errore commit Git finale", error);
+  });
+}
+
+function stopVotingSyncTimers() {
+  if (voteSyncState.intervalId) {
+    clearInterval(voteSyncState.intervalId);
+    voteSyncState.intervalId = null;
+  }
+
+  if (voteSyncState.startTimeoutId) {
+    clearTimeout(voteSyncState.startTimeoutId);
+    voteSyncState.startTimeoutId = null;
+  }
+
+  if (voteSyncState.endTimeoutId) {
+    clearTimeout(voteSyncState.endTimeoutId);
+    voteSyncState.endTimeoutId = null;
+  }
+
+  voteSyncState.proposalId = null;
+}
+
+async function commitVotesCsvToGit(message) {
+  if (!fs.existsSync(VOTES_CSV_PATH)) {
+    return;
+  }
+
+  const proposal = readProposal();
+
+  if (!proposal) {
+    return;
+  }
+
+  const status = getProposalStatus(proposal);
+  const isFinalCommit = message.startsWith("final voting results");
+
+  if (!isFinalCommit && status !== "active") {
+    return;
+  }
+
+  await runGitCommand(["add", "data/votes.csv"]);
+
+  try {
+    await runGitCommand(["commit", "-m", message]);
+  } catch (error) {
+    const combinedOutput = `${error.stdout || ""}\n${error.stderr || ""}`;
+
+    if (!combinedOutput.includes("nothing to commit")) {
+      throw error;
+    }
+  }
+
+  await runGitCommand(["push", "origin", "main"]);
+}
+
+async function runGitCommand(args) {
+  return execFileAsync("git", ["-C", PUBLIC_DIR, ...args], {
+    cwd: PUBLIC_DIR,
+  });
 }
 
 function readVotedNftNamesFromCsv() {
