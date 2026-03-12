@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Torrino DAO Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="bg"></div>
+    <div class="scanlines"></div>
+
+    <div class="admin-shell">
+      <section class="admin-card">
+        <p class="eyebrow">Governance Admin</p>
+        <h1 class="title">TORRINO DAO ADMIN</h1>
+        <p class="tagline">
+          Connetti il wallet admin autorizzato per creare una proposta, impostare il timer
+          e avviare o resettare la votazione.
+        </p>
+        <div class="admin-actions">
+          <button id="connectAdminButton" class="admin-button admin-button--primary" type="button">
+            Connect Admin Wallet
+          </button>
+        </div>
+        <p id="adminStatus" class="status-message">Connetti il wallet admin per continuare.</p>
+        <p id="adminFeedback" class="admin-feedback" aria-live="polite"></p>
+      </section>
+
+      <div id="adminDashboard" class="admin-layout" hidden>
+        <section class="admin-status-card">
+          <p class="eyebrow">Connected Admin</p>
+          <strong id="adminWalletAddress" class="mono">Not connected</strong>
+        </section>
+
+        <section class="admin-form">
+          <p class="eyebrow">Create Proposal</p>
+          <div class="admin-grid">
+            <div class="admin-field admin-field--full">
+              <label for="proposalTitleInput">Proposal title</label>
+              <input id="proposalTitleInput" type="text" />
+            </div>
+            <div class="admin-field admin-field--full">
+              <label for="proposalDescriptionInput">Proposal description</label>
+              <textarea id="proposalDescriptionInput"></textarea>
+            </div>
+            <div class="admin-field">
+              <label for="optionAInput">Option A</label>
+              <input id="optionAInput" type="text" />
+            </div>
+            <div class="admin-field">
+              <label for="optionBInput">Option B</label>
+              <input id="optionBInput" type="text" />
+            </div>
+            <div class="admin-field">
+              <label for="optionCInput">Option C</label>
+              <input id="optionCInput" type="text" />
+            </div>
+            <div class="admin-field">
+              <label for="optionDInput">Option D</label>
+              <input id="optionDInput" type="text" />
+            </div>
+            <div class="admin-field admin-field--full">
+              <label for="optionEInput">Option E</label>
+              <input id="optionEInput" type="text" />
+            </div>
+            <div class="admin-field">
+              <label for="startTimeInput">Start date/time</label>
+              <input id="startTimeInput" type="datetime-local" />
+            </div>
+            <div class="admin-field">
+              <label for="endTimeInput">End date/time</label>
+              <input id="endTimeInput" type="datetime-local" />
+            </div>
+          </div>
+          <div class="admin-actions">
+            <button id="startVotingButton" class="admin-button admin-button--primary" type="button">
+              Start Voting
+            </button>
+            <button id="resetVotingButton" class="admin-button admin-button--secondary" type="button">
+              Reset Voting
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script src="admin.js"></script>
+  </body>
+</html>

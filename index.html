@@ -94,27 +94,21 @@
 
       <main class="main-content">
         <section class="proposal-card">
-          <p class="proposal-tag">Proposta #1</p>
-          <h2>
-            La DAO dovrebbe adottare un'interfaccia di voto proprietaria con
-            potere di voto pesato in base agli NFT detenuti nel wallet?
-          </h2>
-          <p class="proposal-copy">
-            Questa proposta demo mostra un flusso di governance in cui ogni NFT
-            supportato contribuisce con un peso predefinito al voto finale. Il
-            voto viene registrato off-chain nel backend e non invia alcuna
-            transazione blockchain.
+          <p id="proposalTag" class="proposal-tag">Governance</p>
+          <h2 id="proposalTitle">No active proposal</h2>
+          <p id="proposalDescription" class="proposal-copy">
+            L'admin non ha ancora avviato una votazione.
           </p>
 
           <div class="proposal-power">
             <span>Il tuo potere di voto</span>
             <strong id="proposalVotingPower">0.0</strong>
           </div>
-
-          <div class="button-row">
-            <button type="button" class="vote-button yes-button">SI</button>
-            <button type="button" class="vote-button no-button">NO</button>
+          <div class="proposal-meta">
+            <span id="proposalStatus" class="proposal-state">Voting inactive</span>
+            <strong id="proposalCountdown">--</strong>
           </div>
+          <div id="voteOptions" class="vote-options"></div>
           <p id="voteFeedback" class="vote-feedback" aria-live="polite"></p>
         </section>
 
@@ -157,6 +151,7 @@
         <div class="results-header">
           <p class="proposal-tag">Live Voting Results</p>
           <h2>Dashboard risultati in tempo reale</h2>
+          <p id="resultsStatus" class="results-status">Voting inactive</p>
         </div>
         <div class="results-grid">
           <article class="results-stat">
@@ -168,34 +163,15 @@
             <strong id="torrinoVoted">0</strong>
           </article>
           <article class="results-stat results-stat--yes">
-            <span class="label">YES Power</span>
-            <strong id="yesPower">0.0</strong>
+            <span class="label">Total Voting Power</span>
+            <strong id="totalPower">0.0</strong>
           </article>
-          <article class="results-stat results-stat--no">
-            <span class="label">NO Power</span>
-            <strong id="noPower">0.0</strong>
+          <article class="results-stat">
+            <span class="label">Results Refresh</span>
+            <strong>10s</strong>
           </article>
         </div>
-        <div class="results-bars">
-          <div class="results-row">
-            <div class="results-row__meta">
-              <span class="results-row__label">YES</span>
-              <strong id="yesPercent">0%</strong>
-            </div>
-            <div class="results-track">
-              <div id="yesBar" class="results-fill results-fill--yes" style="width: 0%"></div>
-            </div>
-          </div>
-          <div class="results-row">
-            <div class="results-row__meta">
-              <span class="results-row__label">NO</span>
-              <strong id="noPercent">0%</strong>
-            </div>
-            <div class="results-track">
-              <div id="noBar" class="results-fill results-fill--no" style="width: 0%"></div>
-            </div>
-          </div>
-        </div>
+        <div id="resultsBars" class="results-bars"></div>
       </section>
 
       <footer class="footer-note">
