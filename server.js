@@ -12,7 +12,6 @@ const RPC = process.env.HELIUS_RPC;
 const ADMIN_WALLET = process.env.ADMIN_WALLET || "5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc";
 const PUBLIC_DIR = __dirname;
 const DATA_DIR = path.join(__dirname, "data");
-const VOTES_CSV_PATH = path.join(DATA_DIR, "votes.csv");
 const USED_MINTS_PATH = path.join(DATA_DIR, "used-mints.json");
 const PROPOSAL_PATH = path.join(DATA_DIR, "proposal.json");
 const GIT_UPDATE_INTERVAL_MS = 10 * 60 * 1000;
@@ -255,7 +254,7 @@ async function handleAdminProposal(req, res) {
   }
 
   const proposal = {
-    proposal_id: `proposal_${Date.now()}`,
+    proposal_id: String(Math.floor(Date.now() / 1000)),
     title,
     description,
     options,
@@ -290,7 +289,6 @@ async function handleAdminReset(req, res) {
   }
 
   try {
-    deleteFileIfExists(VOTES_CSV_PATH);
     deleteFileIfExists(USED_MINTS_PATH);
     if (fs.existsSync(PROPOSAL_PATH)) {
       fs.unlinkSync(PROPOSAL_PATH);
@@ -412,7 +410,9 @@ function calculateResults() {
       : [],
   };
 
-  if (!proposal || !fs.existsSync(VOTES_CSV_PATH)) {
+  const proposalCsvPath = getProposalCsvPath(proposal);
+
+  if (!proposal || !proposalCsvPath || !fs.existsSync(proposalCsvPath)) {
     return baseResults;
   }
 
@@ -541,15 +541,16 @@ function resetVoteStorage(createFreshFiles) {
   ensureDataDir();
   const proposal = readProposal();
   const header = getVotesCsvHeader(proposal);
+  const proposalCsvPath = getProposalCsvPath(proposal);
 
-  if (createFreshFiles) {
-    fs.writeFileSync(VOTES_CSV_PATH, header, "utf8");
+  if (createFreshFiles && proposalCsvPath) {
+    fs.writeFileSync(proposalCsvPath, header, "utf8");
     fs.writeFileSync(USED_MINTS_PATH, "[]\n", "utf8");
     return;
   }
 
-  if (!fs.existsSync(VOTES_CSV_PATH)) {
-    fs.writeFileSync(VOTES_CSV_PATH, header, "utf8");
+  if (proposalCsvPath && !fs.existsSync(proposalCsvPath)) {
+    fs.writeFileSync(proposalCsvPath, header, "utf8");
   }
 
   if (!fs.existsSync(USED_MINTS_PATH)) {
@@ -559,17 +560,30 @@ function resetVoteStorage(createFreshFiles) {
 
 function initializeVoteStorageForProposal(proposal, adminWallet) {
   ensureDataDir();
-  const auditLines = [
-    `proposal_created_by,${escapeCsvValue(adminWallet)}`,
-    `proposal_created_timestamp,${Math.floor(Date.now() / 1000)}`,
-    `proposal_title,${escapeCsvValue(proposal.title)}`,
-    `proposal_question,${escapeCsvValue(proposal.description)}`,
-    `options,${escapeCsvValue(proposal.options.join("|"))}`,
+  const proposalCsvPath = getProposalCsvPath(proposal);
+  const createdTimestamp = Number(proposal.proposal_id) || Math.floor(Date.now() / 1000);
+  const metadataHeader = [
+    "proposal_created_by",
+    "proposal_created_timestamp",
+    "proposal_title",
+    "proposal_question",
+    "options",
+  ].join(",");
+  const metadataRow = [
+    escapeCsvValue(adminWallet),
+    escapeCsvValue(createdTimestamp),
+    escapeCsvValue(proposal.title),
+    escapeCsvValue(proposal.description),
+    escapeCsvValue(proposal.options.join("|")),
+  ].join(",");
+  const fileContents = [
+    metadataHeader,
+    metadataRow,
     "",
     getVotesCsvHeader(proposal).trimEnd(),
-  ];
+  ].join("\n") + "\n";
 
-  fs.writeFileSync(VOTES_CSV_PATH, `${auditLines.join("\n")}\n`, "utf8");
+  fs.writeFileSync(proposalCsvPath, fileContents, "utf8");
   fs.writeFileSync(USED_MINTS_PATH, "[]\n", "utf8");
 }
 
@@ -580,19 +594,17 @@ function ensureVoteStorageFiles() {
     fs.writeFileSync(USED_MINTS_PATH, "[]\n", "utf8");
   }
 
-  if (!fs.existsSync(VOTES_CSV_PATH)) {
-    const proposal = readProposal();
+  const proposal = readProposal();
+  const proposalCsvPath = getProposalCsvPath(proposal);
 
-    if (proposal) {
-      initializeVoteStorageForProposal(proposal, ADMIN_WALLET);
-    } else {
-      fs.writeFileSync(VOTES_CSV_PATH, `${getVotesCsvHeader(null)}`, "utf8");
-    }
+  if (proposal && proposalCsvPath && !fs.existsSync(proposalCsvPath)) {
+    initializeVoteStorageForProposal(proposal, ADMIN_WALLET);
   }
 }
 
 function appendVoteRow(row) {
   const proposal = readProposal();
+  const proposalCsvPath = getProposalCsvPath(proposal);
   const optionValues = getOptionColumns(proposal).map((optionLabel) => {
     return escapeCsvValue(formatDecimal(optionLabel === row.vote ? row.votingPower : 0));
   });
@@ -606,7 +618,7 @@ function appendVoteRow(row) {
     escapeCsvValue(row.signature),
   ].join(",") + "\n";
 
-  fs.appendFileSync(VOTES_CSV_PATH, csvLine, "utf8");
+  fs.appendFileSync(proposalCsvPath, csvLine, "utf8");
 }
 
 function readUsedMintsRegistry() {
@@ -684,7 +696,10 @@ function parseVoteCsvLine(line) {
 }
 
 function readVotesCsv() {
-  if (!fs.existsSync(VOTES_CSV_PATH)) {
+  const proposal = readProposal();
+  const proposalCsvPath = getProposalCsvPath(proposal);
+
+  if (!proposalCsvPath || !fs.existsSync(proposalCsvPath)) {
     return {
       rows: [],
       header: [],
@@ -692,7 +707,7 @@ function readVotesCsv() {
     };
   }
 
-  const allLines = fs.readFileSync(VOTES_CSV_PATH, "utf8").split(/\r?\n/);
+  const allLines = fs.readFileSync(proposalCsvPath, "utf8").split(/\r?\n/);
   const headerIndex = allLines.findIndex((line) => line.startsWith("wallet,"));
   const rows = headerIndex === -1 ? [] : allLines.slice(headerIndex).filter(Boolean);
   const header = rows.length > 0 ? parseCsvColumns(rows[0]) : [];
@@ -840,7 +855,7 @@ function scheduleFinalVotingCommit(proposal) {
   }
 
   stopVotingSyncTimers();
-  commitVotesCsvToGit(`final voting results ${Math.floor(Date.now() / 1000)}`).catch((error) => {
+  commitVotesCsvToGit(`final voting results ${proposal.proposal_id}`).catch((error) => {
     console.error("Errore commit Git finale", error);
   });
 }
@@ -865,13 +880,10 @@ function stopVotingSyncTimers() {
 }
 
 async function commitVotesCsvToGit(message) {
-  if (!fs.existsSync(VOTES_CSV_PATH)) {
-    return;
-  }
-
   const proposal = readProposal();
+  const proposalCsvPath = getProposalCsvPath(proposal);
 
-  if (!proposal) {
+  if (!proposal || !proposalCsvPath || !fs.existsSync(proposalCsvPath)) {
     return;
   }
 
@@ -882,7 +894,7 @@ async function commitVotesCsvToGit(message) {
     return;
   }
 
-  await runGitCommand(["add", "data/votes.csv"]);
+  await runGitCommand(["add", "data/"]);
 
   try {
     await runGitCommand(["commit", "-m", message]);
@@ -924,6 +936,22 @@ function readVotedNftNamesFromCsv() {
   }
 
   return votedNames;
+}
+
+function getProposalCsvPath(proposal) {
+  if (!proposal || !proposal.proposal_id) {
+    return null;
+  }
+
+  return path.join(DATA_DIR, `proposal_${proposal.proposal_id}.csv`);
+}
+
+function getProposalCsvRelativePath(proposal) {
+  if (!proposal || !proposal.proposal_id) {
+    return null;
+  }
+
+  return `data/proposal_${proposal.proposal_id}.csv`;
 }
 
 function deleteFileIfExists(filePath) {
