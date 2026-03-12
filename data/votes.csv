@@ -1,1 +1,8 @@
-wallet,solnauta_nfts,torrino_nfts,<OPTION_NAME>,voting_power,timestamp,signature
+proposal_created_by,5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc
+proposal_created_timestamp,1773357452
+proposal_title,tbtc
+proposal_question,test
+options,100|300|500
+
+wallet,solnauta_nfts,torrino_nfts,100,300,500,voting_power,timestamp,signature
+Bjojs5bKn5B6q8CK1XfmkRp4eyJUodDsJ6QrDbFWA6E4,Solnauta #852|Solnauta #754|Solnauta #727,#262|#244|#397,0.0,3.0,0.0,3.0,1773357485,4AX2PsbPMc9T5WMEpU4rRwdTjGtZcWgsM9sTgpF55rjZ5njH4pxbYyoZAoTjj6HGzPuKVqoPb87mTaeQNEfY7KAJ
