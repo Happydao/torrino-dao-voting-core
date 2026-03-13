@@ -3,6 +3,7 @@ const AUTHORIZED_ADMIN_WALLETS = new Set([
   "4hcKvjU4EMzz5TSjgk7CMwhTwy4gXTuhdEYHyd5Shaz8",
 ]);
 const ADMIN_CONFIRMATION_MESSAGE = "Confirm admin action for Torrino DAO voting";
+const textEncoder = new TextEncoder();
 const state = {
   adminWallet: null,
 };
@@ -110,7 +111,7 @@ async function startVoting() {
   try {
     setAdminBusy(true, "Signing...", "Signing...");
     setActionStatus("Awaiting wallet signature...", "");
-    await confirmAdminAction();
+    payload.admin_signature = await confirmAdminAction();
     setAdminBusy(true, "Saving...", "Reset Voting");
     setActionStatus("Signature confirmed. Starting voting...", "");
     const response = await fetch("/api/admin/proposal", {
@@ -129,6 +130,11 @@ async function startVoting() {
     console.error(error);
     if (error.message === "UNAUTHORIZED_ADMIN") {
       setActionStatus("Unauthorized admin wallet.", "error");
+      return;
+    }
+
+    if (error.message === "INVALID_ADMIN_SIGNATURE") {
+      setActionStatus("Action failed: admin signature is not valid.", "error");
       return;
     }
 
@@ -162,13 +168,16 @@ async function resetVoting() {
   try {
     setAdminBusy(true, "Start Voting", "Signing...");
     setActionStatus("Awaiting wallet signature...", "");
-    await confirmAdminAction();
+    const adminSignature = await confirmAdminAction();
     setAdminBusy(true, "Start Voting", "Working...");
     setActionStatus("Signature confirmed. Resetting voting...", "");
     const response = await fetch("/api/admin/reset-voting", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ admin_wallet: state.adminWallet }),
+      body: JSON.stringify({
+        admin_wallet: state.adminWallet,
+        admin_signature: adminSignature,
+      }),
     });
     const result = await response.json().catch(() => null);
 
@@ -189,6 +198,8 @@ async function resetVoting() {
     setActionStatus(
       error.message === "UNAUTHORIZED_ADMIN"
         ? "Unauthorized admin wallet."
+        : error.message === "INVALID_ADMIN_SIGNATURE"
+          ? "Action failed: admin signature is not valid."
         : "Action failed while resetting voting.",
       "error"
     );
@@ -238,8 +249,14 @@ async function confirmAdminAction() {
   }
 
   try {
-    const encodedMessage = new TextEncoder().encode(ADMIN_CONFIRMATION_MESSAGE);
-    await provider.signMessage(encodedMessage, "utf8");
+    const encodedMessage = textEncoder.encode(ADMIN_CONFIRMATION_MESSAGE);
+    const signed = await provider.signMessage(encodedMessage, "utf8");
+
+    if (!signed || !signed.signature) {
+      throw new Error("SIGNATURE_UNAVAILABLE");
+    }
+
+    return bytesToBase58(signed.signature);
   } catch (error) {
     if (isSignatureRejected(error)) {
       throw new Error("SIGNATURE_REJECTED");
@@ -279,4 +296,46 @@ function openDateTimePicker(input) {
   }
 
   input.click();
+}
+
+function bytesToBase58(bytes) {
+  const alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+
+  if (!(bytes instanceof Uint8Array) || bytes.length === 0) {
+    return "";
+  }
+
+  const digits = [0];
+
+  for (const byte of bytes) {
+    let carry = byte;
+
+    for (let index = 0; index < digits.length; index += 1) {
+      const value = digits[index] * 256 + carry;
+      digits[index] = value % 58;
+      carry = Math.floor(value / 58);
+    }
+
+    while (carry > 0) {
+      digits.push(carry % 58);
+      carry = Math.floor(carry / 58);
+    }
+  }
+
+  let result = "";
+
+  for (const byte of bytes) {
+    if (byte === 0) {
+      result += alphabet[0];
+      continue;
+    }
+
+    break;
+  }
+
+  for (let index = digits.length - 1; index >= 0; index -= 1) {
+    result += alphabet[digits[index]];
+  }
+
+  return result;
 }

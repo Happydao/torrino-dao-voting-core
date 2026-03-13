@@ -126,6 +126,10 @@ Questo permette alla community di verificare:
 - `POST /api/admin/proposal`
 - `POST /api/admin/reset-voting`
 
+## Live voting platform
+
+https://happydev.fi/torrino.dao.voting/
+
 ## Nota finale
 
 Questo progetto non basa la fiducia su un pannello admin nascosto, ma sulla combinazione di:

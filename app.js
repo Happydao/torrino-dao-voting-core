@@ -2,6 +2,8 @@ const API_ENDPOINT = "/api/wallet-nfts";
 const VOTE_ENDPOINT = "/api/vote";
 const RESULTS_ENDPOINT = "/api/results";
 const PROPOSAL_ENDPOINT = "/api/proposal";
+const GOVERNANCE_HISTORY_API = "https://api.github.com/repos/Happydao/torrino-dao-voting-core/contents/data";
+const GOVERNANCE_HISTORY_RAW_BASE = "https://raw.githubusercontent.com/Happydao/torrino-dao-voting-core/main/data/";
 const textEncoder = new TextEncoder();
 const state = {
   walletAddress: null,
@@ -10,6 +12,8 @@ const state = {
   voteFeedbackTimeoutId: null,
   resultsPollIntervalId: null,
   countdownIntervalId: null,
+  governanceHistory: [],
+  governanceHistoryLoaded: false,
 };
 
 const ui = {
@@ -34,13 +38,14 @@ const ui = {
   torrinoVoted: document.getElementById("torrinoVoted"),
   totalPower: document.getElementById("totalPower"),
   resultsBars: document.getElementById("resultsBars"),
-  securityModal: document.getElementById("securityModal"),
-  openSecurityModal: document.getElementById("openSecurityModal"),
-  closeSecurityModal: document.getElementById("closeSecurityModal"),
+  historyModal: document.getElementById("historyModal"),
+  openHistoryModal: document.getElementById("openHistoryModal"),
+  closeHistoryModal: document.getElementById("closeHistoryModal"),
+  historyTableBody: document.getElementById("historyTableBody"),
 };
 
 initializeWalletStatus();
-initializeSecurityModal();
+initializeHistoryModal();
 initializeProposalAndResults();
 ui.connectButton.addEventListener("click", connectWallet);
 
@@ -211,9 +216,12 @@ function renderVoteOptions(options) {
   for (const option of options) {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "vote-button vote-option-button";
+    button.className = `vote-button vote-option-button vote-option-button--${getOptionColorName(
+      ui.voteOptions.childElementCount
+    )}`;
     button.textContent = option;
     button.dataset.voteOption = option;
+    button.dataset.colorName = getOptionColorName(ui.voteOptions.childElementCount);
     button.addEventListener("click", () => submitVote(option));
     ui.voteOptions.appendChild(button);
   }
@@ -246,14 +254,15 @@ async function submitVote(voteOption) {
     clearVoteFeedback();
     setVoteButtonsBusy(true);
     setStatus(`Invio voto "${voteOption}" in corso...`);
-    const signature = await signVoteMessage(provider, voteOption);
+    const signedVote = await signVoteMessage(provider, voteOption);
     const response = await fetch(VOTE_ENDPOINT, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         wallet: state.walletAddress,
         vote: voteOption,
-        signature,
+        signature: signedVote.signature,
+        signed_message: signedVote.message,
       }),
     });
     const payload = await response.json().catch(() => null);
@@ -297,13 +306,20 @@ async function submitVote(voteOption) {
 
 async function signVoteMessage(provider, voteOption) {
   if (typeof provider.signMessage !== "function") {
-    return "not-signed";
+    throw new Error("SIGNATURE_UNAVAILABLE");
   }
 
   const message = `Torrino DAO governance vote:${voteOption}:wallet:${state.walletAddress}:timestamp:${Date.now()}`;
   const signed = await provider.signMessage(textEncoder.encode(message), "utf8");
 
-  return signed && signed.signature ? bytesToBase58(signed.signature) : "not-signed";
+  if (!signed || !signed.signature) {
+    throw new Error("SIGNATURE_UNAVAILABLE");
+  }
+
+  return {
+    message,
+    signature: bytesToBase58(signed.signature),
+  };
 }
 
 function updateWalletDashboard(walletAddress, walletData) {
@@ -334,15 +350,16 @@ function updateResultsDashboard(results) {
   }
 
   for (const item of optionResults) {
+    const colorName = getOptionColorName(ui.resultsBars.childElementCount);
     const row = document.createElement("div");
     row.className = "results-row";
     row.innerHTML = `
       <div class="results-row__meta">
-        <span class="results-row__label">${escapeHtml(item.option)}</span>
+        <span class="results-row__label results-row__label--${colorName}">${escapeHtml(item.option)}</span>
         <strong>${formatVotingPower(item.power)} • ${Number(item.percent || 0)}%</strong>
       </div>
       <div class="results-track">
-        <div class="results-fill" style="width: ${Number(item.percent || 0)}%"></div>
+        <div class="results-fill results-fill--${colorName}" style="width: ${Number(item.percent || 0)}%"></div>
       </div>
     `;
     ui.resultsBars.appendChild(row);
@@ -475,8 +492,16 @@ function getErrorMessage(error) {
       return "La firma del wallet e' stata annullata dall'utente.";
     }
 
+    if (error.message === "SIGNATURE_UNAVAILABLE") {
+      return "Il wallet collegato non supporta la firma richiesta per confermare il voto.";
+    }
+
     if (error.message === "VOTING_ENDED") {
       return "La votazione e' terminata.";
+    }
+
+    if (error.message === "INVALID_WALLET_SIGNATURE") {
+      return "La firma del wallet non e' valida per questo voto.";
     }
 
     return "Si e' verificato un errore durante la registrazione del voto.";
@@ -485,38 +510,150 @@ function getErrorMessage(error) {
   return "Si e' verificato un errore durante la registrazione del voto.";
 }
 
-function initializeSecurityModal() {
-  if (!ui.securityModal || !ui.openSecurityModal || !ui.closeSecurityModal) {
+function initializeHistoryModal() {
+  if (!ui.historyModal || !ui.openHistoryModal || !ui.closeHistoryModal) {
     return;
   }
 
-  ui.openSecurityModal.addEventListener("click", () => {
-    ui.securityModal.classList.add("open");
-    ui.securityModal.setAttribute("aria-hidden", "false");
-    ui.openSecurityModal.setAttribute("aria-expanded", "true");
+  ui.openHistoryModal.addEventListener("click", async () => {
+    ui.historyModal.classList.add("open");
+    ui.historyModal.setAttribute("aria-hidden", "false");
+    ui.openHistoryModal.setAttribute("aria-expanded", "true");
     document.body.style.overflow = "hidden";
+    if (!state.governanceHistoryLoaded) {
+      await loadGovernanceHistory();
+    }
   });
 
-  ui.closeSecurityModal.addEventListener("click", closeSecurityModal);
+  ui.closeHistoryModal.addEventListener("click", closeHistoryModal);
 
-  ui.securityModal.addEventListener("click", (event) => {
-    if (event.target === ui.securityModal) {
-      closeSecurityModal();
+  ui.historyModal.addEventListener("click", (event) => {
+    if (event.target === ui.historyModal) {
+      closeHistoryModal();
     }
   });
 
   window.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && ui.securityModal.classList.contains("open")) {
-      closeSecurityModal();
+    if (event.key === "Escape" && ui.historyModal.classList.contains("open")) {
+      closeHistoryModal();
     }
   });
 }
 
-function closeSecurityModal() {
-  ui.securityModal.classList.remove("open");
-  ui.securityModal.setAttribute("aria-hidden", "true");
-  ui.openSecurityModal.setAttribute("aria-expanded", "false");
+async function loadGovernanceHistory() {
+  renderGovernanceHistoryRows([], "Loading governance history...");
+
+  try {
+    const response = await fetch(GOVERNANCE_HISTORY_API, {
+      headers: { accept: "application/vnd.github+json" },
+    });
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok || !Array.isArray(payload)) {
+      throw new Error("GOVERNANCE_HISTORY_UNAVAILABLE");
+    }
+
+    state.governanceHistory = payload
+      .filter((item) => item && item.type === "file" && /^proposal_(\d+)\.csv$/.test(item.name))
+      .map((item) => {
+        const match = item.name.match(/^proposal_(\d+)\.csv$/);
+        const timestamp = match ? Number(match[1]) : NaN;
+        return {
+          name: item.name,
+          timestamp,
+          dateLabel: formatHistoryDate(timestamp),
+          downloadUrl: `${GOVERNANCE_HISTORY_RAW_BASE}${item.name}`,
+        };
+      })
+      .sort((first, second) => second.timestamp - first.timestamp);
+
+    state.governanceHistoryLoaded = true;
+    renderGovernanceHistoryRows(state.governanceHistory);
+  } catch (error) {
+    console.error(error);
+    renderGovernanceHistoryRows([], "Unable to load governance history.");
+  }
+}
+
+function renderGovernanceHistoryRows(items, emptyMessage = "No governance history found.") {
+  ui.historyTableBody.replaceChildren();
+
+  if (!Array.isArray(items) || items.length === 0) {
+    const row = document.createElement("tr");
+    row.innerHTML = `<td colspan="3" class="history-table__empty">${escapeHtml(emptyMessage)}</td>`;
+    ui.historyTableBody.appendChild(row);
+    return;
+  }
+
+  for (const item of items) {
+    const row = document.createElement("tr");
+    const nameCell = document.createElement("td");
+    nameCell.className = "mono";
+    nameCell.textContent = item.name;
+
+    const dateCell = document.createElement("td");
+    dateCell.textContent = item.dateLabel;
+
+    const actionCell = document.createElement("td");
+    const downloadButton = document.createElement("button");
+    downloadButton.type = "button";
+    downloadButton.className = "chip chip--ghost";
+    downloadButton.textContent = "Download CSV";
+    downloadButton.addEventListener("click", () => {
+      downloadGovernanceCsv(item.downloadUrl, item.name).catch((error) => {
+        console.error(error);
+      });
+    });
+
+    actionCell.appendChild(downloadButton);
+    row.appendChild(nameCell);
+    row.appendChild(dateCell);
+    row.appendChild(actionCell);
+    ui.historyTableBody.appendChild(row);
+  }
+}
+
+async function downloadGovernanceCsv(csvUrl, filename) {
+  const response = await fetch(csvUrl);
+
+  if (!response.ok) {
+    throw new Error("CSV_DOWNLOAD_FAILED");
+  }
+
+  const csvBlob = await response.blob();
+  const objectUrl = URL.createObjectURL(csvBlob);
+  const link = document.createElement("a");
+
+  link.href = objectUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(objectUrl);
+}
+
+function closeHistoryModal() {
+  ui.historyModal.classList.remove("open");
+  ui.historyModal.setAttribute("aria-hidden", "true");
+  ui.openHistoryModal.setAttribute("aria-expanded", "false");
   document.body.style.overflow = "";
+}
+
+function getOptionColorName(index) {
+  const colorOrder = ["green", "red", "blue", "purple", "orange"];
+  return colorOrder[index] || colorOrder[colorOrder.length - 1];
+}
+
+function formatHistoryDate(timestamp) {
+  if (!Number.isFinite(timestamp)) {
+    return "--";
+  }
+
+  return new Date(timestamp * 1000).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 function formatVotingPower(value) {

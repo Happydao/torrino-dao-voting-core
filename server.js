@@ -1,6 +1,7 @@
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
+const crypto = require("crypto");
 const { execFile } = require("child_process");
 const { promisify } = require("util");
 const { URL } = require("url");
@@ -17,6 +18,12 @@ const DATA_DIR = path.join(__dirname, "data");
 const USED_MINTS_PATH = path.join(DATA_DIR, "used-mints.json");
 const PROPOSAL_PATH = path.join(DATA_DIR, "proposal.json");
 const GIT_UPDATE_INTERVAL_MS = 10 * 60 * 1000;
+const NFT_CACHE_TTL_MS = 45 * 1000;
+const RATE_LIMIT_WINDOW_MS = 10 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 20;
+const JSON_BODY_MAX_BYTES = 16 * 1024;
+const VOTE_SIGNATURE_MAX_AGE_MS = 5 * 60 * 1000;
+const ADMIN_CONFIRMATION_MESSAGE = "Confirm admin action for Torrino DAO voting";
 const COLLECTIONS = {
   torrino: {
     name: "Torrino DAO",
@@ -45,10 +52,18 @@ const voteSyncState = {
   endTimeoutId: null,
   proposalId: null,
 };
+const nftOwnerCache = new Map();
+const rateLimitStore = new Map();
+let mutationQueue = Promise.resolve();
 
 const server = http.createServer(async (req, res) => {
   try {
     const requestUrl = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+
+    if (isRateLimited(req, requestUrl.pathname)) {
+      sendJson(res, 429, { error: "RATE_LIMITED" });
+      return;
+    }
 
     if (requestUrl.pathname === "/api/wallet-nfts") {
       await handleWalletNfts(requestUrl, res);
@@ -88,6 +103,10 @@ const server = http.createServer(async (req, res) => {
     serveStaticFile(requestUrl.pathname, res, req.method === "HEAD");
   } catch (error) {
     console.error(error);
+    if (error && error.message === "BODY_TOO_LARGE") {
+      sendJson(res, 413, { error: "BODY_TOO_LARGE" });
+      return;
+    }
     sendJson(res, 500, { error: "SERVER_ERROR" });
   }
 });
@@ -110,7 +129,7 @@ async function handleWalletNfts(requestUrl, res) {
   }
 
   try {
-    const assets = await getAllAssetsByOwner(walletAddress);
+    const assets = await getCachedAssetsByOwner(walletAddress);
     sendJson(res, 200, summarizeWalletAssets(assets, getUsedNftState()));
   } catch (error) {
     console.error(error);
@@ -171,21 +190,53 @@ async function handleVote(req, res) {
   const wallet = getString(body.wallet);
   const vote = getString(body.vote);
   const signature = getString(body.signature) || "not-signed";
+  const signedMessage = getString(body.signed_message);
 
   if (!wallet || !vote || !proposal.options.includes(vote)) {
     sendJson(res, 400, { error: "SERVER_ERROR" });
     return;
   }
 
-  try {
-    ensureVoteStorageFiles();
-    const assets = await getAllAssetsByOwner(wallet);
-    const summary = summarizeWalletAssets(assets, getUsedNftState());
-    const usableGen1Nfts = summary.gen1_nfts.filter((nft) => nft.status === "AVAILABLE");
-    const usableGen2Nfts = summary.gen2_nfts.filter((nft) => nft.status === "AVAILABLE");
-    const usableNfts = [...usableGen2Nfts, ...usableGen1Nfts];
+  if (!verifyVoteRequest(wallet, vote, signedMessage, signature)) {
+    sendJson(res, 403, { error: "INVALID_WALLET_SIGNATURE" });
+    return;
+  }
 
-    if (usableNfts.length === 0) {
+  try {
+    const assets = await getCachedAssetsByOwner(wallet, { forceRefresh: true });
+    const result = await withMutationLock(() => {
+      ensureVoteStorageFiles();
+      const summary = summarizeWalletAssets(assets, getUsedNftState());
+      const usableGen1Nfts = summary.gen1_nfts.filter((nft) => nft.status === "AVAILABLE");
+      const usableGen2Nfts = summary.gen2_nfts.filter((nft) => nft.status === "AVAILABLE");
+      const usableNfts = [...usableGen2Nfts, ...usableGen1Nfts];
+
+      if (usableNfts.length === 0) {
+        return null;
+      }
+
+      const votingPower = Number(
+        (
+          usableGen1Nfts.length * COLLECTIONS.torrino.weight +
+          usableGen2Nfts.length * COLLECTIONS.solnauta.weight
+        ).toFixed(1)
+      );
+
+      appendVoteRow({
+        wallet,
+        solnautaNfts: usableGen2Nfts.map((nft) => nft.name),
+        torrinoNfts: usableGen1Nfts.map((nft) => nft.name),
+        vote,
+        votingPower,
+        timestamp: Math.floor(Date.now() / 1000),
+        signature,
+      });
+      registerUsedMints(usableNfts.map((nft) => nft.mint));
+
+      return { votingPower };
+    });
+
+    if (!result) {
       sendJson(res, 409, {
         error: "ALL_NFTS_ALREADY_VOTED",
         message: "All NFTs from this wallet have already voted.",
@@ -193,30 +244,9 @@ async function handleVote(req, res) {
       return;
     }
 
-    appendVoteRow({
-      wallet,
-      solnautaNfts: usableGen2Nfts.map((nft) => nft.name),
-      torrinoNfts: usableGen1Nfts.map((nft) => nft.name),
-      vote,
-      votingPower: Number(
-        (
-          usableGen1Nfts.length * COLLECTIONS.torrino.weight +
-          usableGen2Nfts.length * COLLECTIONS.solnauta.weight
-        ).toFixed(1)
-      ),
-      timestamp: Math.floor(Date.now() / 1000),
-      signature,
-    });
-    registerUsedMints(usableNfts.map((nft) => nft.mint));
-
     sendJson(res, 200, {
       success: true,
-      voting_power: Number(
-        (
-          usableGen1Nfts.length * COLLECTIONS.torrino.weight +
-          usableGen2Nfts.length * COLLECTIONS.solnauta.weight
-        ).toFixed(1)
-      ),
+      voting_power: result.votingPower,
     });
   } catch (error) {
     console.error(error);
@@ -232,9 +262,15 @@ async function handleAdminProposal(req, res) {
 
   const body = await readJsonBody(req);
   const adminWallet = getString(body.admin_wallet);
+  const adminSignature = getString(body.admin_signature);
 
   if (!isAuthorizedAdminWallet(adminWallet)) {
     sendJson(res, 403, { error: "UNAUTHORIZED_ADMIN" });
+    return;
+  }
+
+  if (!verifyWalletSignature(adminWallet, ADMIN_CONFIRMATION_MESSAGE, adminSignature)) {
+    sendJson(res, 403, { error: "INVALID_ADMIN_SIGNATURE" });
     return;
   }
 
@@ -267,10 +303,12 @@ async function handleAdminProposal(req, res) {
   };
 
   try {
-    ensureDataDir();
-    initializeVoteStorageForProposal(proposal, adminWallet);
-    fs.writeFileSync(PROPOSAL_PATH, JSON.stringify(proposal, null, 2) + "\n", "utf8");
-    configureVotingSyncTimers(proposal);
+    await withMutationLock(() => {
+      ensureDataDir();
+      initializeVoteStorageForProposal(proposal, adminWallet);
+      writeFileAtomic(PROPOSAL_PATH, JSON.stringify(proposal, null, 2) + "\n");
+      configureVotingSyncTimers(proposal);
+    });
     sendJson(res, 200, { success: true, proposal });
   } catch (error) {
     console.error(error);
@@ -286,9 +324,15 @@ async function handleAdminReset(req, res) {
 
   const body = await readJsonBody(req);
   const adminWallet = getString(body.admin_wallet);
+  const adminSignature = getString(body.admin_signature);
 
   if (!isAuthorizedAdminWallet(adminWallet)) {
     sendJson(res, 403, { error: "UNAUTHORIZED_ADMIN" });
+    return;
+  }
+
+  if (!verifyWalletSignature(adminWallet, ADMIN_CONFIRMATION_MESSAGE, adminSignature)) {
+    sendJson(res, 403, { error: "INVALID_ADMIN_SIGNATURE" });
     return;
   }
 
@@ -296,18 +340,20 @@ async function handleAdminReset(req, res) {
     const proposal = readProposal();
 
     if (proposal) {
-      stopVotingSyncTimers();
-      markProposalCsvAsReset(proposal, adminWallet, Math.floor(Date.now() / 1000));
-      await commitVotesCsvToGit(`proposal reset ${proposal.proposal_id}`, {
-        proposal,
-        allowStatuses: ["scheduled", "active", "ended"],
+      await withMutationLock(async () => {
+        stopVotingSyncTimers();
+        markProposalCsvAsReset(proposal, adminWallet, Math.floor(Date.now() / 1000));
+        await commitVotesCsvToGit(`proposal reset ${proposal.proposal_id}`, {
+          proposal,
+          allowStatuses: ["scheduled", "active", "ended"],
+        });
       });
     }
 
-    deleteFileIfExists(USED_MINTS_PATH);
-    if (fs.existsSync(PROPOSAL_PATH)) {
-      fs.unlinkSync(PROPOSAL_PATH);
-    }
+    await withMutationLock(() => {
+      deleteFileIfExists(USED_MINTS_PATH);
+      deleteFileIfExists(PROPOSAL_PATH);
+    });
 
     sendJson(res, 200, { success: true });
   } catch (error) {
@@ -359,6 +405,62 @@ async function getAllAssetsByOwner(ownerAddress) {
   }
 
   return items;
+}
+
+async function getCachedAssetsByOwner(ownerAddress, options = {}) {
+  const cacheKey = String(ownerAddress || "").trim();
+  const forceRefresh = options.forceRefresh === true;
+
+  if (!cacheKey) {
+    return [];
+  }
+
+  const now = Date.now();
+  cleanupNftCache(now);
+
+  const cachedEntry = nftOwnerCache.get(cacheKey);
+  if (!forceRefresh && cachedEntry && cachedEntry.expiresAt > now && Array.isArray(cachedEntry.items)) {
+    return cachedEntry.items;
+  }
+
+  if (!forceRefresh && cachedEntry && cachedEntry.inFlightPromise) {
+    return cachedEntry.inFlightPromise;
+  }
+
+  const inFlightPromise = getAllAssetsByOwner(cacheKey)
+    .then((items) => {
+      nftOwnerCache.set(cacheKey, {
+        items,
+        expiresAt: Date.now() + NFT_CACHE_TTL_MS,
+        inFlightPromise: null,
+      });
+      return items;
+    })
+    .catch((error) => {
+      nftOwnerCache.delete(cacheKey);
+      throw error;
+    });
+
+  nftOwnerCache.set(cacheKey, {
+    items: cachedEntry && Array.isArray(cachedEntry.items) ? cachedEntry.items : null,
+    expiresAt: 0,
+    inFlightPromise,
+  });
+
+  return inFlightPromise;
+}
+
+function cleanupNftCache(now = Date.now()) {
+  for (const [cacheKey, entry] of nftOwnerCache.entries()) {
+    if (!entry) {
+      nftOwnerCache.delete(cacheKey);
+      continue;
+    }
+
+    if (!entry.inFlightPromise && entry.expiresAt <= now) {
+      nftOwnerCache.delete(cacheKey);
+    }
+  }
 }
 
 function summarizeWalletAssets(assets, usedState) {
@@ -557,17 +659,17 @@ function resetVoteStorage(createFreshFiles) {
   const proposalCsvPath = getProposalCsvPath(proposal);
 
   if (createFreshFiles && proposalCsvPath) {
-    fs.writeFileSync(proposalCsvPath, header, "utf8");
-    fs.writeFileSync(USED_MINTS_PATH, "[]\n", "utf8");
+    writeFileAtomic(proposalCsvPath, header);
+    writeFileAtomic(USED_MINTS_PATH, "[]\n");
     return;
   }
 
   if (proposalCsvPath && !fs.existsSync(proposalCsvPath)) {
-    fs.writeFileSync(proposalCsvPath, header, "utf8");
+    writeFileAtomic(proposalCsvPath, header);
   }
 
   if (!fs.existsSync(USED_MINTS_PATH)) {
-    fs.writeFileSync(USED_MINTS_PATH, "[]\n", "utf8");
+    writeFileAtomic(USED_MINTS_PATH, "[]\n");
   }
 }
 
@@ -580,8 +682,8 @@ function initializeVoteStorageForProposal(proposal, adminWallet) {
     getVotesCsvHeader(proposal).trimEnd(),
   ].join("\n") + "\n";
 
-  fs.writeFileSync(proposalCsvPath, fileContents, "utf8");
-  fs.writeFileSync(USED_MINTS_PATH, "[]\n", "utf8");
+  writeFileAtomic(proposalCsvPath, fileContents);
+  writeFileAtomic(USED_MINTS_PATH, "[]\n");
 }
 
 function buildProposalMetadataLines(proposal, adminWallet, metadataOptions = {}) {
@@ -645,14 +747,14 @@ function markProposalCsvAsReset(proposal, adminWallet, resetTimestamp) {
     ...voteSectionLines,
   ].join("\n") + "\n";
 
-  fs.writeFileSync(proposalCsvPath, nextFileContents, "utf8");
+  writeFileAtomic(proposalCsvPath, nextFileContents);
 }
 
 function ensureVoteStorageFiles() {
   ensureDataDir();
 
   if (!fs.existsSync(USED_MINTS_PATH)) {
-    fs.writeFileSync(USED_MINTS_PATH, "[]\n", "utf8");
+    writeFileAtomic(USED_MINTS_PATH, "[]\n");
   }
 
   const proposal = readProposal();
@@ -705,7 +807,7 @@ function registerUsedMints(mints) {
     }
   }
 
-  fs.writeFileSync(USED_MINTS_PATH, JSON.stringify(Array.from(currentMints).sort(), null, 2) + "\n", "utf8");
+  writeFileAtomic(USED_MINTS_PATH, JSON.stringify(Array.from(currentMints).sort(), null, 2) + "\n");
 }
 
 function isValidMint(value) {
@@ -714,6 +816,99 @@ function isValidMint(value) {
 
 function isAuthorizedAdminWallet(walletAddress) {
   return typeof walletAddress === "string" && AUTHORIZED_ADMIN_WALLETS.has(walletAddress);
+}
+
+function verifyVoteRequest(walletAddress, voteOption, signedMessage, signature) {
+  if (!verifyWalletSignature(walletAddress, signedMessage, signature)) {
+    return false;
+  }
+
+  const voteMatch = signedMessage.match(
+    /^Torrino DAO governance vote:(.+):wallet:([1-9A-HJ-NP-Za-km-z]+):timestamp:(\d+)$/
+  );
+
+  if (!voteMatch) {
+    return false;
+  }
+
+  const [, signedVoteOption, signedWalletAddress, signedTimestamp] = voteMatch;
+  const timestampMs = Number(signedTimestamp);
+
+  if (
+    signedVoteOption !== voteOption ||
+    signedWalletAddress !== walletAddress ||
+    !Number.isFinite(timestampMs) ||
+    Math.abs(Date.now() - timestampMs) > VOTE_SIGNATURE_MAX_AGE_MS
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+function verifyWalletSignature(walletAddress, message, signature) {
+  if (!walletAddress || !message || !signature || signature === "not-signed") {
+    return false;
+  }
+
+  try {
+    const publicKeyBytes = decodeBase58(walletAddress);
+    const signatureBytes = decodeBase58(signature);
+
+    if (publicKeyBytes.length !== 32 || signatureBytes.length !== 64) {
+      return false;
+    }
+
+    const publicKeyDerPrefix = Buffer.from("302a300506032b6570032100", "hex");
+    const publicKeyObject = crypto.createPublicKey({
+      key: Buffer.concat([publicKeyDerPrefix, publicKeyBytes]),
+      format: "der",
+      type: "spki",
+    });
+
+    return crypto.verify(null, Buffer.from(message, "utf8"), publicKeyObject, signatureBytes);
+  } catch (error) {
+    return false;
+  }
+}
+
+function decodeBase58(value) {
+  const alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+  const alphabetMap = new Map(alphabet.split("").map((character, index) => [character, index]));
+  let decodedValue = 0n;
+
+  for (const character of String(value)) {
+    const alphabetIndex = alphabetMap.get(character);
+
+    if (alphabetIndex === undefined) {
+      throw new Error("INVALID_BASE58");
+    }
+
+    decodedValue = decodedValue * 58n + BigInt(alphabetIndex);
+  }
+
+  const bytes = [];
+
+  while (decodedValue > 0n) {
+    bytes.push(Number(decodedValue % 256n));
+    decodedValue /= 256n;
+  }
+
+  let leadingZeroes = 0;
+
+  for (const character of String(value)) {
+    if (character === alphabet[0]) {
+      leadingZeroes += 1;
+      continue;
+    }
+
+    break;
+  }
+
+  return Buffer.from([
+    ...new Array(leadingZeroes).fill(0),
+    ...bytes.reverse(),
+  ]);
 }
 
 function readProposal() {
@@ -1045,6 +1240,18 @@ function deleteFileIfExists(filePath) {
   }
 }
 
+function writeFileAtomic(filePath, fileContents) {
+  const tempPath = `${filePath}.tmp-${process.pid}-${Date.now()}`;
+  fs.writeFileSync(tempPath, fileContents, "utf8");
+  fs.renameSync(tempPath, filePath);
+}
+
+function withMutationLock(task) {
+  const nextTask = mutationQueue.then(() => task());
+  mutationQueue = nextTask.catch(() => {});
+  return nextTask;
+}
+
 function formatTimestampIso(timestamp) {
   const numericTimestamp = Number(timestamp);
 
@@ -1072,8 +1279,17 @@ function getString(value) {
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
     let rawBody = "";
+    let totalBytes = 0;
 
     req.on("data", (chunk) => {
+      totalBytes += chunk.length;
+
+      if (totalBytes > JSON_BODY_MAX_BYTES) {
+        reject(new Error("BODY_TOO_LARGE"));
+        req.destroy();
+        return;
+      }
+
       rawBody += chunk;
     });
 
@@ -1100,7 +1316,7 @@ function serveStaticFile(requestPath, res, headOnly) {
     : requestPath === "/admin"
       ? "/admin.html"
       : requestPath;
-  const filePath = path.join(PUBLIC_DIR, path.normalize(normalizedPath));
+  const filePath = path.resolve(PUBLIC_DIR, `.${path.normalize(normalizedPath)}`);
 
   if (!filePath.startsWith(PUBLIC_DIR)) {
     sendJson(res, 403, { error: "SERVER_ERROR" });
@@ -1123,6 +1339,45 @@ function serveStaticFile(requestPath, res, headOnly) {
 
     fs.createReadStream(filePath).pipe(res);
   });
+}
+
+function isRateLimited(req, pathname) {
+  if (!["/api/wallet-nfts", "/api/vote", "/api/admin/proposal", "/api/admin/reset-voting"].includes(pathname)) {
+    return false;
+  }
+
+  const clientIp = getClientIp(req);
+  const now = Date.now();
+  cleanupRateLimitStore(now);
+  const entry = rateLimitStore.get(clientIp) || { count: 0, resetAt: now + RATE_LIMIT_WINDOW_MS };
+
+  if (entry.resetAt <= now) {
+    entry.count = 0;
+    entry.resetAt = now + RATE_LIMIT_WINDOW_MS;
+  }
+
+  entry.count += 1;
+  rateLimitStore.set(clientIp, entry);
+
+  return entry.count > RATE_LIMIT_MAX_REQUESTS;
+}
+
+function cleanupRateLimitStore(now = Date.now()) {
+  for (const [clientIp, entry] of rateLimitStore.entries()) {
+    if (!entry || entry.resetAt <= now) {
+      rateLimitStore.delete(clientIp);
+    }
+  }
+}
+
+function getClientIp(req) {
+  const forwardedFor = req.headers["x-forwarded-for"];
+
+  if (typeof forwardedFor === "string" && forwardedFor.trim()) {
+    return forwardedFor.split(",")[0].trim();
+  }
+
+  return req.socket && req.socket.remoteAddress ? req.socket.remoteAddress : "unknown";
 }
 
 function sendJson(res, statusCode, payload) {
