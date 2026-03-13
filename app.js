@@ -59,7 +59,7 @@ async function initializeProposalAndResults() {
 }
 
 async function connectWallet() {
-  const provider = getPhantomProvider();
+  const provider = getWalletProvider();
 
   if (!provider) {
     setStatus(getMissingWalletMessage());
@@ -67,8 +67,8 @@ async function connectWallet() {
   }
 
   try {
-    setConnectBusy(true, "Connessione a Phantom in corso...");
-    const response = await window.solana.connect();
+    setConnectBusy(true, "Connessione wallet in corso...");
+    const response = await provider.connect();
     const walletAddress = response.publicKey.toString();
 
     state.walletAddress = walletAddress;
@@ -89,38 +89,46 @@ async function connectWallet() {
 }
 
 function initializeWalletStatus() {
-  if (getPhantomProvider()) {
-    setStatus("Phantom rilevato. Puoi collegare il wallet.");
+  if (getWalletProvider()) {
+    setStatus("Wallet compatibile rilevato. Puoi collegare Phantom o Solflare.");
     return;
   }
 
-  setStatus("In attesa di Phantom wallet...");
+  setStatus("In attesa di Phantom o Solflare...");
 
   window.addEventListener("load", () => {
     window.setTimeout(() => {
-      setStatus(getPhantomProvider() ? "Phantom rilevato. Puoi collegare il wallet." : getMissingWalletMessage());
+      setStatus(
+        getWalletProvider()
+          ? "Wallet compatibile rilevato. Puoi collegare Phantom o Solflare."
+          : getMissingWalletMessage()
+      );
     }, 600);
   });
 }
 
-function getPhantomProvider() {
+function getWalletProvider() {
   if (window.phantom && window.phantom.solana && window.phantom.solana.isPhantom) {
-    if (!window.solana) {
-      window.solana = window.phantom.solana;
-    }
-
     return window.phantom.solana;
   }
 
-  return window.solana && window.solana.isPhantom ? window.solana : null;
+  if (window.solflare && (window.solflare.isSolflare || typeof window.solflare.connect === "function")) {
+    return window.solflare;
+  }
+
+  if (window.solana && (window.solana.isPhantom || window.solana.isSolflare)) {
+    return window.solana;
+  }
+
+  return null;
 }
 
 function getMissingWalletMessage() {
-  if (window.solana && !window.solana.isPhantom) {
-    return "E' stato rilevato un wallet Solana, ma Phantom non e' il provider attivo in questo browser.";
+  if (window.solana || window.solflare) {
+    return "E' stato rilevato un wallet Solana, ma Phantom o Solflare non sono disponibili come provider attivi.";
   }
 
-  return "Phantom wallet non e' stato rilevato in questo browser.";
+  return "Phantom o Solflare non sono stati rilevati in questo browser.";
 }
 
 async function getWalletNfts(walletAddress) {
@@ -212,7 +220,7 @@ function renderVoteOptions(options) {
 }
 
 async function submitVote(voteOption) {
-  const provider = getPhantomProvider();
+  const provider = getWalletProvider();
 
   if (!provider || !state.walletAddress || !state.walletData) {
     setStatus("Collega prima il wallet per poter votare.");
@@ -418,7 +426,7 @@ function syncVoteButtons() {
 
 function setConnectBusy(isBusy, message) {
   ui.connectButton.disabled = isBusy;
-  ui.connectButton.textContent = isBusy ? "Connessione..." : "Collega Phantom Wallet";
+  ui.connectButton.textContent = isBusy ? "Connessione..." : "Collega Wallet";
 
   if (message) {
     setStatus(message);

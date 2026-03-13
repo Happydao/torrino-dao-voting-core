@@ -1,6 +1,6 @@
 # Torrino DAO Voting
 
-Piattaforma di voting per Torrino DAO con interfaccia admin, verifica wallet Phantom, salvataggio dei voti in CSV e tracciamento automatico su GitHub.
+Piattaforma di voting per Torrino DAO con interfaccia admin, supporto wallet Phantom o Solflare, salvataggio dei voti in CSV e tracciamento automatico su GitHub.
 
 L'obiettivo del progetto e' dare alla community un sistema il piu' possibile trasparente e verificabile: il codice applicativo e i file CSV delle votazioni possono essere ispezionati pubblicamente, mentre vengono tenuti privati solo i file sensibili o strettamente interni al runtime.
 
@@ -8,7 +8,7 @@ L'obiettivo del progetto e' dare alla community un sistema il piu' possibile tra
 
 ### 1. Conferma wallet per azioni admin
 
-Le azioni amministrative piu' sensibili richiedono conferma tramite wallet Phantom.
+Le azioni amministrative piu' sensibili richiedono conferma tramite wallet Phantom o Solflare.
 
 Prima di eseguire:
 
@@ -79,7 +79,7 @@ Le parti piu' importanti da rendere pubbliche sono:
 - codice frontend
 - codice backend
 - logica di autorizzazione admin
-- logica di firma Phantom
+- logica di firma wallet
 - file CSV delle votazioni
 
 Questo permette alla community di verificare:

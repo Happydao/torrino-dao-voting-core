@@ -33,10 +33,10 @@
 
         <div class="topbar-actions">
           <button id="connectButton" class="connect-button">
-            Collega Phantom Wallet
+            Collega Wallet
           </button>
           <p id="statusMessage" class="status-message">
-            Collega il wallet per leggere gli NFT posseduti e il potere di voto.
+            Collega Phantom o Solflare per leggere gli NFT posseduti e il potere di voto.
           </p>
         </div>
       </header>
@@ -200,7 +200,7 @@
           <h3 class="modal__title">Codice pubblico e verificabile</h3>
           <p class="modal__lead">
             Qui sotto vedi direttamente il blocco principale del codice usato
-            per collegare Phantom e leggere i dati del wallet tramite backend.
+            per collegare Phantom o Solflare e leggere i dati del wallet tramite backend.
           </p>
           <pre class="code-block"><code>const RPC = process.env.HELIUS_RPC;
 
@@ -212,7 +212,7 @@ async function handleWalletNfts(requestUrl, res) {
 }
 
 async function connectWallet() {
-  const provider = getPhantomProvider();
+  const provider = getWalletProvider();
 
   if (!provider) {
     setStatus(getMissingWalletMessage());

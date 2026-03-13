@@ -35,10 +35,10 @@ ui.openStartTimePickerButton.addEventListener("click", () => openDateTimePicker(
 ui.openEndTimePickerButton.addEventListener("click", () => openDateTimePicker(ui.endTime));
 
 async function connectAdminWallet() {
-  const provider = getPhantomProvider();
+  const provider = getWalletProvider();
 
   if (!provider) {
-    ui.status.textContent = "Phantom wallet non rilevato.";
+    ui.status.textContent = "Phantom o Solflare non rilevati.";
     return;
   }
 
@@ -109,7 +109,7 @@ async function startVoting() {
 
   try {
     setAdminBusy(true, "Signing...", "Signing...");
-    setActionStatus("Awaiting Phantom signature...", "");
+    setActionStatus("Awaiting wallet signature...", "");
     await confirmAdminAction();
     setAdminBusy(true, "Saving...", "Reset Voting");
     setActionStatus("Signature confirmed. Starting voting...", "");
@@ -143,7 +143,7 @@ async function startVoting() {
     }
 
     if (error.message === "SIGNATURE_REJECTED") {
-      setActionStatus("Action cancelled: Phantom signature was rejected.", "error");
+      setActionStatus("Action cancelled: wallet signature was rejected.", "error");
       return;
     }
 
@@ -161,7 +161,7 @@ async function resetVoting() {
 
   try {
     setAdminBusy(true, "Start Voting", "Signing...");
-    setActionStatus("Awaiting Phantom signature...", "");
+    setActionStatus("Awaiting wallet signature...", "");
     await confirmAdminAction();
     setAdminBusy(true, "Start Voting", "Working...");
     setActionStatus("Signature confirmed. Resetting voting...", "");
@@ -182,7 +182,7 @@ async function resetVoting() {
   } catch (error) {
     console.error(error);
     if (error.message === "SIGNATURE_REJECTED") {
-      setActionStatus("Action cancelled: Phantom signature was rejected.", "error");
+      setActionStatus("Action cancelled: wallet signature was rejected.", "error");
       return;
     }
 
@@ -197,12 +197,16 @@ async function resetVoting() {
   }
 }
 
-function getPhantomProvider() {
+function getWalletProvider() {
   if (window.phantom && window.phantom.solana && window.phantom.solana.isPhantom) {
     return window.phantom.solana;
   }
 
-  return window.solana && window.solana.isPhantom ? window.solana : null;
+  if (window.solflare && (window.solflare.isSolflare || typeof window.solflare.connect === "function")) {
+    return window.solflare;
+  }
+
+  return window.solana && (window.solana.isPhantom || window.solana.isSolflare) ? window.solana : null;
 }
 
 function setActionStatus(message, type) {
@@ -227,7 +231,7 @@ function toUnixTimestamp(value) {
 }
 
 async function confirmAdminAction() {
-  const provider = getPhantomProvider();
+  const provider = getWalletProvider();
 
   if (!provider || typeof provider.signMessage !== "function") {
     throw new Error("SIGNATURE_UNAVAILABLE");
