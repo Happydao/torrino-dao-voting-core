@@ -10,6 +10,8 @@ loadEnvFile();
 const PORT = Number(process.env.PORT || 3000);
 const RPC = process.env.HELIUS_RPC;
 const ADMIN_WALLET = process.env.ADMIN_WALLET || "5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc";
+const SECONDARY_ADMIN_WALLET = "4hcKvjU4EMzz5TSjgk7CMwhTwy4gXTuhdEYHyd5Shaz8";
+const AUTHORIZED_ADMIN_WALLETS = new Set([ADMIN_WALLET, SECONDARY_ADMIN_WALLET]);
 const PUBLIC_DIR = __dirname;
 const DATA_DIR = path.join(__dirname, "data");
 const USED_MINTS_PATH = path.join(DATA_DIR, "used-mints.json");
@@ -229,8 +231,9 @@ async function handleAdminProposal(req, res) {
   }
 
   const body = await readJsonBody(req);
+  const adminWallet = getString(body.admin_wallet);
 
-  if (getString(body.admin_wallet) !== ADMIN_WALLET) {
+  if (!isAuthorizedAdminWallet(adminWallet)) {
     sendJson(res, 403, { error: "UNAUTHORIZED_ADMIN" });
     return;
   }
@@ -265,7 +268,7 @@ async function handleAdminProposal(req, res) {
 
   try {
     ensureDataDir();
-    initializeVoteStorageForProposal(proposal, ADMIN_WALLET);
+    initializeVoteStorageForProposal(proposal, adminWallet);
     fs.writeFileSync(PROPOSAL_PATH, JSON.stringify(proposal, null, 2) + "\n", "utf8");
     configureVotingSyncTimers(proposal);
     sendJson(res, 200, { success: true, proposal });
@@ -282,19 +285,29 @@ async function handleAdminReset(req, res) {
   }
 
   const body = await readJsonBody(req);
+  const adminWallet = getString(body.admin_wallet);
 
-  if (getString(body.admin_wallet) !== ADMIN_WALLET) {
+  if (!isAuthorizedAdminWallet(adminWallet)) {
     sendJson(res, 403, { error: "UNAUTHORIZED_ADMIN" });
     return;
   }
 
   try {
+    const proposal = readProposal();
+
+    if (proposal) {
+      stopVotingSyncTimers();
+      markProposalCsvAsReset(proposal, adminWallet, Math.floor(Date.now() / 1000));
+      await commitVotesCsvToGit(`proposal reset ${proposal.proposal_id}`, {
+        proposal,
+        allowStatuses: ["scheduled", "active", "ended"],
+      });
+    }
+
     deleteFileIfExists(USED_MINTS_PATH);
     if (fs.existsSync(PROPOSAL_PATH)) {
       fs.unlinkSync(PROPOSAL_PATH);
     }
-
-    stopVotingSyncTimers();
 
     sendJson(res, 200, { success: true });
   } catch (error) {
@@ -561,10 +574,36 @@ function resetVoteStorage(createFreshFiles) {
 function initializeVoteStorageForProposal(proposal, adminWallet) {
   ensureDataDir();
   const proposalCsvPath = getProposalCsvPath(proposal);
+  const fileContents = [
+    ...buildProposalMetadataLines(proposal, adminWallet),
+    "",
+    getVotesCsvHeader(proposal).trimEnd(),
+  ].join("\n") + "\n";
+
+  fs.writeFileSync(proposalCsvPath, fileContents, "utf8");
+  fs.writeFileSync(USED_MINTS_PATH, "[]\n", "utf8");
+}
+
+function buildProposalMetadataLines(proposal, adminWallet, metadataOptions = {}) {
   const createdTimestamp = Number(proposal.proposal_id) || Math.floor(Date.now() / 1000);
+  const startTimestamp = Number(proposal.start_time) || "";
+  const endTimestamp = Number(proposal.end_time) || "";
+  const resetTimestamp = Number.isFinite(metadataOptions.resetTimestamp)
+    ? Math.floor(metadataOptions.resetTimestamp)
+    : "";
+  const lifecycleStatus = resetTimestamp ? "reset_by_admin" : getProposalStatus(proposal);
+  const lifecycleTimestamp = resetTimestamp || endTimestamp || "";
   const metadataHeader = [
     "proposal_created_by",
     "proposal_created_timestamp",
+    "proposal_created_iso",
+    "voting_start_timestamp",
+    "voting_start_iso",
+    "voting_end_timestamp",
+    "voting_end_iso",
+    "proposal_lifecycle_status",
+    "proposal_lifecycle_timestamp",
+    "proposal_lifecycle_iso",
     "proposal_title",
     "proposal_question",
     "options",
@@ -572,19 +611,41 @@ function initializeVoteStorageForProposal(proposal, adminWallet) {
   const metadataRow = [
     escapeCsvValue(adminWallet),
     escapeCsvValue(createdTimestamp),
+    escapeCsvValue(formatTimestampIso(createdTimestamp)),
+    escapeCsvValue(startTimestamp),
+    escapeCsvValue(formatTimestampIso(startTimestamp)),
+    escapeCsvValue(endTimestamp),
+    escapeCsvValue(formatTimestampIso(endTimestamp)),
+    escapeCsvValue(lifecycleStatus),
+    escapeCsvValue(lifecycleTimestamp),
+    escapeCsvValue(formatTimestampIso(lifecycleTimestamp)),
     escapeCsvValue(proposal.title),
     escapeCsvValue(proposal.description),
     escapeCsvValue(proposal.options.join("|")),
   ].join(",");
-  const fileContents = [
-    metadataHeader,
-    metadataRow,
+
+  return [metadataHeader, metadataRow];
+}
+
+function markProposalCsvAsReset(proposal, adminWallet, resetTimestamp) {
+  const proposalCsvPath = getProposalCsvPath(proposal);
+
+  if (!proposalCsvPath || !fs.existsSync(proposalCsvPath)) {
+    return;
+  }
+
+  const allLines = fs.readFileSync(proposalCsvPath, "utf8").split(/\r?\n/);
+  const headerIndex = allLines.findIndex((line) => line.startsWith("wallet,"));
+  const voteSectionLines = headerIndex === -1
+    ? [getVotesCsvHeader(proposal).trimEnd()]
+    : allLines.slice(headerIndex).filter(Boolean);
+  const nextFileContents = [
+    ...buildProposalMetadataLines(proposal, adminWallet, { resetTimestamp }),
     "",
-    getVotesCsvHeader(proposal).trimEnd(),
+    ...voteSectionLines,
   ].join("\n") + "\n";
 
-  fs.writeFileSync(proposalCsvPath, fileContents, "utf8");
-  fs.writeFileSync(USED_MINTS_PATH, "[]\n", "utf8");
+  fs.writeFileSync(proposalCsvPath, nextFileContents, "utf8");
 }
 
 function ensureVoteStorageFiles() {
@@ -649,6 +710,10 @@ function registerUsedMints(mints) {
 
 function isValidMint(value) {
   return typeof value === "string" && value.trim() && value !== "unknown-mint";
+}
+
+function isAuthorizedAdminWallet(walletAddress) {
+  return typeof walletAddress === "string" && AUTHORIZED_ADMIN_WALLETS.has(walletAddress);
 }
 
 function readProposal() {
@@ -978,6 +1043,16 @@ function deleteFileIfExists(filePath) {
   if (fs.existsSync(filePath)) {
     fs.unlinkSync(filePath);
   }
+}
+
+function formatTimestampIso(timestamp) {
+  const numericTimestamp = Number(timestamp);
+
+  if (!Number.isFinite(numericTimestamp) || numericTimestamp <= 0) {
+    return "";
+  }
+
+  return new Date(numericTimestamp * 1000).toISOString();
 }
 
 function escapeCsvValue(value) {

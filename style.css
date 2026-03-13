@@ -687,6 +687,13 @@ p {
   gap: 8px;
 }
 
+.admin-datetime-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
 .admin-field--full {
   grid-column: 1 / -1;
 }
@@ -712,6 +719,28 @@ p {
 .admin-field textarea {
   min-height: 120px;
   resize: vertical;
+}
+
+.admin-picker-button {
+  border: 1px solid rgba(20, 241, 149, 0.28);
+  border-radius: 12px;
+  min-width: 82px;
+  padding: 12px 14px;
+  background: rgba(20, 241, 149, 0.1);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.admin-picker-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(20, 241, 149, 0.5);
+  background: rgba(20, 241, 149, 0.16);
 }
 
 .admin-actions {
@@ -750,15 +779,29 @@ p {
 .admin-feedback {
   min-height: 1.4em;
   margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(8, 11, 18, 0.56);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   font-weight: 600;
+}
+
+.admin-feedback:empty {
+  min-height: 0;
+  margin-top: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .admin-feedback.is-success {
   color: #5ff0a6;
+  border-color: rgba(95, 240, 166, 0.35);
 }
 
 .admin-feedback.is-error {
   color: #ff7d7d;
+  border-color: rgba(255, 125, 125, 0.35);
 }
 
 .modal {

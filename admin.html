@@ -30,7 +30,6 @@
           </button>
         </div>
         <p id="adminStatus" class="status-message">Connetti il wallet admin per continuare.</p>
-        <p id="adminFeedback" class="admin-feedback" aria-live="polite"></p>
       </section>
 
       <div id="adminDashboard" class="admin-layout" hidden>
@@ -72,11 +71,31 @@
             </div>
             <div class="admin-field">
               <label for="startTimeInput">Start date/time</label>
-              <input id="startTimeInput" type="datetime-local" />
+              <div class="admin-datetime-control">
+                <input id="startTimeInput" type="datetime-local" step="60" />
+                <button
+                  id="openStartTimePickerButton"
+                  class="admin-picker-button"
+                  type="button"
+                  aria-label="Apri calendario e orario di inizio"
+                >
+                  Pick
+                </button>
+              </div>
             </div>
             <div class="admin-field">
               <label for="endTimeInput">End date/time</label>
-              <input id="endTimeInput" type="datetime-local" />
+              <div class="admin-datetime-control">
+                <input id="endTimeInput" type="datetime-local" step="60" />
+                <button
+                  id="openEndTimePickerButton"
+                  class="admin-picker-button"
+                  type="button"
+                  aria-label="Apri calendario e orario di fine"
+                >
+                  Pick
+                </button>
+              </div>
             </div>
           </div>
           <div class="admin-actions">
@@ -87,6 +106,7 @@
               Reset Voting
             </button>
           </div>
+          <div id="admin-status" class="admin-feedback" aria-live="polite"></div>
         </section>
       </div>
     </div>
