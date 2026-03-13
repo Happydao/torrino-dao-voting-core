@@ -1,0 +1,4 @@
+proposal_created_by,proposal_created_timestamp,proposal_created_iso,voting_start_timestamp,voting_start_iso,voting_end_timestamp,voting_end_iso,proposal_lifecycle_status,proposal_lifecycle_timestamp,proposal_lifecycle_iso,proposal_title,proposal_question,options
+5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc,1773398548,2026-03-13T10:42:28.000Z,1773398520,2026-03-13T10:42:00.000Z,1773399360,2026-03-13T10:56:00.000Z,active,1773399360,2026-03-13T10:56:00.000Z,test piattaforma,test,si|no
+
+wallet,solnauta_nfts,torrino_nfts,si,no,voting_power,timestamp,signature
