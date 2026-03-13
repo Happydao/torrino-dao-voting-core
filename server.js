@@ -37,6 +37,7 @@ const MIME_TYPES = {
 };
 const execFileAsync = promisify(execFile);
 const voteSyncState = {
+  initialCommitTimeoutId: null,
   intervalId: null,
   startTimeoutId: null,
   endTimeoutId: null,
@@ -91,7 +92,6 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`Server in ascolto su http://localhost:${PORT}`);
-  configureVotingSyncTimers(readProposal());
 });
 
 async function handleWalletNfts(requestUrl, res) {
@@ -265,8 +265,8 @@ async function handleAdminProposal(req, res) {
 
   try {
     ensureDataDir();
-    fs.writeFileSync(PROPOSAL_PATH, JSON.stringify(proposal, null, 2) + "\n", "utf8");
     initializeVoteStorageForProposal(proposal, ADMIN_WALLET);
+    fs.writeFileSync(PROPOSAL_PATH, JSON.stringify(proposal, null, 2) + "\n", "utf8");
     configureVotingSyncTimers(proposal);
     sendJson(res, 200, { success: true, proposal });
   } catch (error) {
@@ -811,6 +811,15 @@ function configureVotingSyncTimers(proposal) {
   const startMs = Number(proposal.start_time) * 1000;
   const endMs = Number(proposal.end_time) * 1000;
 
+  voteSyncState.initialCommitTimeoutId = setTimeout(() => {
+    commitVotesCsvToGit(`proposal created ${proposal.proposal_id}`, {
+      proposal,
+      allowStatuses: ["scheduled", "active", "ended"],
+    }).catch((error) => {
+      console.error("Errore commit Git iniziale", error);
+    });
+  }, 10 * 1000);
+
   if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= nowMs) {
     scheduleFinalVotingCommit(proposal);
     return;
@@ -843,7 +852,10 @@ function startPeriodicVotingSync(proposal) {
       return;
     }
 
-    commitVotesCsvToGit(`voting update ${Math.floor(Date.now() / 1000)}`).catch((error) => {
+    commitVotesCsvToGit(`voting update ${Math.floor(Date.now() / 1000)}`, {
+      proposal,
+      allowStatuses: ["active"],
+    }).catch((error) => {
       console.error("Errore sync Git periodico", error);
     });
   }, GIT_UPDATE_INTERVAL_MS);
@@ -855,12 +867,20 @@ function scheduleFinalVotingCommit(proposal) {
   }
 
   stopVotingSyncTimers();
-  commitVotesCsvToGit(`final voting results ${proposal.proposal_id}`).catch((error) => {
+  commitVotesCsvToGit(`final voting results ${proposal.proposal_id}`, {
+    proposal,
+    allowStatuses: ["ended"],
+  }).catch((error) => {
     console.error("Errore commit Git finale", error);
   });
 }
 
 function stopVotingSyncTimers() {
+  if (voteSyncState.initialCommitTimeoutId) {
+    clearTimeout(voteSyncState.initialCommitTimeoutId);
+    voteSyncState.initialCommitTimeoutId = null;
+  }
+
   if (voteSyncState.intervalId) {
     clearInterval(voteSyncState.intervalId);
     voteSyncState.intervalId = null;
@@ -879,8 +899,8 @@ function stopVotingSyncTimers() {
   voteSyncState.proposalId = null;
 }
 
-async function commitVotesCsvToGit(message) {
-  const proposal = readProposal();
+async function commitVotesCsvToGit(message, options = {}) {
+  const proposal = options.proposal || readProposal();
   const proposalCsvPath = getProposalCsvPath(proposal);
 
   if (!proposal || !proposalCsvPath || !fs.existsSync(proposalCsvPath)) {
@@ -888,9 +908,9 @@ async function commitVotesCsvToGit(message) {
   }
 
   const status = getProposalStatus(proposal);
-  const isFinalCommit = message.startsWith("final voting results");
+  const allowStatuses = Array.isArray(options.allowStatuses) ? options.allowStatuses : ["active"];
 
-  if (!isFinalCommit && status !== "active") {
+  if (!allowStatuses.includes(status)) {
     return;
   }
 
