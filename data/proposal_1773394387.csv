@@ -1,4 +1,5 @@
 proposal_created_by,proposal_created_timestamp,proposal_created_iso,voting_start_timestamp,voting_start_iso,voting_end_timestamp,voting_end_iso,proposal_lifecycle_status,proposal_lifecycle_timestamp,proposal_lifecycle_iso,proposal_title,proposal_question,options
-5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc,1773394387,2026-03-13T09:33:07.000Z,1773394320,2026-03-13T09:32:00.000Z,1773395040,2026-03-13T09:44:00.000Z,active,1773395040,2026-03-13T09:44:00.000Z,test 2?,des,a|b|c
+5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc,1773394387,2026-03-13T09:33:07.000Z,1773394320,2026-03-13T09:32:00.000Z,1773395040,2026-03-13T09:44:00.000Z,reset_by_admin,1773394486,2026-03-13T09:34:46.000Z,test 2?,des,a|b|c
 
 wallet,solnauta_nfts,torrino_nfts,a,b,c,voting_power,timestamp,signature
+Bjojs5bKn5B6q8CK1XfmkRp4eyJUodDsJ6QrDbFWA6E4,Solnauta #852|Solnauta #754|Solnauta #727,#262|#244|#397,0.0,0.0,3.0,3.0,1773394460,2zxERsBV41aVQp4HjvfM1KQdsGcKP4nt3LhsLPeQzuEpuyo2UobJSad5vQ5YhMrq1kcVzbYXjxjMmzgQCCpkhgE7
