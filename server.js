@@ -894,7 +894,7 @@ async function commitVotesCsvToGit(message) {
     return;
   }
 
-  await runGitCommand(["add", "data/"]);
+  await runGitCommand(["add", getProposalCsvRelativePath(proposal)]);
 
   try {
     await runGitCommand(["commit", "-m", message]);
