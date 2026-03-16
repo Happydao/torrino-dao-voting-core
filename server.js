@@ -1130,8 +1130,16 @@ function configureVotingSyncTimers(proposal) {
   const nowMs = Date.now();
   const startMs = Number(proposal.start_time) * 1000;
   const endMs = Number(proposal.end_time) * 1000;
+  console.log("[voting-sync] configure", {
+    proposalId: proposal.proposal_id,
+    nowIso: new Date(nowMs).toISOString(),
+    startIso: Number.isFinite(startMs) ? new Date(startMs).toISOString() : "invalid",
+    endIso: Number.isFinite(endMs) ? new Date(endMs).toISOString() : "invalid",
+    status: getProposalStatus(proposal),
+  });
 
   voteSyncState.initialCommitTimeoutId = setTimeout(() => {
+    console.log("[voting-sync] initial commit", { proposalId: proposal.proposal_id });
     commitVotesCsvToGit(`proposal created ${proposal.proposal_id}`, {
       proposal,
       allowStatuses: ["scheduled", "active", "ended"],
@@ -1141,37 +1149,55 @@ function configureVotingSyncTimers(proposal) {
   }, 10 * 1000);
 
   if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= nowMs) {
+    console.log("[voting-sync] immediate final scheduling", { proposalId: proposal.proposal_id });
     scheduleFinalVotingCommit(proposal);
     return;
   }
 
   if (startMs <= nowMs) {
+    console.log("[voting-sync] start periodic immediately", { proposalId: proposal.proposal_id });
     startPeriodicVotingSync(proposal);
   } else {
     voteSyncState.startTimeoutId = setTimeout(() => {
+      console.log("[voting-sync] delayed periodic start", { proposalId: proposal.proposal_id });
       startPeriodicVotingSync(proposal);
     }, startMs - nowMs);
   }
 
   voteSyncState.endTimeoutId = setTimeout(() => {
+    console.log("[voting-sync] end timeout fired", { proposalId: proposal.proposal_id });
     scheduleFinalVotingCommit(proposal);
   }, Math.max(endMs - nowMs, 0));
 }
 
 function startPeriodicVotingSync(proposal) {
   if (!proposal || voteSyncState.proposalId !== proposal.proposal_id) {
+    console.log("[voting-sync] periodic skipped", {
+      proposalId: proposal ? proposal.proposal_id : null,
+      activeProposalId: voteSyncState.proposalId,
+    });
     return;
   }
 
   if (getProposalStatus(proposal) !== "active") {
+    console.log("[voting-sync] periodic not active", {
+      proposalId: proposal.proposal_id,
+      status: getProposalStatus(proposal),
+    });
     return;
   }
 
+  console.log("[voting-sync] periodic started", { proposalId: proposal.proposal_id });
   voteSyncState.intervalId = setInterval(() => {
     if (getProposalStatus(proposal) !== "active") {
+      console.log("[voting-sync] periodic tick skipped", {
+        proposalId: proposal.proposal_id,
+        status: getProposalStatus(proposal),
+      });
       return;
     }
 
+    console.log("[voting-sync] periodic tick commit", { proposalId: proposal.proposal_id });
     commitVotesCsvToGit(`voting update ${Math.floor(Date.now() / 1000)}`, {
       proposal,
       allowStatuses: ["active"],
@@ -1183,9 +1209,17 @@ function startPeriodicVotingSync(proposal) {
 
 function scheduleFinalVotingCommit(proposal) {
   if (!proposal || voteSyncState.proposalId !== proposal.proposal_id) {
+    console.log("[voting-sync] final skipped", {
+      proposalId: proposal ? proposal.proposal_id : null,
+      activeProposalId: voteSyncState.proposalId,
+    });
     return;
   }
 
+  console.log("[voting-sync] final commit start", {
+    proposalId: proposal.proposal_id,
+    status: getProposalStatus(proposal),
+  });
   stopVotingSyncTimers();
   commitVotesCsvToGit(`final voting results ${proposal.proposal_id}`, {
     proposal,
@@ -1223,9 +1257,14 @@ function restoreVotingSyncTimers() {
   const proposal = readProposal();
 
   if (!proposal) {
+    console.log("[voting-sync] restore skipped: no proposal");
     return;
   }
 
+  console.log("[voting-sync] restore", {
+    proposalId: proposal.proposal_id,
+    status: getProposalStatus(proposal),
+  });
   configureVotingSyncTimers(proposal);
 }
 
@@ -1234,6 +1273,11 @@ async function commitVotesCsvToGit(message, options = {}) {
   const proposalCsvPath = getProposalCsvPath(proposal);
 
   if (!proposal || !proposalCsvPath || !fs.existsSync(proposalCsvPath)) {
+    console.log("[voting-sync] commit skipped: missing proposal or csv", {
+      message,
+      proposalId: proposal ? proposal.proposal_id : null,
+      proposalCsvPath,
+    });
     return;
   }
 
@@ -1241,9 +1285,20 @@ async function commitVotesCsvToGit(message, options = {}) {
   const allowStatuses = Array.isArray(options.allowStatuses) ? options.allowStatuses : ["active"];
 
   if (!allowStatuses.includes(status)) {
+    console.log("[voting-sync] commit skipped: status not allowed", {
+      message,
+      proposalId: proposal.proposal_id,
+      status,
+      allowStatuses,
+    });
     return;
   }
 
+  console.log("[voting-sync] commit start", {
+    message,
+    proposalId: proposal.proposal_id,
+    status,
+  });
   if (!options.skipMetadataRewrite) {
     rewriteProposalMetadata(proposal, ADMIN_WALLET, {
       lifecycleTimestamp: status === "ended"
@@ -1262,9 +1317,18 @@ async function commitVotesCsvToGit(message, options = {}) {
     if (!combinedOutput.includes("nothing to commit")) {
       throw error;
     }
+
+    console.log("[voting-sync] commit noop", {
+      message,
+      proposalId: proposal.proposal_id,
+    });
   }
 
   await runGitCommand(["push", "origin", "main"]);
+  console.log("[voting-sync] commit pushed", {
+    message,
+    proposalId: proposal.proposal_id,
+  });
 }
 
 async function runGitCommand(args) {
