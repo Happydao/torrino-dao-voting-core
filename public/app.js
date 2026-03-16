@@ -1,7 +1,9 @@
-const API_ENDPOINT = "/api/wallet-nfts";
-const VOTE_ENDPOINT = "/api/vote";
-const RESULTS_ENDPOINT = "/api/results";
-const PROPOSAL_ENDPOINT = "/api/proposal";
+const APP_BASE_PATH = "/torrino.dao.voting";
+const API_BASE_PATH = `${APP_BASE_PATH}/api`;
+const API_ENDPOINT = `${API_BASE_PATH}/wallet-nfts`;
+const VOTE_ENDPOINT = `${API_BASE_PATH}/vote`;
+const RESULTS_ENDPOINT = `${API_BASE_PATH}/results`;
+const PROPOSAL_ENDPOINT = `${API_BASE_PATH}/proposal`;
 const GOVERNANCE_HISTORY_API = "https://api.github.com/repos/Happydao/torrino-dao-voting-core/contents/data";
 const GOVERNANCE_HISTORY_RAW_BASE = "https://raw.githubusercontent.com/Happydao/torrino-dao-voting-core/main/data/";
 const textEncoder = new TextEncoder();

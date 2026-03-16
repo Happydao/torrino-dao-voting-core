@@ -3,6 +3,8 @@ const AUTHORIZED_ADMIN_WALLETS = new Set([
   "4hcKvjU4EMzz5TSjgk7CMwhTwy4gXTuhdEYHyd5Shaz8",
 ]);
 const ADMIN_CONFIRMATION_MESSAGE = "Confirm admin action for Torrino DAO voting";
+const APP_BASE_PATH = "/torrino.dao.voting";
+const API_BASE_PATH = `${APP_BASE_PATH}/api`;
 const textEncoder = new TextEncoder();
 const state = {
   adminWallet: null,
@@ -113,7 +115,7 @@ async function startVoting() {
     payload.admin_signature = await confirmAdminAction();
     setAdminBusy(true, "Saving...", "Reset Voting");
     setActionStatus("Signature confirmed. Starting voting...", "");
-    const response = await fetch("/api/admin/proposal", {
+    const response = await fetch(`${API_BASE_PATH}/admin/proposal`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(payload),
@@ -170,7 +172,7 @@ async function resetVoting() {
     const adminSignature = await confirmAdminAction();
     setAdminBusy(true, "Start Voting", "Working...");
     setActionStatus("Signature confirmed. Resetting voting...", "");
-    const response = await fetch("/api/admin/reset-voting", {
+    const response = await fetch(`${API_BASE_PATH}/admin/reset-voting`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
