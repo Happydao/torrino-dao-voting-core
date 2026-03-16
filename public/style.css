@@ -206,6 +206,20 @@ p {
   text-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
 }
 
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.brand-logo {
+  width: 72px;
+  height: 72px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.35));
+}
+
 .tagline,
 .status-message,
 .proposal-copy,
@@ -1095,6 +1109,16 @@ p {
 
   .title {
     white-space: normal;
+  }
+
+  .title-row {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .brand-logo {
+    width: 56px;
+    height: 56px;
   }
 
   .proposal-details {

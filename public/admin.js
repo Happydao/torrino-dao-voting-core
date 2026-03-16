@@ -147,7 +147,7 @@ async function startVoting() {
     setAdminBusy(true, "Signing...", "Signing...");
     setActionStatus("Awaiting wallet signature...", "");
     payload.admin_signature = await confirmAdminAction();
-    setAdminBusy(true, "Saving...", "Reset Voting");
+    setAdminBusy(true, "Saving...", "Stop Voting");
     setActionStatus("Signature confirmed. Starting voting...", "");
     const response = await fetch(`${API_BASE_PATH}/admin/proposal`, {
       method: "POST",
@@ -348,11 +348,11 @@ function getAdminConnectButtonLabel() {
   return state.adminWallet ? "Disconnect Wallet" : "Connect Admin Wallet";
 }
 
-function setAdminBusy(isBusy, startLabel = "Start Voting", resetLabel = "Reset Voting") {
+function setAdminBusy(isBusy, startLabel = "Start Voting", resetLabel = "Stop Voting") {
   ui.startVotingButton.disabled = isBusy;
   ui.resetVotingButton.disabled = isBusy;
   ui.startVotingButton.textContent = isBusy ? startLabel : "Start Voting";
-  ui.resetVotingButton.textContent = isBusy ? resetLabel : "Reset Voting";
+  ui.resetVotingButton.textContent = isBusy ? resetLabel : "Stop Voting";
 }
 
 function toUnixTimestamp(value) {
