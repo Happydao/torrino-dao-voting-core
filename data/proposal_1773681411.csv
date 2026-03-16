@@ -1,9 +1,9 @@
 proposal_created_by,5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc
 proposal_created_timestamp,1773681411
 proposal_created_iso,2026-03-16T17:16:51.000Z
-proposal_lifecycle_status,Active
-proposal_lifecycle_updated_timestamp,1773681421
-proposal_lifecycle_updated_iso,2026-03-16T17:17:01.000Z
+proposal_lifecycle_status,Completed
+proposal_lifecycle_updated_timestamp,1773681720
+proposal_lifecycle_updated_iso,2026-03-16T17:22:00.000Z
 voting_start_timestamp,1773681360
 voting_start_iso,2026-03-16T17:16:00.000Z
 voting_end_timestamp,1773681720
@@ -13,3 +13,10 @@ proposal_description,y
 proposal_options,u | i
 
 wallet,solnauta_nfts,torrino_nfts,u,i,voting_power,timestamp,signature
+85jTBVsk8sDA35LocJdTh41EN2Eep59RQ1jUw9EExsCw,https://solscan.io/token/22nYjuJhonLHSnLaZzoCFuJoEPr2Sh2TUEeLDXBgAZ39,https://solscan.io/token/DmBFZuqmb6TvSrbm8b3vbwwpddpBcU5PNefwfrNcBpjv,0.0,1.0,1.0,1773681425,2vFvJ9KQpJULPs19o2XbgQoV8iKMTUXYpq4f5QzEQPkdExVA3JScuJuDw1wvpvdDzGSHMKm6zLSAbbWbutuduaSY
+7QhxEMfvPeGdiKNzduaXWW8e81NKagFMQrfYJtejmMb6,https://solscan.io/token/9taRMkivY3URdyqPwBa2AfEsPt5vvhNqMdBundPSAA7m,,0.1,0.0,0.1,1773681460,3ChtdFtLrkoqAjXK7sZw7nicavds7NgxjK567sHFS12QrSQiFnMbMVBnV25QKZ3dSuk6uZjpSirrGAydA3r54MNW
+Bjojs5bKn5B6q8CK1XfmkRp4eyJUodDsJ6QrDbFWA6E4,"https://solscan.io/token/G7wcKyaQRtfwEQnYvwhL4BEruhheRdWA6fGxtRwU5ZCK
+https://solscan.io/token/Fw9h39e1BZdR6a8cVPS78zEhw26FdHNKfyh6zJdxBLiH
+https://solscan.io/token/BpuyN7ZhPgVs11fSa6uf6UfKY4VfzH9pb54Z8p9uLaQS","https://solscan.io/token/DfrChBCFPRGiMu8BPfhaVUgbLhhKYt2aJ5g1iyMPkEfy
+https://solscan.io/token/D8xXbuk1cipRgDGow1Gcjvg4voFTggaSs3fgUgAJfuPf
+https://solscan.io/token/BDEcAsW6p5CTkDitf3omoDyvTPU5y6djcQPUjhrqJmqz",3.0,0.0,3.0,1773681472,etRDPhXPYMtt8bc5zdTxay7nTxq5RKtrHwP9UubCKgFD7pQBokyCstDFHoLbcpeGgFjC2MnNpYrntED5FRmPZDY
