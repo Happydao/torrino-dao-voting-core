@@ -39,11 +39,28 @@ const COLLECTIONS = {
 const MIME_TYPES = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
+  ".ico": "image/x-icon",
+  ".jpeg": "image/jpeg",
+  ".jpg": "image/jpeg",
   ".js": "application/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
   ".svg": "image/svg+xml; charset=utf-8",
-  ".txt": "text/plain; charset=utf-8",
 };
+const STATIC_ALLOWED_EXTENSIONS = new Set(Object.keys(MIME_TYPES));
+const BLOCKED_STATIC_BASENAMES = new Set([
+  ".env",
+  ".env.local",
+  ".gitignore",
+  "package-lock.json",
+  "package.json",
+  "server.js",
+]);
+const BLOCKED_STATIC_PATH_SEGMENTS = new Set([
+  ".git",
+  "data",
+  "node_modules",
+]);
 const execFileAsync = promisify(execFile);
 const voteSyncState = {
   initialCommitTimeoutId: null,
@@ -224,8 +241,8 @@ async function handleVote(req, res) {
 
       appendVoteRow({
         wallet,
-        solnautaNfts: usableGen2Nfts.map((nft) => nft.name),
-        torrinoNfts: usableGen1Nfts.map((nft) => nft.name),
+        solnautaNfts: usableGen2Nfts.map((nft) => nft.mint),
+        torrinoNfts: usableGen1Nfts.map((nft) => nft.mint),
         vote,
         votingPower,
         timestamp: Math.floor(Date.now() / 1000),
@@ -471,12 +488,11 @@ function summarizeWalletAssets(assets, usedState) {
   const gen1Nfts = [];
   const gen2Nfts = [];
   const usedMints = usedState ? usedState.usedMints : new Set();
-  const votedNames = usedState ? usedState.votedNames : new Set();
 
   for (const asset of assets) {
     const assetName = getAssetName(asset);
     const assetMint = getAssetMint(asset);
-    const assetStatus = usedMints.has(assetMint) || votedNames.has(assetName) ? "USED" : "AVAILABLE";
+    const assetStatus = usedMints.has(assetMint) ? "USED" : "AVAILABLE";
 
     if (assetBelongsToCollection(asset, COLLECTIONS.torrino.address)) {
       gen1Names.push(assetName);
@@ -548,8 +564,8 @@ function calculateResults() {
     const row = parseVoteCsvLine(lines[index], csvData.header);
     const votingPower = Number.parseFloat(row.voting_power || "0") || 0;
 
-    solnautaVoted += splitPipeList(row.solnauta_nfts).length;
-    torrinoVoted += splitPipeList(row.torrino_nfts).length;
+    solnautaVoted += splitStoredNftValues(row.solnauta_nfts).length;
+    torrinoVoted += splitStoredNftValues(row.torrino_nfts).length;
     totalPower += votingPower;
 
     for (let optionIndex = 0; optionIndex < proposal.options.length; optionIndex += 1) {
@@ -736,11 +752,11 @@ function markProposalCsvAsReset(proposal, adminWallet, resetTimestamp) {
     return;
   }
 
-  const allLines = fs.readFileSync(proposalCsvPath, "utf8").split(/\r?\n/);
-  const headerIndex = allLines.findIndex((line) => line.startsWith("wallet,"));
+  const allRecords = splitCsvRecords(fs.readFileSync(proposalCsvPath, "utf8"));
+  const headerIndex = allRecords.findIndex((record) => record.startsWith("wallet,"));
   const voteSectionLines = headerIndex === -1
     ? [getVotesCsvHeader(proposal).trimEnd()]
-    : allLines.slice(headerIndex).filter(Boolean);
+    : allRecords.slice(headerIndex).filter(Boolean);
   const nextFileContents = [
     ...buildProposalMetadataLines(proposal, adminWallet, { resetTimestamp }),
     "",
@@ -771,10 +787,12 @@ function appendVoteRow(row) {
   const optionValues = getOptionColumns(proposal).map((optionLabel) => {
     return escapeCsvValue(formatDecimal(optionLabel === row.vote ? row.votingPower : 0));
   });
+  const solnautaLinks = row.solnautaNfts.map(getSolscanTokenUrl).join("\n");
+  const torrinoLinks = row.torrinoNfts.map(getSolscanTokenUrl).join("\n");
   const csvLine = [
     escapeCsvValue(row.wallet),
-    escapeCsvValue(row.solnautaNfts.join("|")),
-    escapeCsvValue(row.torrinoNfts.join("|")),
+    escapeCsvValue(solnautaLinks),
+    escapeCsvValue(torrinoLinks),
     ...optionValues,
     escapeCsvValue(formatDecimal(row.votingPower)),
     escapeCsvValue(String(row.timestamp)),
@@ -942,19 +960,6 @@ function getStatusForTimes(startTime, endTime) {
   return "active";
 }
 
-function parseVoteCsvLine(line) {
-  const columns = parseCsvColumns(line);
-  return {
-    wallet: columns[0] || "",
-    solnauta_nfts: columns[1] || "",
-    torrino_nfts: columns[2] || "",
-    vote: columns[3] || "",
-    voting_power: columns[4] || "0",
-    timestamp: columns[5] || "",
-    signature: columns[6] || "",
-  };
-}
-
 function readVotesCsv() {
   const proposal = readProposal();
   const proposalCsvPath = getProposalCsvPath(proposal);
@@ -967,9 +972,9 @@ function readVotesCsv() {
     };
   }
 
-  const allLines = fs.readFileSync(proposalCsvPath, "utf8").split(/\r?\n/);
-  const headerIndex = allLines.findIndex((line) => line.startsWith("wallet,"));
-  const rows = headerIndex === -1 ? [] : allLines.slice(headerIndex).filter(Boolean);
+  const allRecords = splitCsvRecords(fs.readFileSync(proposalCsvPath, "utf8"));
+  const headerIndex = allRecords.findIndex((record) => record.startsWith("wallet,"));
+  const rows = headerIndex === -1 ? [] : allRecords.slice(headerIndex).filter(Boolean);
   const header = rows.length > 0 ? parseCsvColumns(rows[0]) : [];
   const optionColumns = header.filter((column) => ![
     "wallet",
@@ -1026,8 +1031,10 @@ function parseCsvColumns(line) {
   return columns;
 }
 
-function splitPipeList(value) {
-  return value ? value.split("|").map((item) => item.trim()).filter(Boolean) : [];
+function splitStoredNftValues(value) {
+  return value
+    ? value.split(/\r?\n|\|/).map((item) => item.trim()).filter(Boolean)
+    : [];
 }
 
 function formatDecimal(value) {
@@ -1053,10 +1060,52 @@ function getVotesCsvHeader(proposal) {
 }
 
 function getUsedNftState() {
+  const usedMints = readUsedMintsRegistry();
+
+  for (const mint of readUsedMintsFromCsv()) {
+    usedMints.add(mint);
+  }
+
   return {
-    usedMints: readUsedMintsRegistry(),
-    votedNames: readVotedNftNamesFromCsv(),
+    usedMints,
   };
+}
+
+function splitCsvRecords(csvText) {
+  const normalizedText = String(csvText || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const records = [];
+  let current = "";
+  let insideQuotes = false;
+
+  for (let index = 0; index < normalizedText.length; index += 1) {
+    const character = normalizedText[index];
+
+    if (character === "\"") {
+      if (insideQuotes && normalizedText[index + 1] === "\"") {
+        current += "\"\"";
+        index += 1;
+      } else {
+        insideQuotes = !insideQuotes;
+        current += character;
+      }
+
+      continue;
+    }
+
+    if (character === "\n" && !insideQuotes) {
+      records.push(current);
+      current = "";
+      continue;
+    }
+
+    current += character;
+  }
+
+  if (current || normalizedText.endsWith("\n")) {
+    records.push(current);
+  }
+
+  return records;
 }
 
 function configureVotingSyncTimers(proposal) {
@@ -1195,27 +1244,51 @@ async function runGitCommand(args) {
   });
 }
 
-function readVotedNftNamesFromCsv() {
+function readUsedMintsFromCsv() {
   const csvData = readVotesCsv();
-  const votedNames = new Set();
+  const usedMints = new Set();
 
   if (csvData.rows.length <= 1) {
-    return votedNames;
+    return usedMints;
   }
 
   for (let index = 1; index < csvData.rows.length; index += 1) {
     const row = parseVoteCsvLine(csvData.rows[index], csvData.header);
 
-    for (const name of splitPipeList(row.solnauta_nfts)) {
-      votedNames.add(name);
+    for (const value of splitStoredNftValues(row.solnauta_nfts)) {
+      const mint = extractMintFromStoredValue(value);
+
+      if (mint) {
+        usedMints.add(mint);
+      }
     }
 
-    for (const name of splitPipeList(row.torrino_nfts)) {
-      votedNames.add(name);
+    for (const value of splitStoredNftValues(row.torrino_nfts)) {
+      const mint = extractMintFromStoredValue(value);
+
+      if (mint) {
+        usedMints.add(mint);
+      }
     }
   }
 
-  return votedNames;
+  return usedMints;
+}
+
+function extractMintFromStoredValue(value) {
+  const normalizedValue = getString(value);
+
+  if (!normalizedValue) {
+    return "";
+  }
+
+  const solscanMatch = normalizedValue.match(/^https?:\/\/solscan\.io\/token\/([1-9A-HJ-NP-Za-km-z]+)$/);
+
+  if (solscanMatch) {
+    return solscanMatch[1];
+  }
+
+  return isValidMint(normalizedValue) ? normalizedValue : "";
 }
 
 function getProposalCsvPath(proposal) {
@@ -1317,9 +1390,21 @@ function serveStaticFile(requestPath, res, headOnly) {
       ? "/admin.html"
       : requestPath;
   const filePath = path.resolve(PUBLIC_DIR, `.${path.normalize(normalizedPath)}`);
+  const relativePath = path.relative(PUBLIC_DIR, filePath);
+  const pathSegments = relativePath.split(path.sep).filter(Boolean);
+  const fileExtension = path.extname(filePath).toLowerCase();
+  const basename = path.basename(filePath);
 
-  if (!filePath.startsWith(PUBLIC_DIR)) {
-    sendJson(res, 403, { error: "SERVER_ERROR" });
+  if (
+    !filePath.startsWith(PUBLIC_DIR) ||
+    relativePath.startsWith("..") ||
+    pathSegments.some((segment) => segment.startsWith(".")) ||
+    pathSegments.some((segment) => BLOCKED_STATIC_PATH_SEGMENTS.has(segment)) ||
+    basename.startsWith(".") ||
+    BLOCKED_STATIC_BASENAMES.has(basename) ||
+    !STATIC_ALLOWED_EXTENSIONS.has(fileExtension)
+  ) {
+    sendJson(res, 403, { error: "FORBIDDEN" });
     return;
   }
 
@@ -1329,7 +1414,7 @@ function serveStaticFile(requestPath, res, headOnly) {
       return;
     }
 
-    const contentType = MIME_TYPES[path.extname(filePath)] || "application/octet-stream";
+    const contentType = MIME_TYPES[fileExtension] || "application/octet-stream";
     res.writeHead(200, { "content-type": contentType });
 
     if (headOnly) {

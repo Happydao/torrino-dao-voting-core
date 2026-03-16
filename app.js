@@ -382,7 +382,19 @@ function renderNftStatusList(listElement, nfts, emptyMessage) {
     item.className = nft.status === "USED"
       ? "nft-list__item nft-list__item--used"
       : "nft-list__item nft-list__item--available";
-    item.textContent = `${nft.name} (${nft.status})`;
+    const link = document.createElement("a");
+    link.href = getSolscanTokenUrl(nft.mint);
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.className = "nft-list__link";
+    link.textContent = shortMint(nft.mint);
+
+    const statusText = document.createElement("span");
+    statusText.className = "nft-list__status";
+    statusText.textContent = ` (${nft.status})`;
+
+    item.appendChild(link);
+    item.appendChild(statusText);
     listElement.appendChild(item);
   }
 }
@@ -716,6 +728,18 @@ function bytesToBase58(bytes) {
   }
 
   return result;
+}
+
+function shortMint(mint) {
+  if (typeof mint !== "string" || mint.length <= 8) {
+    return mint || "";
+  }
+
+  return `${mint.slice(0, 4)}...${mint.slice(-4)}`;
+}
+
+function getSolscanTokenUrl(mint) {
+  return `https://solscan.io/token/${mint}`;
 }
 
 function escapeHtml(value) {
