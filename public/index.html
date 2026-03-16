@@ -109,16 +109,19 @@
         </div>
         <div class="results-grid">
           <article class="results-stat">
-            <span class="label">Solnauta NFTs voted</span>
-            <strong id="solnautaVoted">0</strong>
-          </article>
-          <article class="results-stat">
             <span class="label">Torrino DAO NFTs voted</span>
             <strong id="torrinoVoted">0</strong>
+            <span id="torrinoParticipation" class="results-stat__detail">0.0% of 500 collection NFTs</span>
+          </article>
+          <article class="results-stat">
+            <span class="label">Solnauta NFTs voted</span>
+            <strong id="solnautaVoted">0</strong>
+            <span id="solnautaParticipation" class="results-stat__detail">0.0% of 888 collection NFTs</span>
           </article>
           <article class="results-stat results-stat--yes">
             <span class="label">Total Voting Power</span>
             <strong id="totalPower">0.0</strong>
+            <span id="powerParticipation" class="results-stat__detail">Participation rate: 0.0% of 538.8 total power</span>
           </article>
           <article class="results-stat">
             <span class="label label--subtle">Results Refresh</span>
@@ -217,6 +220,25 @@
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="modal"
+      id="feedbackModal"
+      aria-hidden="true"
+      role="dialog"
+      aria-label="Vote feedback"
+    >
+      <div class="modal__inner modal__inner--compact">
+        <div class="modal__content modal__content--feedback">
+          <p id="feedbackModalBadge" class="feedback-modal__badge">Status</p>
+          <h3 id="feedbackModalTitle" class="modal__title">Vote update</h3>
+          <p id="feedbackModalMessage" class="modal__lead feedback-modal__message"></p>
+          <button id="closeFeedbackModal" class="admin-button admin-button--primary feedback-modal__button" type="button">
+            OK
+          </button>
         </div>
       </div>
     </div>

@@ -111,6 +111,25 @@
       </div>
     </div>
 
+    <div
+      class="modal"
+      id="adminFeedbackModal"
+      aria-hidden="true"
+      role="dialog"
+      aria-label="Admin action feedback"
+    >
+      <div class="modal__inner modal__inner--compact">
+        <div class="modal__content modal__content--feedback">
+          <p id="adminFeedbackModalBadge" class="feedback-modal__badge">Status</p>
+          <h3 id="adminFeedbackModalTitle" class="modal__title">Admin update</h3>
+          <p id="adminFeedbackModalMessage" class="modal__lead feedback-modal__message"></p>
+          <button id="closeAdminFeedbackModal" class="admin-button admin-button--primary feedback-modal__button" type="button">
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+
     <script src="admin.js"></script>
   </body>
 </html>

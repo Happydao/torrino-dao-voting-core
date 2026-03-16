@@ -15,6 +15,11 @@ const ui = {
   connectButton: document.getElementById("connectAdminButton"),
   status: document.getElementById("adminStatus"),
   actionStatus: document.getElementById("admin-status"),
+  feedbackModal: document.getElementById("adminFeedbackModal"),
+  feedbackModalBadge: document.getElementById("adminFeedbackModalBadge"),
+  feedbackModalTitle: document.getElementById("adminFeedbackModalTitle"),
+  feedbackModalMessage: document.getElementById("adminFeedbackModalMessage"),
+  closeFeedbackModal: document.getElementById("closeAdminFeedbackModal"),
   dashboard: document.getElementById("adminDashboard"),
   walletAddress: document.getElementById("adminWalletAddress"),
   startVotingButton: document.getElementById("startVotingButton"),
@@ -32,11 +37,22 @@ const ui = {
   openEndTimePickerButton: document.getElementById("openEndTimePickerButton"),
 };
 
-ui.connectButton.addEventListener("click", connectAdminWallet);
+ui.connectButton.addEventListener("click", handleAdminWalletButtonClick);
 ui.startVotingButton.addEventListener("click", startVoting);
 ui.resetVotingButton.addEventListener("click", resetVoting);
 ui.openStartTimePickerButton.addEventListener("click", () => openDateTimePicker(ui.startTime));
 ui.openEndTimePickerButton.addEventListener("click", () => openDateTimePicker(ui.endTime));
+updateAdminConnectButtonLabel();
+initializeAdminFeedbackModal();
+
+async function handleAdminWalletButtonClick() {
+  if (state.adminWallet && state.adminProvider) {
+    await disconnectAdminWallet();
+    return;
+  }
+
+  await connectAdminWallet();
+}
 
 async function connectAdminWallet() {
   const provider = getWalletProvider();
@@ -52,6 +68,8 @@ async function connectAdminWallet() {
     const walletAddress = await connectWalletProvider(provider);
 
     if (!AUTHORIZED_ADMIN_WALLETS.has(walletAddress)) {
+      state.adminWallet = walletAddress;
+      state.adminProvider = provider;
       ui.dashboard.hidden = true;
       ui.walletAddress.textContent = walletAddress;
       ui.status.textContent = "Unauthorized admin wallet.";
@@ -70,7 +88,21 @@ async function connectAdminWallet() {
     ui.status.textContent = "Errore durante la connessione del wallet admin.";
     setActionStatus("An error occurred while connecting the admin wallet.", "error");
   } finally {
-    ui.connectButton.disabled = false;
+    setAdminConnectBusy(false);
+  }
+}
+
+async function disconnectAdminWallet() {
+  const provider = state.adminProvider;
+
+  try {
+    setAdminConnectBusy(true, "Disconnecting...");
+    await disconnectWalletProvider(provider);
+  } catch (error) {
+    console.error(error);
+  } finally {
+    clearAdminSession();
+    setAdminConnectBusy(false);
   }
 }
 
@@ -129,15 +161,18 @@ async function startVoting() {
     }
 
     setActionStatus("Voting started successfully.", "success");
+    openAdminFeedbackModal("Voting Started", "Voting started successfully.", "success");
   } catch (error) {
     console.error(error);
     if (error.message === "UNAUTHORIZED_ADMIN") {
       setActionStatus("Unauthorized admin wallet.", "error");
+      openAdminFeedbackModal("Admin Error", "Unauthorized admin wallet.", "error");
       return;
     }
 
     if (error.message === "INVALID_ADMIN_SIGNATURE") {
       setActionStatus("Action failed: admin signature is not valid.", "error");
+      openAdminFeedbackModal("Admin Error", "Action failed: admin signature is not valid.", "error");
       return;
     }
 
@@ -153,10 +188,12 @@ async function startVoting() {
 
     if (error.message === "SIGNATURE_REJECTED") {
       setActionStatus("Action cancelled: wallet signature was rejected.", "error");
+      openAdminFeedbackModal("Admin Error", "Action cancelled: wallet signature was rejected.", "error");
       return;
     }
 
     setActionStatus("Action failed while starting voting.", "error");
+    openAdminFeedbackModal("Admin Error", "Action failed while starting voting.", "error");
   } finally {
     setAdminBusy(false);
   }
@@ -191,21 +228,22 @@ async function resetVoting() {
     clearForm();
     ui.dashboard.hidden = false;
     setActionStatus("Voting reset successfully.", "success");
+    openAdminFeedbackModal("Voting Stopped", "Voting reset successfully.", "success");
   } catch (error) {
     console.error(error);
     if (error.message === "SIGNATURE_REJECTED") {
       setActionStatus("Action cancelled: wallet signature was rejected.", "error");
+      openAdminFeedbackModal("Admin Error", "Action cancelled: wallet signature was rejected.", "error");
       return;
     }
 
-    setActionStatus(
-      error.message === "UNAUTHORIZED_ADMIN"
-        ? "Unauthorized admin wallet."
-        : error.message === "INVALID_ADMIN_SIGNATURE"
-          ? "Action failed: admin signature is not valid."
-        : "Action failed while resetting voting.",
-      "error"
-    );
+    const errorMessage = error.message === "UNAUTHORIZED_ADMIN"
+      ? "Unauthorized admin wallet."
+      : error.message === "INVALID_ADMIN_SIGNATURE"
+        ? "Action failed: admin signature is not valid."
+        : "Action failed while resetting voting.";
+    setActionStatus(errorMessage, "error");
+    openAdminFeedbackModal("Admin Error", errorMessage, "error");
   } finally {
     setAdminBusy(false);
   }
@@ -282,6 +320,12 @@ async function connectWalletProvider(provider) {
   return publicKey.toString();
 }
 
+async function disconnectWalletProvider(provider) {
+  if (provider && typeof provider.disconnect === "function") {
+    await provider.disconnect();
+  }
+}
+
 function setActionStatus(message, type) {
   ui.actionStatus.textContent = message;
   ui.actionStatus.classList.remove("is-success", "is-error");
@@ -289,6 +333,19 @@ function setActionStatus(message, type) {
   if (type) {
     ui.actionStatus.classList.add(type === "success" ? "is-success" : "is-error");
   }
+}
+
+function setAdminConnectBusy(isBusy, busyLabel = "Connecting...") {
+  ui.connectButton.disabled = isBusy;
+  ui.connectButton.textContent = isBusy ? busyLabel : getAdminConnectButtonLabel();
+}
+
+function updateAdminConnectButtonLabel() {
+  ui.connectButton.textContent = getAdminConnectButtonLabel();
+}
+
+function getAdminConnectButtonLabel() {
+  return state.adminWallet ? "Disconnect Wallet" : "Connect Admin Wallet";
 }
 
 function setAdminBusy(isBusy, startLabel = "Start Voting", resetLabel = "Reset Voting") {
@@ -344,6 +401,57 @@ function clearForm() {
   ui.optionE.value = "";
   ui.startTime.value = "";
   ui.endTime.value = "";
+}
+
+function clearAdminSession() {
+  state.adminWallet = null;
+  state.adminProvider = null;
+  ui.walletAddress.textContent = "Not connected";
+  ui.dashboard.hidden = true;
+  ui.status.textContent = "Admin wallet disconnected.";
+  setActionStatus("", "");
+}
+
+function initializeAdminFeedbackModal() {
+  if (!ui.feedbackModal || !ui.closeFeedbackModal) {
+    return;
+  }
+
+  ui.closeFeedbackModal.addEventListener("click", closeAdminFeedbackModal);
+  ui.feedbackModal.addEventListener("click", (event) => {
+    if (event.target === ui.feedbackModal) {
+      closeAdminFeedbackModal();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && ui.feedbackModal.classList.contains("open")) {
+      closeAdminFeedbackModal();
+    }
+  });
+}
+
+function openAdminFeedbackModal(title, message, type) {
+  if (!ui.feedbackModal) {
+    return;
+  }
+
+  ui.feedbackModalTitle.textContent = title;
+  ui.feedbackModalMessage.textContent = message;
+  ui.feedbackModalBadge.textContent = type === "success" ? "Confirmed" : "Error";
+  ui.feedbackModalBadge.classList.remove("is-success", "is-error");
+  ui.feedbackModalBadge.classList.add(type === "success" ? "is-success" : "is-error");
+  ui.feedbackModal.classList.add("open");
+  ui.feedbackModal.setAttribute("aria-hidden", "false");
+}
+
+function closeAdminFeedbackModal() {
+  if (!ui.feedbackModal) {
+    return;
+  }
+
+  ui.feedbackModal.classList.remove("open");
+  ui.feedbackModal.setAttribute("aria-hidden", "true");
 }
 
 function openDateTimePicker(input) {

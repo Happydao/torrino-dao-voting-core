@@ -4,6 +4,9 @@ const API_ENDPOINT = `${API_BASE_PATH}/wallet-nfts`;
 const VOTE_ENDPOINT = `${API_BASE_PATH}/vote`;
 const RESULTS_ENDPOINT = `${API_BASE_PATH}/results`;
 const PROPOSAL_ENDPOINT = `${API_BASE_PATH}/proposal`;
+const TORRINO_TOTAL_NFTS = 500;
+const SOLNAUTA_TOTAL_NFTS = 888;
+const TOTAL_VOTING_POWER = 538.8;
 const GOVERNANCE_HISTORY_API = "https://api.github.com/repos/Happydao/torrino-dao-voting-core/contents/data";
 const GOVERNANCE_HISTORY_RAW_BASE = "https://raw.githubusercontent.com/Happydao/torrino-dao-voting-core/main/data/";
 const textEncoder = new TextEncoder();
@@ -36,10 +39,18 @@ const ui = {
   proposalCountdown: document.getElementById("proposalCountdown"),
   voteOptions: document.getElementById("voteOptions"),
   voteFeedback: document.getElementById("voteFeedback"),
+  feedbackModal: document.getElementById("feedbackModal"),
+  feedbackModalBadge: document.getElementById("feedbackModalBadge"),
+  feedbackModalTitle: document.getElementById("feedbackModalTitle"),
+  feedbackModalMessage: document.getElementById("feedbackModalMessage"),
+  closeFeedbackModal: document.getElementById("closeFeedbackModal"),
   resultsStatus: document.getElementById("resultsStatus"),
   solnautaVoted: document.getElementById("solnautaVoted"),
   torrinoVoted: document.getElementById("torrinoVoted"),
+  solnautaParticipation: document.getElementById("solnautaParticipation"),
+  torrinoParticipation: document.getElementById("torrinoParticipation"),
   totalPower: document.getElementById("totalPower"),
+  powerParticipation: document.getElementById("powerParticipation"),
   resultsBars: document.getElementById("resultsBars"),
   historyModal: document.getElementById("historyModal"),
   openHistoryModal: document.getElementById("openHistoryModal"),
@@ -49,8 +60,18 @@ const ui = {
 
 initializeWalletStatus();
 initializeHistoryModal();
+initializeFeedbackModal();
 initializeProposalAndResults();
-ui.connectButton.addEventListener("click", connectWallet);
+ui.connectButton.addEventListener("click", handleWalletButtonClick);
+
+async function handleWalletButtonClick() {
+  if (state.walletAddress && state.walletProvider) {
+    await disconnectWallet();
+    return;
+  }
+
+  await connectWallet();
+}
 
 async function initializeProposalAndResults() {
   await refreshProposal();
@@ -96,7 +117,24 @@ async function connectWallet() {
   }
 }
 
+async function disconnectWallet() {
+  const provider = state.walletProvider;
+
+  try {
+    setConnectBusy(true, "Disconnessione wallet in corso...");
+    await disconnectWalletProvider(provider);
+  } catch (error) {
+    console.error(error);
+  } finally {
+    clearWalletSession();
+    setConnectBusy(false);
+    syncVoteButtons();
+  }
+}
+
 function initializeWalletStatus() {
+  updateConnectButtonLabel();
+
   if (getWalletProvider()) {
     setStatus("Wallet compatibile rilevato. Puoi collegare Phantom o Solflare.");
     return;
@@ -184,6 +222,12 @@ async function connectWalletProvider(provider) {
   }
 
   return publicKey.toString();
+}
+
+async function disconnectWalletProvider(provider) {
+  if (provider && typeof provider.disconnect === "function") {
+    await provider.disconnect();
+  }
 }
 
 function getMissingWalletMessage() {
@@ -391,11 +435,32 @@ function updateWalletDashboard(walletAddress, walletData) {
   renderNftStatusList(ui.solnautaNames, walletData.gen2_nfts, "Nessun Solnauta NFT trovato.");
 }
 
+function clearWalletSession() {
+  state.walletAddress = null;
+  state.walletProvider = null;
+  state.walletData = null;
+  ui.walletAddress.textContent = "Non collegato";
+  ui.torrinoCount.textContent = "0";
+  ui.solnautaCount.textContent = "0";
+  ui.votingPower.textContent = "0.0";
+  ui.proposalVotingPower.textContent = "0.0";
+  renderNftStatusList(ui.torrinoNames, [], "Nessun Torrino DAO NFT trovato.");
+  renderNftStatusList(ui.solnautaNames, [], "Nessun Solnauta NFT trovato.");
+  clearVoteFeedback();
+  setStatus("Wallet disconnesso.");
+}
+
 function updateResultsDashboard(results) {
+  const solnautaVoted = Number(results.solnauta_voted || 0);
+  const torrinoVoted = Number(results.torrino_voted || 0);
+  const totalPower = Number(results.total_power || 0);
   ui.resultsStatus.textContent = getProposalStatusLabel(results.status || "inactive");
-  ui.solnautaVoted.textContent = String(results.solnauta_voted || 0);
-  ui.torrinoVoted.textContent = String(results.torrino_voted || 0);
-  ui.totalPower.textContent = formatVotingPower(results.total_power || 0);
+  ui.solnautaVoted.textContent = String(solnautaVoted);
+  ui.torrinoVoted.textContent = String(torrinoVoted);
+  ui.totalPower.textContent = formatVotingPower(totalPower);
+  ui.torrinoParticipation.textContent = `${formatParticipationRate(torrinoVoted, TORRINO_TOTAL_NFTS)} of ${TORRINO_TOTAL_NFTS} collection NFTs`;
+  ui.solnautaParticipation.textContent = `${formatParticipationRate(solnautaVoted, SOLNAUTA_TOTAL_NFTS)} of ${SOLNAUTA_TOTAL_NFTS} collection NFTs`;
+  ui.powerParticipation.textContent = `Participation rate: ${formatParticipationRate(totalPower, TOTAL_VOTING_POWER)} of ${TOTAL_VOTING_POWER.toFixed(1)} total power`;
   ui.resultsBars.replaceChildren();
 
   const optionResults = Array.isArray(results.option_results) ? results.option_results : [];
@@ -514,11 +579,23 @@ function syncVoteButtons() {
 
 function setConnectBusy(isBusy, message) {
   ui.connectButton.disabled = isBusy;
-  ui.connectButton.textContent = isBusy ? "Connessione..." : "Collega Wallet";
+  ui.connectButton.textContent = isBusy
+    ? state.walletAddress
+      ? "Disconnessione..."
+      : "Connessione..."
+    : getConnectButtonLabel();
 
   if (message) {
     setStatus(message);
   }
+}
+
+function updateConnectButtonLabel() {
+  ui.connectButton.textContent = getConnectButtonLabel();
+}
+
+function getConnectButtonLabel() {
+  return state.walletAddress ? "Disconnect Wallet" : "Connect Wallet";
 }
 
 function setVoteButtonsBusy(isBusy) {
@@ -537,22 +614,13 @@ function setStatus(message) {
 }
 
 function showVoteFeedback(message, type) {
-  if (state.voteFeedbackTimeoutId) {
-    window.clearTimeout(state.voteFeedbackTimeoutId);
-  }
-
   ui.voteFeedback.textContent = message;
   ui.voteFeedback.classList.remove("is-success", "is-error");
   ui.voteFeedback.classList.add("is-visible", type === "success" ? "is-success" : "is-error");
-  state.voteFeedbackTimeoutId = window.setTimeout(clearVoteFeedback, 5000);
+  openFeedbackModal(type === "success" ? "Vote Confirmed" : "Vote Error", message, type);
 }
 
 function clearVoteFeedback() {
-  if (state.voteFeedbackTimeoutId) {
-    window.clearTimeout(state.voteFeedbackTimeoutId);
-    state.voteFeedbackTimeoutId = null;
-  }
-
   ui.voteFeedback.textContent = "";
   ui.voteFeedback.classList.remove("is-visible", "is-success", "is-error");
 }
@@ -609,6 +677,48 @@ function initializeHistoryModal() {
       closeHistoryModal();
     }
   });
+}
+
+function initializeFeedbackModal() {
+  if (!ui.feedbackModal || !ui.closeFeedbackModal) {
+    return;
+  }
+
+  ui.closeFeedbackModal.addEventListener("click", closeFeedbackModal);
+  ui.feedbackModal.addEventListener("click", (event) => {
+    if (event.target === ui.feedbackModal) {
+      closeFeedbackModal();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && ui.feedbackModal.classList.contains("open")) {
+      closeFeedbackModal();
+    }
+  });
+}
+
+function openFeedbackModal(title, message, type) {
+  if (!ui.feedbackModal) {
+    return;
+  }
+
+  ui.feedbackModalTitle.textContent = title;
+  ui.feedbackModalMessage.textContent = message;
+  ui.feedbackModalBadge.textContent = type === "success" ? "Confirmed" : "Error";
+  ui.feedbackModalBadge.classList.remove("is-success", "is-error");
+  ui.feedbackModalBadge.classList.add(type === "success" ? "is-success" : "is-error");
+  ui.feedbackModal.classList.add("open");
+  ui.feedbackModal.setAttribute("aria-hidden", "false");
+}
+
+function closeFeedbackModal() {
+  if (!ui.feedbackModal) {
+    return;
+  }
+
+  ui.feedbackModal.classList.remove("open");
+  ui.feedbackModal.setAttribute("aria-hidden", "true");
 }
 
 async function loadGovernanceHistory() {
@@ -729,6 +839,14 @@ function formatHistoryDate(timestamp) {
 
 function formatVotingPower(value) {
   return Number(value || 0).toFixed(1);
+}
+
+function formatParticipationRate(value, total) {
+  if (!Number.isFinite(total) || total <= 0) {
+    return "0.0%";
+  }
+
+  return `${((Number(value || 0) / total) * 100).toFixed(1)}%`;
 }
 
 function getProposalStatusLabel(status) {
