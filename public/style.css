@@ -998,6 +998,16 @@ p {
   color: var(--muted);
 }
 
+.feedback-modal__headline {
+  margin: 0 0 14px 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 3vw, 2rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
 .feedback-modal__badge.is-success {
   color: #5ff0a6;
 }

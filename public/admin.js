@@ -16,6 +16,7 @@ const ui = {
   status: document.getElementById("adminStatus"),
   actionStatus: document.getElementById("admin-status"),
   feedbackModal: document.getElementById("adminFeedbackModal"),
+  feedbackModalHeadline: document.getElementById("adminFeedbackModalHeadline"),
   feedbackModalBadge: document.getElementById("adminFeedbackModalBadge"),
   feedbackModalTitle: document.getElementById("adminFeedbackModalTitle"),
   feedbackModalMessage: document.getElementById("adminFeedbackModalMessage"),
@@ -436,6 +437,9 @@ function openAdminFeedbackModal(title, message, type) {
     return;
   }
 
+  ui.feedbackModalHeadline.textContent = title === "Voting Started" || title === "Voting Stopped"
+    ? "SHOCK ALLA ZANZARA!!"
+    : "";
   ui.feedbackModalTitle.textContent = title;
   ui.feedbackModalMessage.textContent = message;
   ui.feedbackModalBadge.textContent = type === "success" ? "Confirmed" : "Error";
