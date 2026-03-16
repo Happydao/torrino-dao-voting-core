@@ -13,6 +13,7 @@ const RPC = process.env.HELIUS_RPC;
 const ADMIN_WALLET = process.env.ADMIN_WALLET || "5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc";
 const SECONDARY_ADMIN_WALLET = "4hcKvjU4EMzz5TSjgk7CMwhTwy4gXTuhdEYHyd5Shaz8";
 const AUTHORIZED_ADMIN_WALLETS = new Set([ADMIN_WALLET, SECONDARY_ADMIN_WALLET]);
+const APP_DIR = __dirname;
 const PUBLIC_DIR = path.join(__dirname, "public");
 const DATA_DIR = path.join(__dirname, "data");
 const USED_MINTS_PATH = path.join(DATA_DIR, "used-mints.json");
@@ -1239,8 +1240,8 @@ async function commitVotesCsvToGit(message, options = {}) {
 }
 
 async function runGitCommand(args) {
-  return execFileAsync("git", ["-C", PUBLIC_DIR, ...args], {
-    cwd: PUBLIC_DIR,
+  return execFileAsync("git", ["-C", APP_DIR, ...args], {
+    cwd: APP_DIR,
   });
 }
 
@@ -1289,6 +1290,10 @@ function extractMintFromStoredValue(value) {
   }
 
   return isValidMint(normalizedValue) ? normalizedValue : "";
+}
+
+function getSolscanTokenUrl(mintAddress) {
+  return `https://solscan.io/token/${mintAddress}`;
 }
 
 function getProposalCsvPath(proposal) {
