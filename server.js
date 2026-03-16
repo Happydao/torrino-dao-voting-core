@@ -710,40 +710,27 @@ function buildProposalMetadataLines(proposal, adminWallet, metadataOptions = {})
   const resetTimestamp = Number.isFinite(metadataOptions.resetTimestamp)
     ? Math.floor(metadataOptions.resetTimestamp)
     : "";
-  const lifecycleStatus = resetTimestamp ? "reset_by_admin" : getProposalStatus(proposal);
-  const lifecycleTimestamp = resetTimestamp || endTimestamp || "";
-  const metadataHeader = [
-    "proposal_created_by",
-    "proposal_created_timestamp",
-    "proposal_created_iso",
-    "voting_start_timestamp",
-    "voting_start_iso",
-    "voting_end_timestamp",
-    "voting_end_iso",
-    "proposal_lifecycle_status",
-    "proposal_lifecycle_timestamp",
-    "proposal_lifecycle_iso",
-    "proposal_title",
-    "proposal_question",
-    "options",
-  ].join(",");
-  const metadataRow = [
-    escapeCsvValue(adminWallet),
-    escapeCsvValue(createdTimestamp),
-    escapeCsvValue(formatTimestampIso(createdTimestamp)),
-    escapeCsvValue(startTimestamp),
-    escapeCsvValue(formatTimestampIso(startTimestamp)),
-    escapeCsvValue(endTimestamp),
-    escapeCsvValue(formatTimestampIso(endTimestamp)),
-    escapeCsvValue(lifecycleStatus),
-    escapeCsvValue(lifecycleTimestamp),
-    escapeCsvValue(formatTimestampIso(lifecycleTimestamp)),
-    escapeCsvValue(proposal.title),
-    escapeCsvValue(proposal.description),
-    escapeCsvValue(proposal.options.join("|")),
-  ].join(",");
+  const lifecycle = getProposalLifecycleMetadata(proposal, adminWallet, {
+    resetTimestamp,
+    lifecycleTimestamp: metadataOptions.lifecycleTimestamp,
+  });
+  const metadataRows = [
+    ["proposal_created_by", adminWallet],
+    ["proposal_created_timestamp", createdTimestamp],
+    ["proposal_created_iso", formatTimestampIso(createdTimestamp)],
+    ["proposal_lifecycle_status", lifecycle.status],
+    ["proposal_lifecycle_updated_timestamp", lifecycle.timestamp],
+    ["proposal_lifecycle_updated_iso", formatTimestampIso(lifecycle.timestamp)],
+    ["voting_start_timestamp", startTimestamp],
+    ["voting_start_iso", formatTimestampIso(startTimestamp)],
+    ["voting_end_timestamp", endTimestamp],
+    ["voting_end_iso", formatTimestampIso(endTimestamp)],
+    ["proposal_title", proposal.title],
+    ["proposal_description", proposal.description],
+    ["proposal_options", proposal.options.join(" | ")],
+  ];
 
-  return [metadataHeader, metadataRow];
+  return metadataRows.map(([label, value]) => `${escapeCsvValue(label)},${escapeCsvValue(value)}`);
 }
 
 function markProposalCsvAsReset(proposal, adminWallet, resetTimestamp) {
@@ -801,6 +788,27 @@ function appendVoteRow(row) {
   ].join(",") + "\n";
 
   fs.appendFileSync(proposalCsvPath, csvLine, "utf8");
+}
+
+function rewriteProposalMetadata(proposal, adminWallet, metadataOptions = {}) {
+  const proposalCsvPath = getProposalCsvPath(proposal);
+
+  if (!proposalCsvPath || !fs.existsSync(proposalCsvPath)) {
+    return;
+  }
+
+  const allRecords = splitCsvRecords(fs.readFileSync(proposalCsvPath, "utf8"));
+  const headerIndex = allRecords.findIndex((record) => record.startsWith("wallet,"));
+  const voteSectionLines = headerIndex === -1
+    ? [getVotesCsvHeader(proposal).trimEnd()]
+    : allRecords.slice(headerIndex).filter(Boolean);
+  const nextFileContents = [
+    ...buildProposalMetadataLines(proposal, adminWallet, metadataOptions),
+    "",
+    ...voteSectionLines,
+  ].join("\n") + "\n";
+
+  writeFileAtomic(proposalCsvPath, nextFileContents);
 }
 
 function readUsedMintsRegistry() {
@@ -1224,6 +1232,12 @@ async function commitVotesCsvToGit(message, options = {}) {
     return;
   }
 
+  rewriteProposalMetadata(proposal, ADMIN_WALLET, {
+    lifecycleTimestamp: status === "ended"
+      ? Number(proposal.end_time) || Math.floor(Date.now() / 1000)
+      : Math.floor(Date.now() / 1000),
+  });
+
   await runGitCommand(["add", getProposalCsvRelativePath(proposal)]);
 
   try {
@@ -1294,6 +1308,41 @@ function extractMintFromStoredValue(value) {
 
 function getSolscanTokenUrl(mintAddress) {
   return `https://solscan.io/token/${mintAddress}`;
+}
+
+function getProposalLifecycleMetadata(proposal, adminWallet, metadataOptions = {}) {
+  const resetTimestamp = Number.isFinite(metadataOptions.resetTimestamp)
+    ? Math.floor(metadataOptions.resetTimestamp)
+    : 0;
+  const lifecycleTimestamp = Number.isFinite(metadataOptions.lifecycleTimestamp)
+    ? Math.floor(metadataOptions.lifecycleTimestamp)
+    : Math.floor(Date.now() / 1000);
+
+  if (resetTimestamp > 0) {
+    return {
+      status: `Stopped by admin: ${adminWallet}`,
+      timestamp: resetTimestamp,
+    };
+  }
+
+  if (getProposalStatus(proposal) === "ended") {
+    return {
+      status: "Completed",
+      timestamp: lifecycleTimestamp,
+    };
+  }
+
+  if (getProposalStatus(proposal) === "active") {
+    return {
+      status: "Active",
+      timestamp: lifecycleTimestamp,
+    };
+  }
+
+  return {
+    status: "Scheduled",
+    timestamp: lifecycleTimestamp,
+  };
 }
 
 function getProposalCsvPath(proposal) {
