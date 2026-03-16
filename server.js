@@ -964,7 +964,7 @@ function getStatusForTimes(startTime, endTime) {
     return "scheduled";
   }
 
-  if (now > endTime) {
+  if (now >= endTime) {
     return "ended";
   }
 
