@@ -311,12 +311,13 @@ async function confirmAdminAction() {
   try {
     const encodedMessage = textEncoder.encode(ADMIN_CONFIRMATION_MESSAGE);
     const signed = await provider.signMessage(encodedMessage, "utf8");
+    const signatureBytes = extractSignatureBytes(signed);
 
-    if (!signed || !signed.signature) {
+    if (!signatureBytes) {
       throw new Error("SIGNATURE_UNAVAILABLE");
     }
 
-    return bytesToBase58(signed.signature);
+    return bytesToBase58(signatureBytes);
   } catch (error) {
     if (isSignatureRejected(error)) {
       throw new Error("SIGNATURE_REJECTED");
@@ -398,4 +399,24 @@ function bytesToBase58(bytes) {
   }
 
   return result;
+}
+
+function extractSignatureBytes(signedValue) {
+  if (!signedValue) {
+    return null;
+  }
+
+  if (signedValue instanceof Uint8Array) {
+    return signedValue;
+  }
+
+  if (signedValue.signature instanceof Uint8Array) {
+    return signedValue.signature;
+  }
+
+  if (Array.isArray(signedValue.signature)) {
+    return Uint8Array.from(signedValue.signature);
+  }
+
+  return null;
 }

@@ -367,14 +367,15 @@ async function signVoteMessage(provider, voteOption) {
 
   const message = `Torrino DAO governance vote:${voteOption}:wallet:${state.walletAddress}:timestamp:${Date.now()}`;
   const signed = await provider.signMessage(textEncoder.encode(message), "utf8");
+  const signatureBytes = extractSignatureBytes(signed);
 
-  if (!signed || !signed.signature) {
+  if (!signatureBytes) {
     throw new Error("SIGNATURE_UNAVAILABLE");
   }
 
   return {
     message,
-    signature: bytesToBase58(signed.signature),
+    signature: bytesToBase58(signatureBytes),
   };
 }
 
@@ -784,6 +785,26 @@ function bytesToBase58(bytes) {
   }
 
   return result;
+}
+
+function extractSignatureBytes(signedValue) {
+  if (!signedValue) {
+    return null;
+  }
+
+  if (signedValue instanceof Uint8Array) {
+    return signedValue;
+  }
+
+  if (signedValue.signature instanceof Uint8Array) {
+    return signedValue.signature;
+  }
+
+  if (Array.isArray(signedValue.signature)) {
+    return Uint8Array.from(signedValue.signature);
+  }
+
+  return null;
 }
 
 function shortMint(mint) {
