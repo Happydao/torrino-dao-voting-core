@@ -8,6 +8,7 @@ const API_BASE_PATH = `${APP_BASE_PATH}/api`;
 const textEncoder = new TextEncoder();
 const state = {
   adminWallet: null,
+  adminProvider: null,
 };
 
 const ui = {
@@ -59,6 +60,7 @@ async function connectAdminWallet() {
     }
 
     state.adminWallet = walletAddress;
+    state.adminProvider = provider;
     ui.walletAddress.textContent = walletAddress;
     ui.dashboard.hidden = false;
     ui.status.textContent = "Admin wallet autorizzato. Puoi gestire la governance.";
@@ -302,7 +304,7 @@ function toUnixTimestamp(value) {
 }
 
 async function confirmAdminAction() {
-  const provider = getWalletProvider();
+  const provider = state.adminProvider || getWalletProvider();
 
   if (!provider || typeof provider.signMessage !== "function") {
     throw new Error("SIGNATURE_UNAVAILABLE");

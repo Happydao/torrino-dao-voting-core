@@ -9,6 +9,7 @@ const GOVERNANCE_HISTORY_RAW_BASE = "https://raw.githubusercontent.com/Happydao/
 const textEncoder = new TextEncoder();
 const state = {
   walletAddress: null,
+  walletProvider: null,
   walletData: null,
   proposal: null,
   voteFeedbackTimeoutId: null,
@@ -78,6 +79,7 @@ async function connectWallet() {
     const walletAddress = await connectWalletProvider(provider);
 
     state.walletAddress = walletAddress;
+    state.walletProvider = provider;
     ui.walletAddress.textContent = walletAddress;
     setStatus("Wallet collegato. Lettura NFT dal backend in corso...");
 
@@ -284,7 +286,7 @@ function renderVoteOptions(options) {
 }
 
 async function submitVote(voteOption) {
-  const provider = getWalletProvider();
+  const provider = state.walletProvider || getWalletProvider();
 
   if (!provider || !state.walletAddress || !state.walletData) {
     setStatus("Collega prima il wallet per poter votare.");
