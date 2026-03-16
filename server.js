@@ -131,6 +131,7 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`Server in ascolto su http://localhost:${PORT}`);
+  restoreVotingSyncTimers();
 });
 
 async function handleWalletNfts(requestUrl, res) {
@@ -364,6 +365,7 @@ async function handleAdminReset(req, res) {
         await commitVotesCsvToGit(`proposal reset ${proposal.proposal_id}`, {
           proposal,
           allowStatuses: ["scheduled", "active", "ended"],
+          skipMetadataRewrite: true,
         });
       });
     }
@@ -1217,6 +1219,16 @@ function stopVotingSyncTimers() {
   voteSyncState.proposalId = null;
 }
 
+function restoreVotingSyncTimers() {
+  const proposal = readProposal();
+
+  if (!proposal) {
+    return;
+  }
+
+  configureVotingSyncTimers(proposal);
+}
+
 async function commitVotesCsvToGit(message, options = {}) {
   const proposal = options.proposal || readProposal();
   const proposalCsvPath = getProposalCsvPath(proposal);
@@ -1232,11 +1244,13 @@ async function commitVotesCsvToGit(message, options = {}) {
     return;
   }
 
-  rewriteProposalMetadata(proposal, ADMIN_WALLET, {
-    lifecycleTimestamp: status === "ended"
-      ? Number(proposal.end_time) || Math.floor(Date.now() / 1000)
-      : Math.floor(Date.now() / 1000),
-  });
+  if (!options.skipMetadataRewrite) {
+    rewriteProposalMetadata(proposal, ADMIN_WALLET, {
+      lifecycleTimestamp: status === "ended"
+        ? Number(proposal.end_time) || Math.floor(Date.now() / 1000)
+        : Math.floor(Date.now() / 1000),
+    });
+  }
 
   await runGitCommand(["add", getProposalCsvRelativePath(proposal)]);
 
