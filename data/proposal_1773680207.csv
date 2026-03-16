@@ -1,0 +1,16 @@
+proposal_created_by,5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc
+proposal_created_timestamp,1773680207
+proposal_created_iso,2026-03-16T16:56:47.000Z
+proposal_lifecycle_status,Active
+proposal_lifecycle_updated_timestamp,1773680217
+proposal_lifecycle_updated_iso,2026-03-16T16:56:57.000Z
+voting_start_timestamp,1773680160
+voting_start_iso,2026-03-16T16:56:00.000Z
+voting_end_timestamp,1773680700
+voting_end_iso,2026-03-16T17:05:00.000Z
+proposal_title,q
+proposal_description,q
+proposal_options,a | b | c
+
+wallet,solnauta_nfts,torrino_nfts,a,b,c,voting_power,timestamp,signature
+85jTBVsk8sDA35LocJdTh41EN2Eep59RQ1jUw9EExsCw,https://solscan.io/token/22nYjuJhonLHSnLaZzoCFuJoEPr2Sh2TUEeLDXBgAZ39,https://solscan.io/token/DmBFZuqmb6TvSrbm8b3vbwwpddpBcU5PNefwfrNcBpjv,0.0,1.0,0.0,1.0,1773680216,2nngMW8zNwhb9qBie8ijptrDjqUXHuoSw84Dyq2NnD792RJdqHN2YksTaKZmKa5btndbFUjXK5JZ8G4gjVhgRfC5
