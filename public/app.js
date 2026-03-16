@@ -73,8 +73,7 @@ async function connectWallet() {
 
   try {
     setConnectBusy(true, "Connessione wallet in corso...");
-    const response = await provider.connect();
-    const walletAddress = response.publicKey.toString();
+    const walletAddress = await connectWalletProvider(provider);
 
     state.walletAddress = walletAddress;
     ui.walletAddress.textContent = walletAddress;
@@ -113,23 +112,78 @@ function initializeWalletStatus() {
 }
 
 function getWalletProvider() {
-  if (window.phantom && window.phantom.solana && window.phantom.solana.isPhantom) {
-    return window.phantom.solana;
+  const providers = getInstalledWalletProviders();
+  const connectedProvider = providers.find((provider) => provider && provider.isConnected);
+
+  if (connectedProvider) {
+    return connectedProvider;
   }
 
-  if (window.solflare && (window.solflare.isSolflare || typeof window.solflare.connect === "function")) {
-    return window.solflare;
+  return providers[0] || null;
+}
+
+function getInstalledWalletProviders() {
+  const providers = [];
+  const knownProviders = [
+    window.phantom && window.phantom.solana,
+    window.solflare,
+    window.solana,
+  ];
+
+  if (window.solana && Array.isArray(window.solana.providers)) {
+    knownProviders.push(...window.solana.providers);
   }
 
-  if (window.solana && (window.solana.isPhantom || window.solana.isSolflare)) {
-    return window.solana;
+  for (const provider of knownProviders) {
+    if (
+      !provider ||
+      typeof provider.connect !== "function" ||
+      (!provider.isPhantom && !provider.isSolflare)
+    ) {
+      continue;
+    }
+
+    if (!providers.includes(provider)) {
+      providers.push(provider);
+    }
   }
 
-  return null;
+  providers.sort((left, right) => {
+    if (left.isConnected && !right.isConnected) {
+      return -1;
+    }
+
+    if (!left.isConnected && right.isConnected) {
+      return 1;
+    }
+
+    if (left.isPhantom && !right.isPhantom) {
+      return -1;
+    }
+
+    if (!left.isPhantom && right.isPhantom) {
+      return 1;
+    }
+
+    return 0;
+  });
+
+  return providers;
+}
+
+async function connectWalletProvider(provider) {
+  const response = await provider.connect({ onlyIfTrusted: false });
+  const publicKey = response && response.publicKey ? response.publicKey : provider.publicKey;
+
+  if (!publicKey || typeof publicKey.toString !== "function") {
+    throw new Error("WALLET_CONNECTION_UNAVAILABLE");
+  }
+
+  return publicKey.toString();
 }
 
 function getMissingWalletMessage() {
-  if (window.solana || window.solflare) {
+  if (getInstalledWalletProviders().length > 0 || window.solana || window.solflare) {
     return "E' stato rilevato un wallet Solana, ma Phantom o Solflare non sono disponibili come provider attivi.";
   }
 

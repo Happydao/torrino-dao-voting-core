@@ -323,6 +323,22 @@ p {
   font-weight: 600;
 }
 
+.nft-list__link {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 0.14em;
+}
+
+.nft-list__link:hover,
+.nft-list__link:focus-visible {
+  color: var(--text);
+  text-decoration-thickness: 2px;
+}
+
+.nft-list__status {
+  color: inherit;
+}
+
 .nft-list__item--available {
   color: #5ff0a6;
 }
