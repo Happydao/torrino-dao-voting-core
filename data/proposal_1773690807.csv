@@ -1,7 +1,7 @@
 proposal_created_by,5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc
 proposal_created_timestamp,1773690807
 proposal_created_iso,2026-03-16T19:53:27.000Z
-proposal_lifecycle_status,Completed
+proposal_lifecycle_status,Voting completed successfully
 proposal_lifecycle_updated_timestamp,1773691020
 proposal_lifecycle_updated_iso,2026-03-16T19:57:00.000Z
 voting_start_timestamp,1773690780
@@ -11,5 +11,8 @@ voting_end_iso,2026-03-16T19:57:00.000Z
 proposal_title,4
 proposal_description,4
 proposal_options,A | B
+torrino_participation_rate,0.0%
+solnauta_participation_rate,0.0%
+total_voting_power_participation_rate,0.0%
 
 wallet,solnauta_nfts,torrino_nfts,A,B,voting_power,timestamp,signature
