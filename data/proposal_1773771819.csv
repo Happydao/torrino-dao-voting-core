@@ -1,0 +1,18 @@
+proposal_created_by,5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc
+proposal_created_timestamp,1773771819
+proposal_created_iso,2026-03-17T18:23:39.000Z
+proposal_lifecycle_status,Voting in progress
+proposal_lifecycle_updated_timestamp,1773771829
+proposal_lifecycle_updated_iso,2026-03-17T18:23:49.000Z
+voting_start_timestamp,1773771780
+voting_start_iso,2026-03-17T18:23:00.000Z
+voting_end_timestamp,1773775380
+voting_end_iso,2026-03-17T19:23:00.000Z
+proposal_title,Secondo test di votazione
+proposal_description,Scegliere un opzione a caso
+proposal_options,Opzione A | Opzione B | Opzione C | Opzione D
+torrino_participation_rate,0.0%
+solnauta_participation_rate,0.0%
+total_voting_power_participation_rate,0.0%
+
+wallet,solnauta_nfts,torrino_nfts,Opzione A,Opzione B,Opzione C,Opzione D,voting_power,timestamp,signed_message,signature
