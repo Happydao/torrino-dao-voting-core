@@ -15,17 +15,15 @@ Prima di eseguire:
 - `Start Voting`
 - `Reset Voting`
 
-il backend genera un challenge monouso con:
+l'admin deve firmare il messaggio:
 
-- tipo di azione
-- wallet admin
-- nonce casuale
-- timestamp
-- hash del payload amministrativo
+```text
+Confirm admin action for Torrino DAO voting
+```
 
 Se la firma non viene approvata, l'azione viene annullata.
 
-Questo impedisce il riutilizzo di vecchie firme e aggiunge un secondo livello di conferma lato wallet prima di creare o resettare una proposta.
+Questo aggiunge un secondo livello di conferma lato wallet prima di creare o resettare una proposta.
 
 ### 2. Wallet admin autorizzati
 
