@@ -2,8 +2,8 @@ proposal_created_by,5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc
 proposal_created_timestamp,1773764060
 proposal_created_iso,2026-03-17T16:14:20.000Z
 proposal_lifecycle_status,Voting in progress
-proposal_lifecycle_updated_timestamp,1773767060
-proposal_lifecycle_updated_iso,2026-03-17T17:04:20.000Z
+proposal_lifecycle_updated_timestamp,1773767660
+proposal_lifecycle_updated_iso,2026-03-17T17:14:20.000Z
 voting_start_timestamp,1773763980
 voting_start_iso,2026-03-17T16:13:00.000Z
 voting_end_timestamp,1773771180
@@ -12,7 +12,7 @@ proposal_title,votazione di test
 proposal_description,votazione di test
 proposal_options,a | b | c
 torrino_participation_rate,2.8%
-solnauta_participation_rate,1.5%
+solnauta_participation_rate,1.6%
 total_voting_power_participation_rate,2.6%
 
 wallet,solnauta_nfts,torrino_nfts,a,b,c,voting_power,timestamp,signature
@@ -38,3 +38,4 @@ https://solscan.io/token/8C5SKRdUqA8fGFhMubNcTMNXxgsC9cvrkTFvZgkpV1it
 https://solscan.io/token/7bLQda47oLTSnmc32fGD8WQXjZQfzk5NRC5DrzD1to3i
 https://solscan.io/token/3BYcpdgsSVX5wCZxKAEZi5SZZVypZQqhTCXCTaqTHJuK
 https://solscan.io/token/315RMGLJgWjDJDA7SSXbf8SdrYLWxo8Fxqocv9QvSphW",6.5,0.0,0.0,6.5,1773766122,4UwnC6nYQbm7iW2Nqc397RubhSPebEbC33hYpjdFQQdbhVNNf7T1Zp5HLm4BQY2QXMzLWaxNLW8w3qHjJgQSgUbz
+7QhxEMfvPeGdiKNzduaXWW8e81NKagFMQrfYJtejmMb6,https://solscan.io/token/9taRMkivY3URdyqPwBa2AfEsPt5vvhNqMdBundPSAA7m,,0.0,0.1,0.0,0.1,1773767618,2d77pXHQexpkQoj8dVEnfxuFYyhEnYNA2weDcbhV6iNytJC8LkcjWuacZdw8kVgzar19cL2uudSxmKRuqjQsrdZH
