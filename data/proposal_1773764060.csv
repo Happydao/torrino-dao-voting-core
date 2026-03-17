@@ -2,8 +2,8 @@ proposal_created_by,5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc
 proposal_created_timestamp,1773764060
 proposal_created_iso,2026-03-17T16:14:20.000Z
 proposal_lifecycle_status,Voting in progress
-proposal_lifecycle_updated_timestamp,1773768260
-proposal_lifecycle_updated_iso,2026-03-17T17:24:20.000Z
+proposal_lifecycle_updated_timestamp,1773768860
+proposal_lifecycle_updated_iso,2026-03-17T17:34:20.000Z
 voting_start_timestamp,1773763980
 voting_start_iso,2026-03-17T16:13:00.000Z
 voting_end_timestamp,1773771180
@@ -11,9 +11,9 @@ voting_end_iso,2026-03-17T18:13:00.000Z
 proposal_title,votazione di test
 proposal_description,votazione di test
 proposal_options,a | b | c
-torrino_participation_rate,4.4%
+torrino_participation_rate,5.0%
 solnauta_participation_rate,2.3%
-total_voting_power_participation_rate,4.0%
+total_voting_power_participation_rate,4.5%
 
 wallet,solnauta_nfts,torrino_nfts,a,b,c,voting_power,timestamp,signature
 85jTBVsk8sDA35LocJdTh41EN2Eep59RQ1jUw9EExsCw,https://solscan.io/token/22nYjuJhonLHSnLaZzoCFuJoEPr2Sh2TUEeLDXBgAZ39,https://solscan.io/token/DmBFZuqmb6TvSrbm8b3vbwwpddpBcU5PNefwfrNcBpjv,1.0,0.0,0.0,1.0,1773765278,YhtdzhHDbzcm57dMGJrpduuv7q9MeQwjqt1a12GhggYuPsY7YFJSvvA8G1NG1XNLdGtq9BvLZrvWqBPN2rPP3Vv
@@ -51,3 +51,6 @@ https://solscan.io/token/Fw9h39e1BZdR6a8cVPS78zEhw26FdHNKfyh6zJdxBLiH
 https://solscan.io/token/BpuyN7ZhPgVs11fSa6uf6UfKY4VfzH9pb54Z8p9uLaQS","https://solscan.io/token/DfrChBCFPRGiMu8BPfhaVUgbLhhKYt2aJ5g1iyMPkEfy
 https://solscan.io/token/D8xXbuk1cipRgDGow1Gcjvg4voFTggaSs3fgUgAJfuPf
 https://solscan.io/token/BDEcAsW6p5CTkDitf3omoDyvTPU5y6djcQPUjhrqJmqz",0.0,3.0,0.0,3.0,1773768170,4tS2vT2VgAcdDCQLsBpzWFcrJzWRoyxrMEmGstswmcBqP4QDkmwxwTVRBEDsV1KGRv4bKBC6wFaV758MXAiWpeN7
+FHFUqsGWK23cGCQqjXcCZ82vwMjZAkzMzwcPTYWhbzRD,,"https://solscan.io/token/6UJ28w7CN8CrcYCjiyAA7yaHdKMR1eaRKfRmDU7JDsPy
+https://solscan.io/token/5pui6547Ke55Pw9Cr4GNtzvk7hhffPmsn8mNQo6vf8KU
+https://solscan.io/token/2xMd9Ghydr5ZsnjSrbrkayhJkD61yQAzxUX15126Kg9x",2.7,0.0,0.0,2.7,1773768695,5cdLpHXqiBXaTwKF9kKf2zLHtjNL7hFTNs1T9g8Gf64JYKfC83B8HWUaCUo1reeSqQhvAxjwuNeoNjeoBCBpJdLD
