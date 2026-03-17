@@ -348,7 +348,7 @@ async function submitVote(voteOption) {
 
   if ((state.walletData.gen1_count + state.walletData.gen2_count) === 0) {
     setStatus("The connected wallet does not hold valid NFTs for voting.");
-    showVoteFeedback("An error occurred while submitting the vote.", "error");
+    showVoteFeedback("This wallet does not hold any eligible NFTs for voting.", "error");
     return;
   }
 
