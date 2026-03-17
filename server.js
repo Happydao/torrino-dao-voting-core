@@ -251,6 +251,7 @@ async function handleVote(req, res) {
         vote,
         votingPower,
         timestamp: Math.floor(Date.now() / 1000),
+        signedMessage,
         signature,
       });
       registerUsedMints(usableNfts.map((nft) => nft.mint));
@@ -793,6 +794,7 @@ function appendVoteRow(row) {
     ...optionValues,
     escapeCsvValue(formatDecimal(row.votingPower)),
     escapeCsvValue(String(row.timestamp)),
+    escapeCsvValue(row.signedMessage || ""),
     escapeCsvValue(row.signature),
   ].join(",") + "\n";
 
@@ -1000,6 +1002,7 @@ function readVotesCsv() {
     "torrino_nfts",
     "voting_power",
     "timestamp",
+    "signed_message",
     "signature",
   ].includes(column));
 
@@ -1071,6 +1074,7 @@ function getVotesCsvHeader(proposal) {
     ...getOptionColumns(proposal).map((option) => escapeCsvValue(option)),
     "voting_power",
     "timestamp",
+    "signed_message",
     "signature",
   ];
 
