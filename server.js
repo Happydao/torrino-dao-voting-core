@@ -18,6 +18,9 @@ const PUBLIC_DIR = path.join(__dirname, "public");
 const DATA_DIR = path.join(__dirname, "data");
 const USED_MINTS_PATH = path.join(DATA_DIR, "used-mints.json");
 const PROPOSAL_PATH = path.join(DATA_DIR, "proposal.json");
+const TORRINO_TOTAL_NFTS = 500;
+const SOLNAUTA_TOTAL_NFTS = 888;
+const TOTAL_VOTING_POWER = 538.8;
 const GIT_UPDATE_INTERVAL_MS = 10 * 60 * 1000;
 const NFT_CACHE_TTL_MS = 45 * 1000;
 const RATE_LIMIT_WINDOW_MS = 10 * 1000;
@@ -362,7 +365,7 @@ async function handleAdminReset(req, res) {
       await withMutationLock(async () => {
         stopVotingSyncTimers();
         markProposalCsvAsReset(proposal, adminWallet, Math.floor(Date.now() / 1000));
-        await commitVotesCsvToGit(`proposal reset ${proposal.proposal_id}`, {
+        await commitVotesCsvToGit(buildLifecycleCommitMessage("stopped", proposal, adminWallet), {
           proposal,
           allowStatuses: ["scheduled", "active", "ended"],
           skipMetadataRewrite: true,
@@ -716,6 +719,7 @@ function buildProposalMetadataLines(proposal, adminWallet, metadataOptions = {})
     resetTimestamp,
     lifecycleTimestamp: metadataOptions.lifecycleTimestamp,
   });
+  const participation = getProposalParticipationMetadata(proposal);
   const metadataRows = [
     ["proposal_created_by", adminWallet],
     ["proposal_created_timestamp", createdTimestamp],
@@ -730,6 +734,9 @@ function buildProposalMetadataLines(proposal, adminWallet, metadataOptions = {})
     ["proposal_title", proposal.title],
     ["proposal_description", proposal.description],
     ["proposal_options", proposal.options.join(" | ")],
+    ["torrino_participation_rate", participation.torrinoParticipationRate],
+    ["solnauta_participation_rate", participation.solnautaParticipationRate],
+    ["total_voting_power_participation_rate", participation.totalVotingPowerParticipationRate],
   ];
 
   return metadataRows.map(([label, value]) => `${escapeCsvValue(label)},${escapeCsvValue(value)}`);
@@ -1140,7 +1147,7 @@ function configureVotingSyncTimers(proposal) {
 
   voteSyncState.initialCommitTimeoutId = setTimeout(() => {
     console.log("[voting-sync] initial commit", { proposalId: proposal.proposal_id });
-    commitVotesCsvToGit(`proposal created ${proposal.proposal_id}`, {
+    commitVotesCsvToGit(buildLifecycleCommitMessage("active", proposal), {
       proposal,
       allowStatuses: ["scheduled", "active", "ended"],
     }).catch((error) => {
@@ -1198,7 +1205,7 @@ function startPeriodicVotingSync(proposal) {
     }
 
     console.log("[voting-sync] periodic tick commit", { proposalId: proposal.proposal_id });
-    commitVotesCsvToGit(`voting update ${Math.floor(Date.now() / 1000)}`, {
+    commitVotesCsvToGit(buildLifecycleCommitMessage("active", proposal), {
       proposal,
       allowStatuses: ["active"],
     }).catch((error) => {
@@ -1221,7 +1228,7 @@ function scheduleFinalVotingCommit(proposal) {
     status: getProposalStatus(proposal),
   });
   stopVotingSyncTimers();
-  commitVotesCsvToGit(`final voting results ${proposal.proposal_id}`, {
+  commitVotesCsvToGit(buildLifecycleCommitMessage("completed", proposal), {
     proposal,
     allowStatuses: ["ended"],
   }).catch((error) => {
@@ -1398,21 +1405,21 @@ function getProposalLifecycleMetadata(proposal, adminWallet, metadataOptions = {
 
   if (resetTimestamp > 0) {
     return {
-      status: `Stopped by admin: ${adminWallet}`,
+      status: `Voting stopped by admin ${adminWallet}`,
       timestamp: resetTimestamp,
     };
   }
 
   if (getProposalStatus(proposal) === "ended") {
     return {
-      status: "Completed",
+      status: "Voting completed successfully",
       timestamp: lifecycleTimestamp,
     };
   }
 
   if (getProposalStatus(proposal) === "active") {
     return {
-      status: "Active",
+      status: "Voting in progress",
       timestamp: lifecycleTimestamp,
     };
   }
@@ -1421,6 +1428,50 @@ function getProposalLifecycleMetadata(proposal, adminWallet, metadataOptions = {
     status: "Scheduled",
     timestamp: lifecycleTimestamp,
   };
+}
+
+function buildLifecycleCommitMessage(statusKey, proposal, adminWallet = "") {
+  if (!proposal || !proposal.proposal_id) {
+    return "voting status update";
+  }
+
+  if (statusKey === "stopped") {
+    return `voting stopped by admin ${adminWallet} ${proposal.proposal_id}`;
+  }
+
+  if (statusKey === "completed") {
+    return `voting completed successfully ${proposal.proposal_id}`;
+  }
+
+  return `voting in progress ${proposal.proposal_id}`;
+}
+
+function getProposalParticipationMetadata(proposal) {
+  const proposalCsvPath = getProposalCsvPath(proposal);
+
+  if (!proposal || !proposalCsvPath || !fs.existsSync(proposalCsvPath)) {
+    return {
+      torrinoParticipationRate: "0.0%",
+      solnautaParticipationRate: "0.0%",
+      totalVotingPowerParticipationRate: "0.0%",
+    };
+  }
+
+  const results = calculateResults();
+
+  return {
+    torrinoParticipationRate: formatParticipationRate(results.torrino_voted, TORRINO_TOTAL_NFTS),
+    solnautaParticipationRate: formatParticipationRate(results.solnauta_voted, SOLNAUTA_TOTAL_NFTS),
+    totalVotingPowerParticipationRate: formatParticipationRate(results.total_power, TOTAL_VOTING_POWER),
+  };
+}
+
+function formatParticipationRate(value, total) {
+  if (!Number.isFinite(total) || total <= 0) {
+    return "0.0%";
+  }
+
+  return `${((Number(value || 0) / total) * 100).toFixed(1)}%`;
 }
 
 function getProposalCsvPath(proposal) {
