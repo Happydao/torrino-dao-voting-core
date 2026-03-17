@@ -27,7 +27,7 @@ const RATE_LIMIT_WINDOW_MS = 10 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 20;
 const JSON_BODY_MAX_BYTES = 16 * 1024;
 const VOTE_SIGNATURE_MAX_AGE_MS = 5 * 60 * 1000;
-const ADMIN_CONFIRMATION_MESSAGE = "Confirm admin action for Torrino DAO voting";
+const ADMIN_CHALLENGE_MAX_AGE_MS = 5 * 60 * 1000;
 const COLLECTIONS = {
   torrino: {
     name: "Torrino DAO",
@@ -75,6 +75,7 @@ const voteSyncState = {
 };
 const nftOwnerCache = new Map();
 const rateLimitStore = new Map();
+const adminChallengeStore = new Map();
 let mutationQueue = Promise.resolve();
 
 const server = http.createServer(async (req, res) => {
@@ -108,6 +109,11 @@ const server = http.createServer(async (req, res) => {
 
     if (requestUrl.pathname === "/api/admin/proposal") {
       await handleAdminProposal(req, res);
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/admin/challenge") {
+      await handleAdminChallenge(req, res);
       return;
     }
 
@@ -286,14 +292,10 @@ async function handleAdminProposal(req, res) {
   const body = await readJsonBody(req);
   const adminWallet = getString(body.admin_wallet);
   const adminSignature = getString(body.admin_signature);
+  const adminSignedMessage = getString(body.admin_signed_message);
 
   if (!isAuthorizedAdminWallet(adminWallet)) {
     sendJson(res, 403, { error: "UNAUTHORIZED_ADMIN" });
-    return;
-  }
-
-  if (!verifyWalletSignature(adminWallet, ADMIN_CONFIRMATION_MESSAGE, adminSignature)) {
-    sendJson(res, 403, { error: "INVALID_ADMIN_SIGNATURE" });
     return;
   }
 
@@ -315,13 +317,27 @@ async function handleAdminProposal(req, res) {
     return;
   }
 
-  const proposal = {
-    proposal_id: String(Math.floor(Date.now() / 1000)),
+  const proposalDetails = {
     title,
     description,
     options,
-    start_time: Math.floor(startTime),
-    end_time: Math.floor(endTime),
+    startTime: Math.floor(startTime),
+    endTime: Math.floor(endTime),
+  };
+  const expectedPayloadHash = getAdminActionPayloadHash("start_voting", proposalDetails);
+
+  if (!verifyAdminRequest(adminWallet, "start_voting", expectedPayloadHash, adminSignedMessage, adminSignature)) {
+    sendJson(res, 403, { error: "INVALID_ADMIN_SIGNATURE" });
+    return;
+  }
+
+  const proposal = {
+    proposal_id: String(Math.floor(Date.now() / 1000)),
+    title: proposalDetails.title,
+    description: proposalDetails.description,
+    options: proposalDetails.options,
+    start_time: proposalDetails.startTime,
+    end_time: proposalDetails.endTime,
     status: getStatusForTimes(startTime, endTime),
   };
 
@@ -348,30 +364,44 @@ async function handleAdminReset(req, res) {
   const body = await readJsonBody(req);
   const adminWallet = getString(body.admin_wallet);
   const adminSignature = getString(body.admin_signature);
+  const adminSignedMessage = getString(body.admin_signed_message);
 
   if (!isAuthorizedAdminWallet(adminWallet)) {
     sendJson(res, 403, { error: "UNAUTHORIZED_ADMIN" });
     return;
   }
 
-  if (!verifyWalletSignature(adminWallet, ADMIN_CONFIRMATION_MESSAGE, adminSignature)) {
-    sendJson(res, 403, { error: "INVALID_ADMIN_SIGNATURE" });
-    return;
-  }
-
   try {
     const proposal = readProposal();
+    const resetTargetProposalId = proposal && proposal.proposal_id ? String(proposal.proposal_id) : "no-proposal";
+
+    if (!verifyAdminRequest(
+      adminWallet,
+      "reset_voting",
+      getAdminActionPayloadHash("reset_voting", { proposalId: resetTargetProposalId }),
+      adminSignedMessage,
+      adminSignature
+    )) {
+      sendJson(res, 403, { error: "INVALID_ADMIN_SIGNATURE" });
+      return;
+    }
 
     if (proposal) {
-      await withMutationLock(async () => {
-        stopVotingSyncTimers();
-        markProposalCsvAsReset(proposal, adminWallet, Math.floor(Date.now() / 1000));
-        await commitVotesCsvToGit(buildLifecycleCommitMessage("stopped", proposal, adminWallet), {
-          proposal,
-          allowStatuses: ["scheduled", "active", "ended"],
-          skipMetadataRewrite: true,
+      const proposalStatus = getProposalStatus(proposal);
+
+      if (proposalStatus !== "ended") {
+        await withMutationLock(async () => {
+          stopVotingSyncTimers();
+          markProposalCsvAsReset(proposal, adminWallet, Math.floor(Date.now() / 1000));
+          await commitVotesCsvToGit(buildLifecycleCommitMessage("stopped", proposal, adminWallet), {
+            proposal,
+            allowStatuses: ["scheduled", "active"],
+            skipMetadataRewrite: true,
+          });
         });
-      });
+      } else {
+        stopVotingSyncTimers();
+      }
     }
 
     await withMutationLock(() => {
@@ -384,6 +414,47 @@ async function handleAdminReset(req, res) {
     console.error(error);
     sendJson(res, 500, { error: "SERVER_ERROR" });
   }
+}
+
+async function handleAdminChallenge(req, res) {
+  if (req.method !== "POST") {
+    sendJson(res, 405, { error: "SERVER_ERROR" });
+    return;
+  }
+
+  const body = await readJsonBody(req);
+  const adminWallet = getString(body.admin_wallet);
+  const action = getString(body.action);
+
+  if (!isAuthorizedAdminWallet(adminWallet)) {
+    sendJson(res, 403, { error: "UNAUTHORIZED_ADMIN" });
+    return;
+  }
+
+  if (!["start_voting", "reset_voting"].includes(action)) {
+    sendJson(res, 400, { error: "INVALID_ADMIN_ACTION" });
+    return;
+  }
+
+  let payloadHash = "";
+
+  if (action === "start_voting") {
+    const proposalDetails = getNormalizedAdminProposalDetails(body);
+    payloadHash = getAdminActionPayloadHash(action, proposalDetails);
+  } else {
+    const proposal = readProposal();
+    payloadHash = getAdminActionPayloadHash(action, {
+      proposalId: proposal && proposal.proposal_id ? String(proposal.proposal_id) : "no-proposal",
+    });
+  }
+
+  const challenge = createAdminChallenge(adminWallet, action, payloadHash);
+  sendJson(res, 200, {
+    action,
+    payload_hash: payloadHash,
+    message: challenge.message,
+    expires_at: challenge.expiresAt,
+  });
 }
 
 async function getAllAssetsByOwner(ownerAddress) {
@@ -854,6 +925,118 @@ function isValidMint(value) {
 
 function isAuthorizedAdminWallet(walletAddress) {
   return typeof walletAddress === "string" && AUTHORIZED_ADMIN_WALLETS.has(walletAddress);
+}
+
+function getNormalizedAdminProposalDetails(value) {
+  return {
+    title: getString(value && value.title),
+    description: getString(value && value.description),
+    options: Array.isArray(value && value.options)
+      ? value.options.map(getString).filter(Boolean).slice(0, 5)
+      : [],
+    startTime: Math.floor(Number(value && value.start_time)),
+    endTime: Math.floor(Number(value && value.end_time)),
+  };
+}
+
+function getAdminActionPayloadHash(action, details = {}) {
+  const normalizedPayload = action === "start_voting"
+    ? {
+      action,
+      title: getString(details.title),
+      description: getString(details.description),
+      options: Array.isArray(details.options) ? details.options.map(getString).filter(Boolean).slice(0, 5) : [],
+      start_time: Number.isFinite(details.startTime) ? Math.floor(details.startTime) : null,
+      end_time: Number.isFinite(details.endTime) ? Math.floor(details.endTime) : null,
+    }
+    : {
+      action,
+      proposal_id: getString(details.proposalId) || "no-proposal",
+    };
+
+  return crypto
+    .createHash("sha256")
+    .update(JSON.stringify(normalizedPayload))
+    .digest("hex");
+}
+
+function buildAdminActionMessage(action, walletAddress, payloadHash, nonce, timestampMs) {
+  return [
+    "Torrino DAO admin action",
+    `action:${action}`,
+    `wallet:${walletAddress}`,
+    `payload:${payloadHash}`,
+    `nonce:${nonce}`,
+    `timestamp:${timestampMs}`,
+  ].join(":");
+}
+
+function createAdminChallenge(walletAddress, action, payloadHash) {
+  cleanupAdminChallengeStore();
+  const nonce = crypto.randomBytes(16).toString("hex");
+  const timestampMs = Date.now();
+  const expiresAt = timestampMs + ADMIN_CHALLENGE_MAX_AGE_MS;
+  const normalizedPayloadHash = getString(payloadHash);
+  const message = buildAdminActionMessage(action, walletAddress, normalizedPayloadHash, nonce, timestampMs);
+
+  adminChallengeStore.set(nonce, {
+    walletAddress,
+    action,
+    payloadHash: normalizedPayloadHash,
+    timestampMs,
+    expiresAt,
+  });
+
+  return {
+    message,
+    expiresAt,
+  };
+}
+
+function verifyAdminRequest(walletAddress, action, payloadHash, signedMessage, signature) {
+  if (!verifyWalletSignature(walletAddress, signedMessage, signature)) {
+    return false;
+  }
+
+  cleanupAdminChallengeStore();
+  const match = signedMessage.match(
+    /^Torrino DAO admin action:action:([^:]+):wallet:([1-9A-HJ-NP-Za-km-z]+):payload:([a-f0-9]+):nonce:([a-f0-9]+):timestamp:(\d+)$/
+  );
+
+  if (!match) {
+    return false;
+  }
+
+  const [, signedAction, signedWalletAddress, signedPayloadHash, signedNonce, signedTimestamp] = match;
+  const timestampMs = Number(signedTimestamp);
+  const storedChallenge = adminChallengeStore.get(signedNonce);
+
+  if (
+    signedAction !== action ||
+    signedWalletAddress !== walletAddress ||
+    signedPayloadHash !== payloadHash ||
+    !Number.isFinite(timestampMs) ||
+    Math.abs(Date.now() - timestampMs) > ADMIN_CHALLENGE_MAX_AGE_MS ||
+    !storedChallenge ||
+    storedChallenge.walletAddress !== walletAddress ||
+    storedChallenge.action !== action ||
+    storedChallenge.payloadHash !== payloadHash ||
+    storedChallenge.timestampMs !== timestampMs ||
+    storedChallenge.expiresAt < Date.now()
+  ) {
+    return false;
+  }
+
+  adminChallengeStore.delete(signedNonce);
+  return true;
+}
+
+function cleanupAdminChallengeStore(now = Date.now()) {
+  for (const [nonce, entry] of adminChallengeStore.entries()) {
+    if (!entry || entry.expiresAt < now) {
+      adminChallengeStore.delete(nonce);
+    }
+  }
 }
 
 function verifyVoteRequest(walletAddress, voteOption, signedMessage, signature) {
@@ -1610,7 +1793,7 @@ function serveStaticFile(requestPath, res, headOnly) {
 }
 
 function isRateLimited(req, pathname) {
-  if (!["/api/wallet-nfts", "/api/vote", "/api/admin/proposal", "/api/admin/reset-voting"].includes(pathname)) {
+  if (!["/api/wallet-nfts", "/api/vote", "/api/admin/challenge", "/api/admin/proposal", "/api/admin/reset-voting"].includes(pathname)) {
     return false;
   }
 

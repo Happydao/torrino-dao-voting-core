@@ -2,7 +2,6 @@ const AUTHORIZED_ADMIN_WALLETS = new Set([
   "5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc",
   "4hcKvjU4EMzz5TSjgk7CMwhTwy4gXTuhdEYHyd5Shaz8",
 ]);
-const ADMIN_CONFIRMATION_MESSAGE = "Confirm admin action for Torrino DAO voting";
 const APP_BASE_PATH = "/torrino.dao.voting";
 const API_BASE_PATH = `${APP_BASE_PATH}/api`;
 const textEncoder = new TextEncoder();
@@ -147,7 +146,9 @@ async function startVoting() {
   try {
     setAdminBusy(true, "Signing...", "Signing...");
     setActionStatus("Awaiting wallet signature...", "");
-    payload.admin_signature = await confirmAdminAction();
+    const adminAuthorization = await confirmAdminAction("start_voting", payload);
+    payload.admin_signature = adminAuthorization.signature;
+    payload.admin_signed_message = adminAuthorization.message;
     setAdminBusy(true, "Saving...", "Stop Voting");
     setActionStatus("Signature confirmed. Starting voting...", "");
     const response = await fetch(`${API_BASE_PATH}/admin/proposal`, {
@@ -209,7 +210,7 @@ async function resetVoting() {
   try {
     setAdminBusy(true, "Start Voting", "Signing...");
     setActionStatus("Awaiting wallet signature...", "");
-    const adminSignature = await confirmAdminAction();
+    const adminAuthorization = await confirmAdminAction("reset_voting");
     setAdminBusy(true, "Start Voting", "Working...");
     setActionStatus("Signature confirmed. Resetting voting...", "");
     const response = await fetch(`${API_BASE_PATH}/admin/reset-voting`, {
@@ -217,7 +218,8 @@ async function resetVoting() {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         admin_wallet: state.adminWallet,
-        admin_signature: adminSignature,
+        admin_signature: adminAuthorization.signature,
+        admin_signed_message: adminAuthorization.message,
       }),
     });
     const result = await response.json().catch(() => null);
@@ -361,7 +363,7 @@ function toUnixTimestamp(value) {
   return Number.isFinite(timestamp) ? Math.floor(timestamp / 1000) : NaN;
 }
 
-async function confirmAdminAction() {
+async function confirmAdminAction(action, payload = {}) {
   const provider = state.adminProvider || getWalletProvider();
 
   if (!provider || typeof provider.signMessage !== "function") {
@@ -369,7 +371,22 @@ async function confirmAdminAction() {
   }
 
   try {
-    const encodedMessage = textEncoder.encode(ADMIN_CONFIRMATION_MESSAGE);
+    const challengeResponse = await fetch(`${API_BASE_PATH}/admin/challenge`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        admin_wallet: state.adminWallet,
+        action,
+        ...payload,
+      }),
+    });
+    const challengePayload = await challengeResponse.json().catch(() => null);
+
+    if (!challengeResponse.ok || !challengePayload || !challengePayload.message) {
+      throw new Error(challengePayload && challengePayload.error ? challengePayload.error : "SERVER_ERROR");
+    }
+
+    const encodedMessage = textEncoder.encode(challengePayload.message);
     const signed = await provider.signMessage(encodedMessage, "utf8");
     const signatureBytes = extractSignatureBytes(signed);
 
@@ -377,7 +394,10 @@ async function confirmAdminAction() {
       throw new Error("SIGNATURE_UNAVAILABLE");
     }
 
-    return bytesToBase58(signatureBytes);
+    return {
+      message: challengePayload.message,
+      signature: bytesToBase58(signatureBytes),
+    };
   } catch (error) {
     if (isSignatureRejected(error)) {
       throw new Error("SIGNATURE_REJECTED");
