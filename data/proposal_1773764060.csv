@@ -2,8 +2,8 @@ proposal_created_by,5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc
 proposal_created_timestamp,1773764060
 proposal_created_iso,2026-03-17T16:14:20.000Z
 proposal_lifecycle_status,Voting in progress
-proposal_lifecycle_updated_timestamp,1773770060
-proposal_lifecycle_updated_iso,2026-03-17T17:54:20.000Z
+proposal_lifecycle_updated_timestamp,1773770660
+proposal_lifecycle_updated_iso,2026-03-17T18:04:20.000Z
 voting_start_timestamp,1773763980
 voting_start_iso,2026-03-17T16:13:00.000Z
 voting_end_timestamp,1773771180
@@ -11,9 +11,9 @@ voting_end_iso,2026-03-17T18:13:00.000Z
 proposal_title,votazione di test
 proposal_description,votazione di test
 proposal_options,a | b | c
-torrino_participation_rate,5.0%
-solnauta_participation_rate,2.6%
-total_voting_power_participation_rate,4.6%
+torrino_participation_rate,5.2%
+solnauta_participation_rate,2.8%
+total_voting_power_participation_rate,4.8%
 
 wallet,solnauta_nfts,torrino_nfts,a,b,c,voting_power,timestamp,signature
 85jTBVsk8sDA35LocJdTh41EN2Eep59RQ1jUw9EExsCw,https://solscan.io/token/22nYjuJhonLHSnLaZzoCFuJoEPr2Sh2TUEeLDXBgAZ39,https://solscan.io/token/DmBFZuqmb6TvSrbm8b3vbwwpddpBcU5PNefwfrNcBpjv,1.0,0.0,0.0,1.0,1773765278,YhtdzhHDbzcm57dMGJrpduuv7q9MeQwjqt1a12GhggYuPsY7YFJSvvA8G1NG1XNLdGtq9BvLZrvWqBPN2rPP3Vv
@@ -57,3 +57,5 @@ https://solscan.io/token/2xMd9Ghydr5ZsnjSrbrkayhJkD61yQAzxUX15126Kg9x",2.7,0.0,0
 5C7wiRhLu6Mtux9uuK4QRmAvoWNuZf86kiJfCmEL2ZyV,"https://solscan.io/token/EqRju8VYoShUPWAnVTZWiavaYwcE2j6gijiZd6trLQoG
 https://solscan.io/token/CRWqr2EWhHcHHNRkzcpEeJNx3YCDGyfPXGfKLAyhGPJn
 https://solscan.io/token/MFTEu7Qds8XoQz7mSt6faUZeVKjhb6zTFocMDYdkXjq",,0.3,0.0,0.0,0.3,1773769653,4VZTRKAHij6EJC1aLUZgXikc4ujtULQjbJKVXkkztKExjKLrfD2Wpbzj6EZk9gfvfWwK9A3rsaQYE6yDb1TGYN5k
+4S9CvpCSKxpv6RtSHDXLXevJyaiYANtphDvrpsPYkaJ3,https://solscan.io/token/GswVRSiEjZQzoc7kzrXs9RmKU7qJGYdPoGRanmdt3qFN,,0.0,0.0,0.1,0.1,1773770554,4AJwiSQb4QEiactjywAnBD8Dh7XzomD3hJjq9wPeB8mgUDtAHqNENWpYKko7qjeb2awb2Ew1HcxqN6g55F2gPtuT
+3HnXg3W6gZTKscWmiEV6WiRkTZxHcgAY4LPaA8BN5TMV,https://solscan.io/token/E49EW9o1ex7qQDDYB9FJaubVsR1snCGSp1zoxkZwwC8v,https://solscan.io/token/3Mf6GMiEfrdwvFefEc5rPWqGgPnQ64eYTNBNdAnt8eHp,0.0,1.0,0.0,1.0,1773770602,4pFtv8tmFE2BK21doeoHTv4J8pwnV8DuRdCCLHYym8xYQaJnysMjaub1Kt2zXScknhivtnUGLTK7mwDFT9EbBqVY
