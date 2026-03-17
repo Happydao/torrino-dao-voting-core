@@ -1,0 +1,18 @@
+proposal_created_by,5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc
+proposal_created_timestamp,1773782766
+proposal_created_iso,2026-03-17T21:26:06.000Z
+proposal_lifecycle_status,Voting in progress
+proposal_lifecycle_updated_timestamp,1773782776
+proposal_lifecycle_updated_iso,2026-03-17T21:26:16.000Z
+voting_start_timestamp,1773782700
+voting_start_iso,2026-03-17T21:25:00.000Z
+voting_end_timestamp,1773782820
+voting_end_iso,2026-03-17T21:27:00.000Z
+proposal_title,Quinto test scegli l'opzione
+proposal_description,scegli l'opzione
+proposal_options,A | B | C
+torrino_participation_rate,0.0%
+solnauta_participation_rate,0.0%
+total_voting_power_participation_rate,0.0%
+
+wallet,solnauta_nfts,torrino_nfts,A,B,C,voting_power,timestamp,signed_message,signature
