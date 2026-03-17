@@ -96,18 +96,18 @@ async function connectWallet() {
   }
 
   try {
-    setConnectBusy(true, "Connessione wallet in corso...");
+    setConnectBusy(true, "Connecting wallet...");
     const walletAddress = await connectWalletProvider(provider);
 
     state.walletAddress = walletAddress;
     state.walletProvider = provider;
     ui.walletAddress.textContent = walletAddress;
-    setStatus("Wallet collegato. Lettura NFT dal backend in corso...");
+    setStatus("Wallet connected. Loading NFTs from the backend...");
 
     const walletData = await getWalletNfts(walletAddress);
     state.walletData = walletData;
     updateWalletDashboard(walletAddress, walletData);
-    setStatus("NFT caricati correttamente. Puoi votare se la proposta e' attiva.");
+    setStatus("NFTs loaded successfully. You can vote if the proposal is active.");
   } catch (error) {
     console.error(error);
     setStatus(getErrorMessage(error));
@@ -121,7 +121,7 @@ async function disconnectWallet() {
   const provider = state.walletProvider;
 
   try {
-    setConnectBusy(true, "Disconnessione wallet in corso...");
+    setConnectBusy(true, "Disconnecting wallet...");
     await disconnectWalletProvider(provider);
   } catch (error) {
     console.error(error);
@@ -136,17 +136,17 @@ function initializeWalletStatus() {
   updateConnectButtonLabel();
 
   if (getWalletProvider()) {
-    setStatus("Wallet compatibile rilevato. Puoi collegare Phantom o Solflare.");
+    setStatus("Compatible wallet detected. You can connect Phantom or Solflare.");
     return;
   }
 
-  setStatus("In attesa di Phantom o Solflare...");
+  setStatus("Waiting for Phantom or Solflare...");
 
   window.addEventListener("load", () => {
     window.setTimeout(() => {
       setStatus(
         getWalletProvider()
-          ? "Wallet compatibile rilevato. Puoi collegare Phantom o Solflare."
+          ? "Compatible wallet detected. You can connect Phantom or Solflare."
           : getMissingWalletMessage()
       );
     }, 600);
@@ -232,10 +232,10 @@ async function disconnectWalletProvider(provider) {
 
 function getMissingWalletMessage() {
   if (getInstalledWalletProviders().length > 0 || window.solana || window.solflare) {
-    return "E' stato rilevato un wallet Solana, ma Phantom o Solflare non sono disponibili come provider attivi.";
+    return "A Solana wallet was detected, but Phantom or Solflare are not available as active providers.";
   }
 
-  return "Phantom o Solflare non sono stati rilevati in questo browser.";
+  return "Phantom or Solflare were not detected in this browser.";
 }
 
 async function getWalletNfts(walletAddress) {
@@ -284,9 +284,9 @@ function renderProposal() {
   const proposal = state.proposal;
 
   if (!proposal) {
-    ui.proposalTag.textContent = "Governance";
+    ui.proposalTag.textContent = "PROPOSAL";
     ui.proposalTitle.textContent = "No active proposal";
-    ui.proposalDescription.textContent = "L'admin non ha ancora avviato una votazione.";
+    ui.proposalDescription.textContent = "The admin has not started a vote yet.";
     ui.proposalStatus.textContent = "Voting inactive";
     ui.proposalCountdown.textContent = "--";
     renderVoteOptions([]);
@@ -295,7 +295,7 @@ function renderProposal() {
     return;
   }
 
-  ui.proposalTag.textContent = proposal.proposal_id || "Governance";
+  ui.proposalTag.textContent = proposal.proposal_id ? `PROPOSAL ${proposal.proposal_id}` : "PROPOSAL";
   ui.proposalTitle.textContent = proposal.title;
   ui.proposalDescription.textContent = proposal.description;
   ui.proposalStatus.textContent = getProposalStatusLabel(proposal.status);
@@ -310,7 +310,7 @@ function renderVoteOptions(options) {
   if (!options.length) {
     const empty = document.createElement("p");
     empty.className = "vote-options__empty";
-    empty.textContent = "Nessuna opzione disponibile.";
+    empty.textContent = "No options available.";
     ui.voteOptions.appendChild(empty);
     return;
   }
@@ -333,13 +333,13 @@ async function submitVote(voteOption) {
   const provider = state.walletProvider || getWalletProvider();
 
   if (!provider || !state.walletAddress || !state.walletData) {
-    setStatus("Collega prima il wallet per poter votare.");
+    setStatus("Connect your wallet before voting.");
     showVoteFeedback("An error occurred while submitting the vote.", "error");
     return;
   }
 
   if (!state.proposal || state.proposal.status !== "active") {
-    setStatus("La votazione non e' attiva.");
+    setStatus("Voting is not active.");
     showVoteFeedback(state.proposal && state.proposal.status === "ended"
       ? "Voting has ended."
       : "An error occurred while submitting the vote.", "error");
@@ -347,7 +347,7 @@ async function submitVote(voteOption) {
   }
 
   if ((state.walletData.gen1_count + state.walletData.gen2_count) === 0) {
-    setStatus("Il wallet collegato non possiede NFT validi per il voto.");
+    setStatus("The connected wallet does not hold valid NFTs for voting.");
     showVoteFeedback("An error occurred while submitting the vote.", "error");
     return;
   }
@@ -355,7 +355,7 @@ async function submitVote(voteOption) {
   try {
     clearVoteFeedback();
     setVoteButtonsBusy(true);
-    setStatus(`Invio voto "${voteOption}" in corso...`);
+    setStatus(`Submitting vote "${voteOption}"...`);
     const signedVote = await signVoteMessage(provider, voteOption);
     const response = await fetch(VOTE_ENDPOINT, {
       method: "POST",
@@ -370,14 +370,14 @@ async function submitVote(voteOption) {
     const payload = await response.json().catch(() => null);
 
     if (response.ok && payload && payload.success === true) {
-      setStatus(`Voto registrato. Potere di voto usato: ${formatVotingPower(payload.voting_power)}.`);
+      setStatus(`Vote recorded. Voting power used: ${formatVotingPower(payload.voting_power)}.`);
       showVoteFeedback("Vote successfully recorded.", "success");
       await refreshResults();
       return;
     }
 
     if (payload && payload.error === "ALL_NFTS_ALREADY_VOTED") {
-      setStatus("Tutti gli NFT del wallet risultano gia' utilizzati per il voto.");
+      setStatus("All NFTs from this wallet have already been used for voting.");
       showVoteFeedback(
         payload.message || "All NFTs from this wallet have already voted.",
         "error"
@@ -389,7 +389,7 @@ async function submitVote(voteOption) {
     }
 
     if (payload && payload.error === "VOTING_ENDED") {
-      setStatus("La votazione e' terminata.");
+      setStatus("Voting has ended.");
       showVoteFeedback("Voting has ended.", "error");
       await refreshProposal();
       return;
@@ -431,23 +431,23 @@ function updateWalletDashboard(walletAddress, walletData) {
   ui.solnautaCount.textContent = String(walletData.gen2_count);
   ui.votingPower.textContent = formatVotingPower(walletData.voting_power);
   ui.proposalVotingPower.textContent = formatVotingPower(walletData.voting_power);
-  renderNftStatusList(ui.torrinoNames, walletData.gen1_nfts, "Nessun Torrino DAO NFT trovato.");
-  renderNftStatusList(ui.solnautaNames, walletData.gen2_nfts, "Nessun Solnauta NFT trovato.");
+  renderNftStatusList(ui.torrinoNames, walletData.gen1_nfts, "No Torrino DAO NFTs found.");
+  renderNftStatusList(ui.solnautaNames, walletData.gen2_nfts, "No Solnauta NFTs found.");
 }
 
 function clearWalletSession() {
   state.walletAddress = null;
   state.walletProvider = null;
   state.walletData = null;
-  ui.walletAddress.textContent = "Non collegato";
+  ui.walletAddress.textContent = "Not connected";
   ui.torrinoCount.textContent = "0";
   ui.solnautaCount.textContent = "0";
   ui.votingPower.textContent = "0.0";
   ui.proposalVotingPower.textContent = "0.0";
-  renderNftStatusList(ui.torrinoNames, [], "Nessun Torrino DAO NFT trovato.");
-  renderNftStatusList(ui.solnautaNames, [], "Nessun Solnauta NFT trovato.");
+  renderNftStatusList(ui.torrinoNames, [], "No Torrino DAO NFTs found.");
+  renderNftStatusList(ui.solnautaNames, [], "No Solnauta NFTs found.");
   clearVoteFeedback();
-  setStatus("Wallet disconnesso.");
+  setStatus("Wallet disconnected.");
 }
 
 function updateResultsDashboard(results) {
@@ -468,7 +468,7 @@ function updateResultsDashboard(results) {
   if (optionResults.length === 0) {
     const empty = document.createElement("p");
     empty.className = "vote-options__empty";
-    empty.textContent = "Nessun risultato disponibile.";
+    empty.textContent = "No results available.";
     ui.resultsBars.appendChild(empty);
     return;
   }
@@ -581,8 +581,8 @@ function setConnectBusy(isBusy, message) {
   ui.connectButton.disabled = isBusy;
   ui.connectButton.textContent = isBusy
     ? state.walletAddress
-      ? "Disconnessione..."
-      : "Connessione..."
+      ? "Disconnecting..."
+      : "Connecting..."
     : getConnectButtonLabel();
 
   if (message) {
@@ -628,25 +628,25 @@ function clearVoteFeedback() {
 function getErrorMessage(error) {
   if (error && typeof error.message === "string") {
     if (error.message.includes("User rejected")) {
-      return "La firma del wallet e' stata annullata dall'utente.";
+      return "The wallet signature was cancelled by the user.";
     }
 
     if (error.message === "SIGNATURE_UNAVAILABLE") {
-      return "Il wallet collegato non supporta la firma richiesta per confermare il voto.";
+      return "The connected wallet does not support the signature required to confirm the vote.";
     }
 
     if (error.message === "VOTING_ENDED") {
-      return "La votazione e' terminata.";
+      return "Voting has ended.";
     }
 
     if (error.message === "INVALID_WALLET_SIGNATURE") {
-      return "La firma del wallet non e' valida per questo voto.";
+      return "The wallet signature is not valid for this vote.";
     }
 
-    return "Si e' verificato un errore durante la registrazione del voto.";
+    return "An error occurred while recording the vote.";
   }
 
-  return "Si e' verificato un errore durante la registrazione del voto.";
+  return "An error occurred while recording the vote.";
 }
 
 function initializeHistoryModal() {
@@ -851,18 +851,18 @@ function formatParticipationRate(value, total) {
 
 function getProposalStatusLabel(status) {
   if (status === "active") {
-    return "Voting active";
+    return "Voting Active";
   }
 
   if (status === "scheduled") {
-    return "Voting scheduled";
+    return "Voting Scheduled";
   }
 
   if (status === "ended") {
-    return "Voting has ended";
+    return "Voting Ended";
   }
 
-  return "Voting inactive";
+  return "Voting Inactive";
 }
 
 function bytesToBase58(bytes) {

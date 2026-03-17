@@ -29,22 +29,21 @@
             <h1 class="title">TORRINO DAO VOTING</h1>
           </div>
           <p class="tagline">
-            Interfaccia di governance per mostrare il potere di voto calcolato
-            in base agli NFT posseduti nel wallet.
+            Governance interface showing voting power based on the NFTs held in the connected wallet.
           </p>
         </div>
 
         <div class="topbar-actions">
           <div class="topbar-buttons">
             <button id="connectButton" class="connect-button">
-              Collega Wallet
+              Connect Wallet
             </button>
             <button id="openHistoryModal" class="history-button" type="button">
               Governance History
             </button>
           </div>
           <p id="statusMessage" class="status-message">
-            Collega Phantom o Solflare per leggere gli NFT posseduti e il potere di voto.
+            Connect Phantom or Solflare to load wallet NFTs and voting power.
           </p>
         </div>
       </header>
@@ -52,14 +51,14 @@
       <section class="summary-grid">
         <article class="summary-card">
           <span class="label">Wallet</span>
-          <strong id="walletAddress" class="mono">Non collegato</strong>
+          <strong id="walletAddress" class="mono">Not connected</strong>
         </article>
 
         <article class="summary-card">
           <span class="label">NFT Torrino DAO</span>
           <strong id="torrinoCount">0</strong>
           <ul id="torrinoNames" class="nft-list">
-            <li class="nft-list__empty">Nessun Torrino DAO NFT trovato.</li>
+            <li class="nft-list__empty">No Torrino DAO NFTs found.</li>
           </ul>
         </article>
 
@@ -67,31 +66,31 @@
           <span class="label">NFT Solnauta</span>
           <strong id="solnautaCount">0</strong>
           <ul id="solnautaNames" class="nft-list">
-            <li class="nft-list__empty">Nessun Solnauta NFT trovato.</li>
+            <li class="nft-list__empty">No Solnauta NFTs found.</li>
           </ul>
         </article>
 
         <article class="summary-card accent-card">
-          <span class="label">Potere Di Voto</span>
+          <span class="label">Voting Power</span>
           <strong id="votingPower">0.0</strong>
         </article>
       </section>
 
       <main class="main-content">
         <section class="proposal-card proposal-card--featured">
-          <p id="proposalTag" class="proposal-tag">Governance</p>
+          <p id="proposalTag" class="proposal-tag">PROPOSAL</p>
           <h2 id="proposalTitle">No active proposal</h2>
           <p id="proposalDescription" class="proposal-copy">
-            L'admin non ha ancora avviato una votazione.
+            The admin has not started a vote yet.
           </p>
 
           <div class="proposal-details">
             <div class="proposal-detail">
-              <span>Il tuo potere di voto</span>
+              <span>Your voting power</span>
               <strong id="proposalVotingPower">0.0</strong>
             </div>
             <div class="proposal-detail">
-              <span>Stato votazione</span>
+              <span>Voting status</span>
               <strong id="proposalStatus" class="proposal-state">Voting inactive</strong>
             </div>
             <div class="proposal-detail proposal-detail--countdown">
@@ -107,7 +106,7 @@
       <section class="results-card" aria-live="polite">
         <div class="results-header">
           <p class="proposal-tag">Live Voting Results</p>
-          <h2>Dashboard risultati in tempo reale</h2>
+          <h2>Live results dashboard</h2>
           <p id="resultsStatus" class="results-status">Voting inactive</p>
         </div>
         <div class="results-grid">
@@ -136,36 +135,34 @@
 
       <section class="info-grid">
         <section class="weights-card">
-          <p class="proposal-tag">Peso Di Voto NFT</p>
-          <h2>Come viene calcolato il potere di voto</h2>
+          <p class="proposal-tag">NFT Voting Weight</p>
+          <h2>How voting power is calculated</h2>
           <p class="weights-copy">
-            Il peso del voto dipende esclusivamente dagli NFT presenti nel wallet collegato.
+            Voting power depends entirely on the NFTs held in the connected wallet.
           </p>
           <ul class="weights-list">
-            <li>Ogni NFT Torrino DAO (Gen1) vale <strong>0,9</strong> punti di voto.</li>
-            <li>Ogni NFT Solnauta (Gen2) vale <strong>0,1</strong> punti di voto.</li>
+            <li>Each Torrino DAO NFT (Gen1) is worth <strong>0.9</strong> voting points.</li>
+            <li>Each Solnauta NFT (Gen2) is worth <strong>0.1</strong> voting points.</li>
           </ul>
           <p class="weights-copy">
-            Il totale mostrato nella proposal e nei risultati deriva dalla somma di questi pesi.
+            The total shown in the proposal and the results is the sum of these weights.
           </p>
         </section>
 
         <aside class="transparency-card">
-          <h3>Trasparenza</h3>
+          <h3>Transparency</h3>
           <p class="security-note">
-            La governance e' completamente trasparente. Il codice sorgente e i risultati delle
-            votazioni sono pubblici su GitHub.
+            Governance is fully transparent. The source code and voting results are public on GitHub.
           </p>
           <ul>
-            <li>Il codice della piattaforma e' pubblico.</li>
-            <li>I risultati delle votazioni sono pubblici.</li>
-            <li>I voti vengono registrati off-chain.</li>
-            <li>I CSV vengono pubblicati automaticamente su GitHub.</li>
-            <li>Chiunque puo' verificare pubblicamente i risultati.</li>
+            <li>The platform source code is public.</li>
+            <li>Voting results are public.</li>
+            <li>Votes are recorded off-chain.</li>
+            <li>CSV files are published automatically on GitHub.</li>
+            <li>Anyone can verify the results publicly.</li>
           </ul>
           <p class="security-note">
-            Durante la votazione il file dei risultati viene aggiornato automaticamente e puo'
-            essere verificato pubblicamente.
+            During voting, the results file is updated automatically and can be verified publicly.
           </p>
           <div class="transparency-actions">
             <a
@@ -174,7 +171,7 @@
               target="_blank"
               rel="noopener"
             >
-              Apri repository GitHub
+              Open GitHub repository
             </a>
           </div>
         </aside>
@@ -197,22 +194,22 @@
           class="modal__close"
           type="button"
           id="closeHistoryModal"
-          aria-label="Chiudi Governance History"
+          aria-label="Close Governance History"
         >
           ✕
         </button>
         <div class="modal__content">
           <h3 class="modal__title">Governance History</h3>
           <p class="modal__lead">
-            Elenco delle proposal pubblicate nella cartella <span class="mono-inline">/data/</span>
-            del repository GitHub.
+            List of proposals published in the <span class="mono-inline">/data/</span>
+            folder of the GitHub repository.
           </p>
           <div class="history-table-wrap">
             <table class="history-table">
               <thead>
                 <tr>
                   <th>Proposal file</th>
-                  <th>Data</th>
+                  <th>Date</th>
                   <th>Download</th>
                 </tr>
               </thead>

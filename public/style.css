@@ -179,6 +179,13 @@ body {
   color: var(--muted);
 }
 
+#proposalTag {
+  font-size: 0.98rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: #ff7d7d;
+}
+
 h1,
 h2,
 h3,
