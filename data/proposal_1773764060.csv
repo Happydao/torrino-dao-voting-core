@@ -2,8 +2,8 @@ proposal_created_by,5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc
 proposal_created_timestamp,1773764060
 proposal_created_iso,2026-03-17T16:14:20.000Z
 proposal_lifecycle_status,Voting in progress
-proposal_lifecycle_updated_timestamp,1773765860
-proposal_lifecycle_updated_iso,2026-03-17T16:44:20.000Z
+proposal_lifecycle_updated_timestamp,1773766460
+proposal_lifecycle_updated_iso,2026-03-17T16:54:20.000Z
 voting_start_timestamp,1773763980
 voting_start_iso,2026-03-17T16:13:00.000Z
 voting_end_timestamp,1773771180
@@ -11,9 +11,9 @@ voting_end_iso,2026-03-17T18:13:00.000Z
 proposal_title,votazione di test
 proposal_description,votazione di test
 proposal_options,a | b | c
-torrino_participation_rate,1.2%
-solnauta_participation_rate,1.1%
-total_voting_power_participation_rate,1.2%
+torrino_participation_rate,2.8%
+solnauta_participation_rate,1.5%
+total_voting_power_participation_rate,2.6%
 
 wallet,solnauta_nfts,torrino_nfts,a,b,c,voting_power,timestamp,signature
 85jTBVsk8sDA35LocJdTh41EN2Eep59RQ1jUw9EExsCw,https://solscan.io/token/22nYjuJhonLHSnLaZzoCFuJoEPr2Sh2TUEeLDXBgAZ39,https://solscan.io/token/DmBFZuqmb6TvSrbm8b3vbwwpddpBcU5PNefwfrNcBpjv,1.0,0.0,0.0,1.0,1773765278,YhtdzhHDbzcm57dMGJrpduuv7q9MeQwjqt1a12GhggYuPsY7YFJSvvA8G1NG1XNLdGtq9BvLZrvWqBPN2rPP3Vv
@@ -29,3 +29,12 @@ https://solscan.io/token/7hEPdv2PE86ZoPbXPtBqq7pLaG3hg2Jnn8nMwp27ersE
 https://solscan.io/token/4LN732WE4T4x1ZKjHoufztdfeYQGT2DRZio7AVPcmnvZ","https://solscan.io/token/JAWqkL2KXiDGGqJQZSFQRknk59Qd45CCjBgyABGXbzTt
 https://solscan.io/token/Hzrrgx7vPybwKrfPLXwrzijkuE4HQv7JxMEtKfaC3edj
 https://solscan.io/token/H7Tw5sosgLf4UusPBHEHC5om3Nyr9Ne791sLbahE2TfX",3.0,0.0,0.0,3.0,1773765347,47TeeukvhqD9RNFwCzANv6qXqaCHm27cSUZ4gnYNbzjRXyJgSkhcinKhFg7Tozfpkx3AwwXBKek7Z2aXhJ4Lk5o7
+Hri97UGBvas69rE429VhVu8BSiGoNvroyEwk2MiWQTy7,https://solscan.io/token/3VMDTFaY48R7CW5dfLKNnEVMStQ9exy2kaQ977i6cGFQ,https://solscan.io/token/4XnLZfpUCmiRVpG3yxRfJyGVqSP1XT7e8k6M11AqaaiU,1.0,0.0,0.0,1.0,1773766030,4SGpfziPopXsFuYqGXxheuoRjWLWBfesKB7kqrK9CXQwWQ2vMMVufNCQdR69wAArEVZeybGxvQEA4mCQkRxYHw6
+DKubU38J2AhWZjJ5oa7J5PoDqppP9pfEmEk3Vyv2yzxm,"https://solscan.io/token/BAU9zdQZigvMGkf768vNabDgPZ8F12kymxe2JWdnBeqN
+https://solscan.io/token/6ZUJhjBbbrHx5VS4a2ckFKgac9j6oKWK1McBER4xpWrR","https://solscan.io/token/CcNC7sVBTewAXDFAcy9xyfViGfoPXWiA6TGzRHWCyYKB
+https://solscan.io/token/Ag3LTHpViDVuwkKM2yEJRoJFiQVKbAEQbYLEgnivwjkZ
+https://solscan.io/token/APi2iuqW6Xrd7TCRsgTmxwvXPTQpVJJb4hAbk7FrveKz
+https://solscan.io/token/8C5SKRdUqA8fGFhMubNcTMNXxgsC9cvrkTFvZgkpV1it
+https://solscan.io/token/7bLQda47oLTSnmc32fGD8WQXjZQfzk5NRC5DrzD1to3i
+https://solscan.io/token/3BYcpdgsSVX5wCZxKAEZi5SZZVypZQqhTCXCTaqTHJuK
+https://solscan.io/token/315RMGLJgWjDJDA7SSXbf8SdrYLWxo8Fxqocv9QvSphW",6.5,0.0,0.0,6.5,1773766122,4UwnC6nYQbm7iW2Nqc397RubhSPebEbC33hYpjdFQQdbhVNNf7T1Zp5HLm4BQY2QXMzLWaxNLW8w3qHjJgQSgUbz
