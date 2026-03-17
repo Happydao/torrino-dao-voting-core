@@ -2,3 +2,4 @@
 node_modules
 data/proposal.json
 data/used-mints.json
+.DS_Store
