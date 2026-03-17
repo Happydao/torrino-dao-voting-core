@@ -785,12 +785,12 @@ function appendVoteRow(row) {
   const optionValues = getOptionColumns(proposal).map((optionLabel) => {
     return escapeCsvValue(formatDecimal(optionLabel === row.vote ? row.votingPower : 0));
   });
-  const solnautaLinks = row.solnautaNfts.map(getSolscanTokenUrl).join("\n");
-  const torrinoLinks = row.torrinoNfts.map(getSolscanTokenUrl).join("\n");
+  const solnautaMints = row.solnautaNfts.join("\n");
+  const torrinoMints = row.torrinoNfts.join("\n");
   const csvLine = [
     escapeCsvValue(row.wallet),
-    escapeCsvValue(solnautaLinks),
-    escapeCsvValue(torrinoLinks),
+    escapeCsvValue(solnautaMints),
+    escapeCsvValue(torrinoMints),
     ...optionValues,
     escapeCsvValue(formatDecimal(row.votingPower)),
     escapeCsvValue(String(row.timestamp)),
@@ -1393,10 +1393,6 @@ function extractMintFromStoredValue(value) {
   }
 
   return isValidMint(normalizedValue) ? normalizedValue : "";
-}
-
-function getSolscanTokenUrl(mintAddress) {
-  return `https://solscan.io/token/${mintAddress}`;
 }
 
 function getProposalLifecycleMetadata(proposal, adminWallet, metadataOptions = {}) {
