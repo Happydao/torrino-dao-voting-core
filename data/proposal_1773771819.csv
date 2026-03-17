@@ -1,9 +1,9 @@
 proposal_created_by,5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc
 proposal_created_timestamp,1773771819
 proposal_created_iso,2026-03-17T18:23:39.000Z
-proposal_lifecycle_status,Voting in progress
-proposal_lifecycle_updated_timestamp,1773772419
-proposal_lifecycle_updated_iso,2026-03-17T18:33:39.000Z
+proposal_lifecycle_status,Voting stopped by admin 5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc
+proposal_lifecycle_updated_timestamp,1773772813
+proposal_lifecycle_updated_iso,2026-03-17T18:40:13.000Z
 voting_start_timestamp,1773771780
 voting_start_iso,2026-03-17T18:23:00.000Z
 voting_end_timestamp,1773775380
