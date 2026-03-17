@@ -1,0 +1,18 @@
+proposal_created_by,5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc
+proposal_created_timestamp,1773759028
+proposal_created_iso,2026-03-17T14:50:28.000Z
+proposal_lifecycle_status,Voting in progress
+proposal_lifecycle_updated_timestamp,1773759038
+proposal_lifecycle_updated_iso,2026-03-17T14:50:38.000Z
+voting_start_timestamp,1773759000
+voting_start_iso,2026-03-17T14:50:00.000Z
+voting_end_timestamp,1773759540
+voting_end_iso,2026-03-17T14:59:00.000Z
+proposal_title,test2
+proposal_description,test2
+proposal_options,a | b
+torrino_participation_rate,0.0%
+solnauta_participation_rate,0.0%
+total_voting_power_participation_rate,0.0%
+
+wallet,solnauta_nfts,torrino_nfts,a,b,voting_power,timestamp,signature
