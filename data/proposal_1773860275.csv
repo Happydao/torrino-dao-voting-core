@@ -1,0 +1,24 @@
+proposal_created_by,5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc
+proposal_created_timestamp,1773860275
+proposal_created_iso,2026-03-18T18:57:55.000Z
+proposal_lifecycle_status,Scheduled
+proposal_lifecycle_updated_timestamp,1773860285
+proposal_lifecycle_updated_iso,2026-03-18T18:58:05.000Z
+voting_start_timestamp,1773860400
+voting_start_iso,2026-03-18T19:00:00.000Z
+voting_end_timestamp,1774130400
+voting_end_iso,2026-03-21T22:00:00.000Z
+proposal_title,APPOINTMENT OF THE NEW GOVERNANCE COUNCIL
+proposal_description,"1. Eugenio Benetazzo | @EugenioBenetazo
+2. Andrea Savoca Corona | @ASavocaCorona
+3. Manuel Rosa | @Happy
+4. Andrea Ferrari | @andy_ferrucci
+5. Gabriele Fejza | @Gabriele
+6. Francesco Cappellani | @xuxien
+7. Enrico De Turris | @mr.vinyl"
+proposal_options,FAVOREVOLE | CONTRARIO
+torrino_participation_rate,0.0%
+solnauta_participation_rate,0.0%
+total_voting_power_participation_rate,0.0%
+
+wallet,solnauta_nfts,torrino_nfts,FAVOREVOLE,CONTRARIO,voting_power,timestamp,signed_message,signature
