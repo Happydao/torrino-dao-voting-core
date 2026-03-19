@@ -2,8 +2,8 @@ proposal_created_by,5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc
 proposal_created_timestamp,1773860275
 proposal_created_iso,2026-03-18T18:57:55.000Z
 proposal_lifecycle_status,Voting in progress
-proposal_lifecycle_updated_timestamp,1773907200
-proposal_lifecycle_updated_iso,2026-03-19T08:00:00.000Z
+proposal_lifecycle_updated_timestamp,1773907800
+proposal_lifecycle_updated_iso,2026-03-19T08:10:00.000Z
 voting_start_timestamp,1773860400
 voting_start_iso,2026-03-18T19:00:00.000Z
 voting_end_timestamp,1774130400
@@ -18,8 +18,8 @@ proposal_description,"1. Eugenio Benetazzo | @EugenioBenetazo
 7. Enrico De Turris | @mr.vinyl"
 proposal_options,FAVOREVOLE | CONTRARIO
 torrino_participation_rate,21.0%
-solnauta_participation_rate,18.2%
-total_voting_power_participation_rate,20.5%
+solnauta_participation_rate,18.4%
+total_voting_power_participation_rate,20.6%
 
 wallet,solnauta_nfts,torrino_nfts,FAVOREVOLE,CONTRARIO,voting_power,timestamp,signed_message,signature
 59C4gdQT5VFqZj8LTw5bt4CTzJkJpncujiG3xfngCzs8,8gjqkdHgmHvHUKZ3uHfbW3F1tYW4AKqjguG2rtvjhQ7Q,,0.1,0.0,0.1,1773860588,Torrino DAO governance vote:FAVOREVOLE:wallet:59C4gdQT5VFqZj8LTw5bt4CTzJkJpncujiG3xfngCzs8:timestamp:1773860585777,4Tkq6ENtYe2ex67nimnxkrNAHvnKxhASd7qeVkVJoXJKwFn8jWPHgbyK7AKEj1oyMqMj5jseGzNyodUHKRoG98cm
@@ -239,3 +239,4 @@ eGwAEdJufBzfbLbctJNjz4D7LjNWiQm87cFXBpELU5C
 8G7UMpNpwKYKghju4etVkFiZyNgPegBhPRsctPWHg5cL,,"GQUSkpDEnJ753b5L5gAaroYspwCMMitJZBV1JzfG2PZh
 GADMXK57QJ1Zgya6b3dMKpgFswfdQy7XpTwa7TWEbTkS
 8uMfcc5jhSxbd6DmDhXK8fmbPxjXHtiKjQXUqkgkv91t",2.7,0.0,2.7,1773906995,Torrino DAO governance vote:FAVOREVOLE:wallet:8G7UMpNpwKYKghju4etVkFiZyNgPegBhPRsctPWHg5cL:timestamp:1773906994043,sqEzwafknznVuo29HSgvS8FnYByiwBQNmyxi3rJey72mKB8QNRmvkDF54ohYfV34xqM6HDnAZhbE31evCxkmosA
+5YVmAaJAnUzZE7vBSiPT9p6b5ZcCsz3RdN6ic8bQ2gPv,2harRvn6arVGYX3BR7kYBRaosPgTT2q3K8t1PzAVwevi,,0.1,0.0,0.1,1773907334,Torrino DAO governance vote:FAVOREVOLE:wallet:5YVmAaJAnUzZE7vBSiPT9p6b5ZcCsz3RdN6ic8bQ2gPv:timestamp:1773907329147,443vY9MQ9xfsHYqXAMkf9tCy1foMnZkCzAAixuswrywqfMttf5MtQzVpJ1EeqtfZuptWKCnacT6XL35zLaKfSuia
