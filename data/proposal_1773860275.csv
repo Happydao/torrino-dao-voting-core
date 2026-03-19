@@ -2,8 +2,8 @@ proposal_created_by,5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc
 proposal_created_timestamp,1773860275
 proposal_created_iso,2026-03-18T18:57:55.000Z
 proposal_lifecycle_status,Voting in progress
-proposal_lifecycle_updated_timestamp,1773959400
-proposal_lifecycle_updated_iso,2026-03-19T22:30:00.000Z
+proposal_lifecycle_updated_timestamp,1773960000
+proposal_lifecycle_updated_iso,2026-03-19T22:40:00.000Z
 voting_start_timestamp,1773860400
 voting_start_iso,2026-03-18T19:00:00.000Z
 voting_end_timestamp,1774130400
@@ -18,8 +18,8 @@ proposal_description,"1. Eugenio Benetazzo | @EugenioBenetazo
 7. Enrico De Turris | @mr.vinyl"
 proposal_options,FAVOREVOLE | CONTRARIO
 torrino_participation_rate,29.6%
-solnauta_participation_rate,21.4%
-total_voting_power_participation_rate,28.2%
+solnauta_participation_rate,21.5%
+total_voting_power_participation_rate,28.3%
 
 wallet,solnauta_nfts,torrino_nfts,FAVOREVOLE,CONTRARIO,voting_power,timestamp,signed_message,signature
 59C4gdQT5VFqZj8LTw5bt4CTzJkJpncujiG3xfngCzs8,8gjqkdHgmHvHUKZ3uHfbW3F1tYW4AKqjguG2rtvjhQ7Q,,0.1,0.0,0.1,1773860588,Torrino DAO governance vote:FAVOREVOLE:wallet:59C4gdQT5VFqZj8LTw5bt4CTzJkJpncujiG3xfngCzs8:timestamp:1773860585777,4Tkq6ENtYe2ex67nimnxkrNAHvnKxhASd7qeVkVJoXJKwFn8jWPHgbyK7AKEj1oyMqMj5jseGzNyodUHKRoG98cm
@@ -301,3 +301,4 @@ BECfvq1vMzNmq9KkZge4MrutJwxdkdgGjqVMBprXxGXr,"FCnVt1DfA3QykHrh8fbFBrjgeF368Q9juL
 3ekBW7Kp8XUuuHxn7y6VRLV23Lzz7yBefc77xdtJW3jP","GXjYdbnSvSkM4hDDXZHwL3AGAqWP916cdosYUh8NBdnY
 G3TLRuSjbyX6gGcVub9pVbHHHnsfjaNwY1cprsroNpCz
 937S8JKrUEme1LPLyxAVT11WrNomGvpNdEPP3dhT4QRt",3.0,0.0,3.0,1773958716,Torrino DAO governance vote:FAVOREVOLE:wallet:BECfvq1vMzNmq9KkZge4MrutJwxdkdgGjqVMBprXxGXr:timestamp:1773958707399,48zNhuKd8a6VfHdHvo4YTGf9p876w7HGjKdyDf3VAauZM5FxRfn8MU3k6EsmTyNpa1JUZ9cXBkCnDHq1prMD2Pty
+36y4VNhivhUiQUCQcU457Tm23GPsuwQqooyQhJoGdYYK,Gszk2nArktZvvPB8jCoYSM6N2QBCEBoh4755JopUBntX,,0.1,0.0,0.1,1773959787,Torrino DAO governance vote:FAVOREVOLE:wallet:36y4VNhivhUiQUCQcU457Tm23GPsuwQqooyQhJoGdYYK:timestamp:1773959768935,24EknePH4A8XzYyw2n6FWF6GPsJ3DoSpxUPFprZxKbvpgk9Goj9Jb18ccmwKi2pu9DRRfH57skNF5mcLGYwr4LHy
