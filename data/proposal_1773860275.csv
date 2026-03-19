@@ -2,8 +2,8 @@ proposal_created_by,5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc
 proposal_created_timestamp,1773860275
 proposal_created_iso,2026-03-18T18:57:55.000Z
 proposal_lifecycle_status,Voting in progress
-proposal_lifecycle_updated_timestamp,1773922800
-proposal_lifecycle_updated_iso,2026-03-19T12:20:00.000Z
+proposal_lifecycle_updated_timestamp,1773923400
+proposal_lifecycle_updated_iso,2026-03-19T12:30:00.000Z
 voting_start_timestamp,1773860400
 voting_start_iso,2026-03-18T19:00:00.000Z
 voting_end_timestamp,1774130400
@@ -18,8 +18,8 @@ proposal_description,"1. Eugenio Benetazzo | @EugenioBenetazo
 7. Enrico De Turris | @mr.vinyl"
 proposal_options,FAVOREVOLE | CONTRARIO
 torrino_participation_rate,26.8%
-solnauta_participation_rate,18.6%
-total_voting_power_participation_rate,25.4%
+solnauta_participation_rate,18.7%
+total_voting_power_participation_rate,25.5%
 
 wallet,solnauta_nfts,torrino_nfts,FAVOREVOLE,CONTRARIO,voting_power,timestamp,signed_message,signature
 59C4gdQT5VFqZj8LTw5bt4CTzJkJpncujiG3xfngCzs8,8gjqkdHgmHvHUKZ3uHfbW3F1tYW4AKqjguG2rtvjhQ7Q,,0.1,0.0,0.1,1773860588,Torrino DAO governance vote:FAVOREVOLE:wallet:59C4gdQT5VFqZj8LTw5bt4CTzJkJpncujiG3xfngCzs8:timestamp:1773860585777,4Tkq6ENtYe2ex67nimnxkrNAHvnKxhASd7qeVkVJoXJKwFn8jWPHgbyK7AKEj1oyMqMj5jseGzNyodUHKRoG98cm
@@ -269,3 +269,4 @@ CnUkEYfkURizbQa993EoK3Y9K5rk8xSbJyRvHdj14RCf
 BMtAKXPxa2Zcp3G8tG45R3nrVo6uW7GemKRJLwiSw4xX
 5jqqRAuP6KcrZPji2Tyazk4CiUFktBewfMcHntrsVENQ",4.6,0.0,4.6,1773912793,Torrino DAO governance vote:FAVOREVOLE:wallet:3Djwa3yvVHwMzEXonCzobUqvRx7k9RwKss48ATYTwbVS:timestamp:1773912787867,5zpLvqc1t2q9q15s2tRvC9LBowh6NtTeXGmEdXcPRvVivpG5Aew5BYZiifpLy6aGnUq53joY1nfX1FRurGZT5hDm
 EkmA2Bswj64tUzGaA1jkTuYXpakfbY6TfwC9FYjNKYHT,,GWynfVVVy7JipgmFb3h9UDZ6jE3t7NRquVCcnHbiYUmT,0.9,0.0,0.9,1773919146,Torrino DAO governance vote:FAVOREVOLE:wallet:EkmA2Bswj64tUzGaA1jkTuYXpakfbY6TfwC9FYjNKYHT:timestamp:1773919145023,5r5Zd3dFjdT69TnwC7QnJ7N3p94CudfRfNRhiMqVuSgmwhV3BgKYuLEJQxiqCh8cWosCBRWFmk94LfymEXPJxX2t
+2ouoRXjr9wDteDvg6XLmBup9deMQgZsLfYt3HAGQ5m7o,Afem9XZ5vELhVSkdm1eTeuTu3nTX7VjMHn4mEfLQASui,,0.1,0.0,0.1,1773922983,Torrino DAO governance vote:FAVOREVOLE:wallet:2ouoRXjr9wDteDvg6XLmBup9deMQgZsLfYt3HAGQ5m7o:timestamp:1773922978911,4zK47n7Hr7qSYraAkqTb1FhCgZr91g7Fcy38EH7UvqqPeycEdCySUQuGRyPcRuCv9o8Piz3MRKSJqgQssuHvxpoN
