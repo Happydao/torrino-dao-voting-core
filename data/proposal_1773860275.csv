@@ -2,8 +2,8 @@ proposal_created_by,5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc
 proposal_created_timestamp,1773860275
 proposal_created_iso,2026-03-18T18:57:55.000Z
 proposal_lifecycle_status,Voting in progress
-proposal_lifecycle_updated_timestamp,1774042200
-proposal_lifecycle_updated_iso,2026-03-20T21:30:00.000Z
+proposal_lifecycle_updated_timestamp,1774042800
+proposal_lifecycle_updated_iso,2026-03-20T21:40:00.000Z
 voting_start_timestamp,1773860400
 voting_start_iso,2026-03-18T19:00:00.000Z
 voting_end_timestamp,1774130400
@@ -18,7 +18,7 @@ proposal_description,"1. Eugenio Benetazzo | @EugenioBenetazo
 7. Enrico De Turris | @mr.vinyl"
 proposal_options,FAVOREVOLE | CONTRARIO
 torrino_participation_rate,31.6%
-solnauta_participation_rate,23.1%
+solnauta_participation_rate,23.2%
 total_voting_power_participation_rate,30.2%
 
 wallet,solnauta_nfts,torrino_nfts,FAVOREVOLE,CONTRARIO,voting_power,timestamp,signed_message,signature
@@ -319,3 +319,4 @@ GHKFb6wzA4tnLyDHPEHyZhqneRAd7ACWvyG5S3JoK8uy,BDUtaYAXg9xhNiLvbFPR2ow87s6DwMjPBbG
 4B8rsqpVnh7RCronjgnYqnRb7ncpU2ossEZsX2QhewjL,"GE1HkY8evxgBeSam5ozkL9dF91voiuvQrvKoEqy7JS8p
 6FmAQcyCTSC64db1xPPJoxNfAVnwWQ6bvjgGVW2XYUbQ",HVg4Fs4tBjV3K3WFdavMkkz7w5MYJvgVGfuxXpGt8C1R,1.1,0.0,1.1,1774030526,Torrino DAO governance vote:FAVOREVOLE:wallet:4B8rsqpVnh7RCronjgnYqnRb7ncpU2ossEZsX2QhewjL:timestamp:1774030516799,3qf6HACRjif6pAwQoEBDyodC5usThu9eENFoAAG8bu4fDr8tGmgHpSCpGmWZ9ULQQ1carbwRZsYGhyPkoyNBhA8h
 qKkFK4n5AEGk1GG2NXVsxxNT9ntGWMq2EEGNKjQeW7h,8carPoqupwQuXt5gmpaDr3voM6UfiJDy9bBtuQ66UTzJ,7hvGms3rRvoRkbFx5CBnS6VLXSLuzu2VFn4RzW3wpSjm,1.0,0.0,1.0,1774040311,Torrino DAO governance vote:FAVOREVOLE:wallet:qKkFK4n5AEGk1GG2NXVsxxNT9ntGWMq2EEGNKjQeW7h:timestamp:1774040296960,45HyC6x5wqDgBsLoFPFjJfbne5MEu2EEXuBZNUYpmaRUo1bPqmdoPntxGichYtVkhg2xPdJEiXDRwXe2pUXYwjWi
+DQNu957S2REv2jVmnJZa4MhGkAaKPuiWk11XJmr6ARag,HuGkt5aH2ufmd6kiRmPK5XsQCaky45bt1oQyR83BEeqi,,0.1,0.0,0.1,1774042256,Torrino DAO governance vote:FAVOREVOLE:wallet:DQNu957S2REv2jVmnJZa4MhGkAaKPuiWk11XJmr6ARag:timestamp:1774042253518,3WzTZ5jGkJUVfhatKmA6b6iQAHncpvp7yFkkyfsNP6XxXK9eGt2LyBP37D8BzD4cUMdzTMCMZpX8Lb9YzNNYUHWq
