@@ -47,13 +47,11 @@
             <button id="connectButton" class="connect-button">
               Connect Wallet
             </button>
-            <button id="openHistoryModal" class="history-button" type="button">
-              Governance History
-            </button>
           </div>
           <p id="statusMessage" class="status-message">
             Connect Phantom or Solflare to load wallet NFTs and voting power.
           </p>
+          <p class="platform-pillars">No Fees • No Manipulation • Full Transparency</p>
         </div>
       </header>
 
@@ -165,13 +163,13 @@
           </p>
           <ul>
             <li>The platform source code is public.</li>
-            <li>Voting results are public.</li>
-            <li>Votes are recorded off-chain.</li>
+            <li>Voting results are saved in a CSV file.</li>
             <li>CSV files are published automatically on GitHub.</li>
-            <li>Anyone can verify the results publicly.</li>
+            <li>Votes are publicly verifiable and tamper-resistant.</li>
+            <li>Each vote is protected by a cryptographic signature, proving it was cast by the wallet and cannot be altered.</li>
           </ul>
           <p class="security-note">
-            During voting, the results file is updated automatically and can be verified publicly.
+            During voting, the results file is updated on GitHub every 10 minutes.
           </p>
           <div class="transparency-actions">
             <a
@@ -180,8 +178,14 @@
               target="_blank"
               rel="noopener"
             >
-              Open GitHub repository
+              GitHub Repository
             </a>
+            <button id="openHistoryModal" class="chip chip--ghost" type="button">
+              Governance History
+            </button>
+            <button class="chip chip--ghost chip--disabled" type="button" aria-disabled="true">
+              Vote Verifier
+            </button>
           </div>
         </aside>
       </section>

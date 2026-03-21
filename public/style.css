@@ -309,6 +309,17 @@ p {
   line-height: 1.5;
 }
 
+.platform-pillars {
+  margin-top: auto;
+  align-self: flex-end;
+  text-align: right;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(244, 246, 248, 0.7);
+}
+
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -733,6 +744,12 @@ p {
   margin-top: 14px;
 }
 
+.transparency-actions .chip {
+  min-height: 48px;
+  padding: 11px 18px;
+  font-size: 0.95rem;
+}
+
 .security-note {
   margin-top: 12px;
   font-size: 0.88rem;
@@ -778,6 +795,20 @@ p {
 .chip--ghost {
   background: rgba(10, 12, 22, 0.6);
   border: 1px solid rgba(153, 69, 255, 0.28);
+}
+
+.chip--disabled {
+  cursor: default;
+  opacity: 0.56;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.chip--disabled:hover,
+.chip--disabled:focus-visible {
+  transform: none;
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(10, 12, 22, 0.6);
+  box-shadow: none;
 }
 
 .footer-note {
@@ -1141,6 +1172,13 @@ p {
   .proposal-details {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .platform-pillars {
+    align-self: flex-start;
+    text-align: left;
+    letter-spacing: 0.12em;
+    line-height: 1.6;
   }
 
   .transparency-actions {
