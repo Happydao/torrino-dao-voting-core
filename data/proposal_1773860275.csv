@@ -2,8 +2,8 @@ proposal_created_by,5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc
 proposal_created_timestamp,1773860275
 proposal_created_iso,2026-03-18T18:57:55.000Z
 proposal_lifecycle_status,Voting in progress
-proposal_lifecycle_updated_timestamp,1774122000
-proposal_lifecycle_updated_iso,2026-03-21T19:40:00.000Z
+proposal_lifecycle_updated_timestamp,1774122600
+proposal_lifecycle_updated_iso,2026-03-21T19:50:00.000Z
 voting_start_timestamp,1773860400
 voting_start_iso,2026-03-18T19:00:00.000Z
 voting_end_timestamp,1774130400
@@ -18,7 +18,7 @@ proposal_description,"1. Eugenio Benetazzo | @EugenioBenetazo
 7. Enrico De Turris | @mr.vinyl"
 proposal_options,FAVOREVOLE | CONTRARIO
 torrino_participation_rate,32.2%
-solnauta_participation_rate,23.9%
+solnauta_participation_rate,24.0%
 total_voting_power_participation_rate,30.8%
 
 wallet,solnauta_nfts,torrino_nfts,FAVOREVOLE,CONTRARIO,voting_power,timestamp,signed_message,signature
@@ -328,3 +328,4 @@ UaN6j8ajS6bBWuTK2tbC3fm81sMGExwV5AECEEVkTb9,"FiQ2jfeoPDEEg6yLu5ePMJmoqMVapd8gHYg
 8t7oEsGbG1jxMM1SWFFMiSPzLLNC8qNiynvsXEQjJz97
 vCoDVcPzXBWWDSuUvb1kBq7bGctov432pbrsC8JLq9A",3.0,0.0,3.0,1774077391,Torrino DAO governance vote:FAVOREVOLE:wallet:UaN6j8ajS6bBWuTK2tbC3fm81sMGExwV5AECEEVkTb9:timestamp:1774077370546,2JP5K8AvYbfxe8VWnBaPjn7w2u386gwwbM3BcpaZhokzbCL5qYLysfMVxiqG38LVng1etZv9bNgrrT2gBJn4rhmy
 46WURXcAfMGwRUuRVNHEEY95pjyFseBuJJ9WVng9A1Sh,H8yqwDDUisMzYCSYT3cKbmc7gep6D7Q6aVrGP8yg4ccz,,0.1,0.0,0.1,1774109599,Torrino DAO governance vote:FAVOREVOLE:wallet:46WURXcAfMGwRUuRVNHEEY95pjyFseBuJJ9WVng9A1Sh:timestamp:1774109591773,3d5gHD7g2rReB982XC3Rn8m77ZZie2N76igpBQsYeozxeq4vVZQKhVhLV1HYEX89odNPDa9a7CSDTvfCsJEfZpH9
+AbAVK9ZafVnMjXWdWw4JcCMSfYwkwN5KQw6hz2tvhTAi,FE5yFXpePeiU4BVRQqGN8XZQt4kii66oUxUEMtMEKVZv,,0.1,0.0,0.1,1774122209,Torrino DAO governance vote:FAVOREVOLE:wallet:AbAVK9ZafVnMjXWdWw4JcCMSfYwkwN5KQw6hz2tvhTAi:timestamp:1774122208161,2XLBYVBT3kJKe95w2QN1gn16ZCm3bTkYfyy97qh3nA1ccGN2Zm3khsNL2uKUSN4hnJhY45KdH813Y4qFyb3L7a7a
