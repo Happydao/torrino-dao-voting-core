@@ -4,8 +4,8 @@ proposal_created_iso,2026-03-22T12:08:06.000Z
 proposal_created_signed_message,Torrino DAO admin action:start:wallet:5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc:payload_hash:2a2b58241302cbca5bbdd5bb6dfcab4d4e5b10ec8a34017cc8c93584865e4812:timestamp:1774181284543
 proposal_created_signature,3t7co8qFP1N5WwBD9QAAb9Ywm2B3p8dw8xXde1zy7RqrK7L37px5CLfRYMVWRqTPvXVeWZ5TuSsUP7ZxH4thnjJc
 proposal_lifecycle_status,Voting in progress
-proposal_lifecycle_updated_timestamp,1774186686
-proposal_lifecycle_updated_iso,2026-03-22T13:38:06.000Z
+proposal_lifecycle_updated_timestamp,1774187286
+proposal_lifecycle_updated_iso,2026-03-22T13:48:06.000Z
 voting_start_timestamp,1774181220
 voting_start_iso,2026-03-22T12:07:00.000Z
 voting_end_timestamp,1774188420
@@ -18,9 +18,9 @@ proposal_reset_signature,
 proposal_title,Votazione di test
 proposal_description,Seleziona un opzione a piacere
 proposal_options,A | B | C
-torrino_participation_rate,1.0%
-solnauta_participation_rate,1.1%
-total_voting_power_participation_rate,1.0%
+torrino_participation_rate,1.4%
+solnauta_participation_rate,1.2%
+total_voting_power_participation_rate,1.4%
 
 wallet,solnauta_nfts,torrino_nfts,A,B,C,voting_power,timestamp,signed_message,signature
 7QhxEMfvPeGdiKNzduaXWW8e81NKagFMQrfYJtejmMb6,9taRMkivY3URdyqPwBa2AfEsPt5vvhNqMdBundPSAA7m,,0.1,0.0,0.0,0.1,1774181325,Torrino DAO governance vote:A:wallet:7QhxEMfvPeGdiKNzduaXWW8e81NKagFMQrfYJtejmMb6:timestamp:1774181321260,euWgCEPo4AzzP6SfHV5XyTw3YWNSwWr3scsUBoncX6tAj4PgYyCepTiuEhSPizXL1t9kXPf8xWodEjr5JJ4xfzR
@@ -37,3 +37,5 @@ BB4qyn1kpD9rP32nJjCMsQuJj3AqAaS26czHFYL4dZ4V
 6wtkA4LMQ5dYoGbZt1vgFdTXSqWoRPccdMQasD8sJxz7
 6pByNt3B7cwePhH57j63DWpwwMEXKqY8wZdkbc9zhGn2
 3oNR2YSJZLbhfLKfWcAkkkV1h6FaXUKmjbZPv8JB9fxB",0.0,5.4,0.0,5.4,1774186463,Torrino DAO governance vote:B:wallet:CiVp6EP6Wk595nPmBFphbzZdi3x4cHE3Vc16SCWkDQZN:timestamp:1774186453839,4WU6uDYpB9dNVdjod4ZrUNmSYm4LP9YtEFkpBk1dv9XuRLoLvb5hFJG2GLXoG9pG6UC694iwoHB7YwqVZJ23FEW
+CJtKEFSaGjXhVnjgRSeeFBbQfsmR2aeXkcHrn1vJXAoq,J5hG49Stif7r8QEgeVUTsLLcpHdP1RtBi4WCDnUNaL5x,"5GJCuizKM2BdpiMXVnRF2GnVUXKCMFQeZCNZ6bCx6n5K
+2GNkhMUmeduP5FqxipR4RC5x7s8BKA5rf1i89rDGN8xn",0.0,1.9,0.0,1.9,1774186701,Torrino DAO governance vote:B:wallet:CJtKEFSaGjXhVnjgRSeeFBbQfsmR2aeXkcHrn1vJXAoq:timestamp:1774186697399,61K4TXH8Z71T2wphvMyRxLtCS4ZbMxvzrXk7AfFuzk17CYGeiGUXrxayBGTUraFTQeN3WDKWEyRpQbDx6kVtYk6C
