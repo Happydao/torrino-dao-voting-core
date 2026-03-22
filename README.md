@@ -1,142 +1,401 @@
 # Torrino DAO Voting
 
-Piattaforma di voting per Torrino DAO con interfaccia admin, supporto wallet Phantom o Solflare, salvataggio dei voti in CSV e tracciamento automatico su GitHub.
+Transparent Solana governance voting with public CSV records, cryptographic vote verification, admin wallet authorization, and live GitHub publishing.
 
-L'obiettivo del progetto e' dare alla community un sistema il piu' possibile trasparente e verificabile: il codice applicativo e i file CSV delle votazioni possono essere ispezionati pubblicamente, mentre vengono tenuti privati solo i file sensibili o strettamente interni al runtime.
+Live platform:
 
-## Principi di sicurezza
+- Voting app: `https://happydev.fi/torrino.dao.voting/`
+- Admin dashboard: `https://happydev.fi/torrino.dao.voting/admin`
+- Vote verifier: `https://happydev.fi/torrino.dao.voting/vote.verifier`
 
-### 1. Conferma wallet per azioni admin
+## Overview
 
-Le azioni amministrative piu' sensibili richiedono conferma tramite wallet Phantom o Solflare.
+Torrino DAO Voting is a lightweight governance platform designed for communities that want:
 
-Prima di eseguire:
+- wallet-based voting eligibility
+- transparent public results
+- verifiable off-chain vote signatures
+- simple admin operations
+- public auditability through CSV archives and open source code
 
-- `Start Voting`
-- `Reset Voting`
+The project is built for Solana communities and NFT-based governance models, but its operating model can also be useful for other DAOs that want a public, inspectable voting process without hiding the logic behind a closed backend.
 
-l'admin deve firmare il messaggio:
+## Why This Project Exists
 
-```text
-Confirm admin action for Torrino DAO voting
-```
+Most community voting tools ask users to trust:
 
-Se la firma non viene approvata, l'azione viene annullata.
+- a private database
+- an opaque admin panel
+- a hidden result calculation flow
 
-Questo aggiunge un secondo livello di conferma lato wallet prima di creare o resettare una proposta.
+This project takes a different approach.
 
-### 2. Wallet admin autorizzati
+The trust model is based on:
 
-Solo i wallet admin autorizzati dal backend possono eseguire azioni di governance.
+- public frontend code
+- public backend code
+- public proposal CSV files
+- public vote verification
+- cryptographic signatures tied to each vote
+- explicit admin wallet authorization on the server
 
-Questo significa che:
+The goal is not to hide governance. The goal is to make governance readable, inspectable, and externally verifiable.
 
-- non basta aprire la dashboard admin
-- non basta modificare il frontend localmente
-- il backend verifica comunque il wallet che sta tentando l'azione
+## Core Features
 
-### 3. Tracciabilita' dei file di voto
+- NFT-based voting power calculation
+- wallet connection with Phantom or Solflare
+- support for multiple voting options
+- public live results dashboard
+- public governance history
+- public vote verifier page
+- admin-only proposal creation
+- admin-only proposal stop/reset
+- cryptographic admin confirmation for start and stop actions
+- automatic CSV generation per proposal
+- automatic GitHub sync during the vote lifecycle
 
-Ogni proposta genera un file CSV dedicato:
+## How Voting Power Works
+
+The current Torrino DAO configuration uses two NFT collections:
+
+- Torrino DAO Gen1: `0.9` voting power per NFT
+- Solnauta Gen2: `0.1` voting power per NFT
+
+Current total reference voting power in the app:
+
+- `538.8`
+
+The backend calculates wallet eligibility and voting power by reading wallet assets from the configured Solana RPC source and matching them against the allowed collection addresses.
+
+## Public Transparency Model
+
+Each proposal creates a dedicated CSV file:
 
 ```text
 data/proposal_<proposal_id>.csv
 ```
 
-Nel file vengono registrati:
+That file is intended to be the public audit artifact for the vote.
 
-- wallet che ha creato la proposta
-- timestamp di creazione
-- inizio e fine votazione
-- opzioni della proposta
-- voti ricevuti
-- potere di voto calcolato
-- eventuale reset admin
+It includes:
 
-Questo rende la votazione ispezionabile anche dopo la chiusura.
+- proposal creator wallet
+- proposal creation timestamp
+- proposal signed message and signature
+- proposal status metadata
+- reset metadata, if voting is stopped by admin
+- proposal title and description
+- proposal options
+- participation metrics
+- every recorded vote row
+- signed message and signature for each vote
 
-### 4. Storico automatico su GitHub
+During the voting lifecycle, CSV files are pushed to GitHub automatically:
 
-I file CSV vengono sincronizzati automaticamente su GitHub nei momenti chiave:
+- initial proposal creation
+- periodic updates during the active vote
+- final state when voting completes
+- final state when an admin stops the vote
 
-- commit iniziale dopo la creazione della proposta
-- commit periodici durante la votazione attiva
-- commit finale a fine votazione
-- commit finale anche in caso di reset admin
+This means the community can inspect both:
 
-In questo modo la community puo' controllare lo storico dei file e verificare che il risultato finale non venga modificato in modo opaco.
+- the current state of a vote
+- the published history of its result file
 
-### 5. Protezione contro il doppio utilizzo degli NFT
+## Vote Verification
 
-Il backend mantiene un registro degli NFT gia' usati per votare, in modo da impedire che lo stesso asset venga contato due volte.
+The project includes a public verifier page:
 
-Questa parte e' un controllo tecnico interno del server.
+```text
+/vote.verifier
+```
 
-## Trasparenza del progetto
+The verifier allows any user to copy three values from a public CSV row:
 
-Le parti piu' importanti da rendere pubbliche sono:
+- `wallet`
+- `signed_message`
+- `signature`
 
-- codice frontend
-- codice backend
-- logica di autorizzazione admin
-- logica di firma wallet
-- file CSV delle votazioni
+and check whether the record is cryptographically valid.
 
-Questo permette alla community di verificare:
+The result is:
 
-- come viene creato un voto
-- come viene confermata un'azione admin
-- come vengono salvati i risultati
-- come viene mantenuto lo storico dei file
+- `TRUE` if the wallet really signed that vote message
+- `FALSE` if the row was altered, mismatched, or malformed
 
-## File pubblici e file privati
+This gives the community an independent way to validate vote integrity without trusting the frontend or the admin.
 
-### Da tenere pubblici
+## Admin Security Model
 
-- `admin.html`
-- `admin.js`
+The admin page is public, but admin authority is not.
+
+Opening `admin.html` does not grant governance access.
+
+Real protection happens on the backend:
+
+- only whitelisted admin wallets are accepted
+- each admin action must include a valid wallet signature
+- proposal creation requires a signed action message bound to the proposal payload
+- proposal stop/reset requires a signed action message bound to the proposal id
+- the backend verifies wallet signatures before changing proposal state
+
+This means an external user cannot damage governance simply by discovering the admin URL.
+
+### Admin actions currently protected
+
+- `Start Voting`
+- `Stop Voting`
+
+### Admin proof stored publicly
+
+For every proposal start and stop event, the system stores:
+
+- admin wallet
+- signed message
+- signature
+
+inside the proposal CSV metadata, so the community can verify that the admin really executed the action.
+
+## Vote Security Model
+
+Every submitted vote includes:
+
+- wallet address
+- selected option
+- signed message
+- wallet signature
+
+The backend verifies:
+
+- that the message format is valid
+- that the wallet inside the message matches the sender wallet
+- that the vote option matches the signed content
+- that the signature is valid for that wallet
+- that the message is recent enough for live vote submission
+
+The backend then records the vote into the CSV and marks the eligible NFTs as used, preventing the same NFT from being counted twice.
+
+## Hardware Wallet Note
+
+The current vote flow depends on `signMessage`.
+
+Because of that:
+
+- standard Phantom or Solflare software wallets work with the expected flow
+- some hardware wallet setups connected through Phantom or Solflare may not support message signing correctly
+
+For those cases, the frontend now returns a specific user-facing error instead of a generic failure.
+
+## User Flow
+
+### Regular voter
+
+1. Connect wallet with Phantom or Solflare
+2. The backend reads eligible NFTs
+3. Voting power is calculated
+4. The user signs the vote message
+5. The backend validates the signature
+6. The vote is written into the proposal CSV
+7. Live results update publicly
+
+### Admin
+
+1. Connect authorized admin wallet
+2. Create proposal title, description, options, start time, end time
+3. Sign the admin action
+4. The backend verifies the admin signature
+5. A new proposal CSV is created
+6. CSV metadata is published and synced to GitHub
+
+If the admin stops a proposal:
+
+1. The current proposal is loaded
+2. The admin signs a stop action linked to that proposal
+3. The backend validates the signature
+4. The CSV is updated with reset metadata
+5. The final stopped state is published to GitHub
+
+## Main Pages
+
+### Voting page
+
+Public interface for:
+
+- wallet connection
+- current proposal
+- live results
+- voting power view
+- governance history
+- transparency section
+- vote verifier entry point
+
+### Admin page
+
+Publicly accessible UI, but operationally restricted by backend wallet authorization.
+
+Provides:
+
+- admin wallet connection
+- proposal creation
+- start voting action
+- stop voting action
+- countdown / in-progress reminder for active or scheduled proposals
+
+### Vote verifier page
+
+Public self-service tool for:
+
+- verifying a vote row from CSV
+- checking signature authenticity
+- confirming that a vote was not manipulated
+
+## Architecture
+
+This project is intentionally simple.
+
+### Frontend
+
+Static files in `public/`:
+
 - `index.html`
+- `admin.html`
+- `vote.verifier.html`
 - `app.js`
+- `admin.js`
+- `vote-verifier.js`
 - `style.css`
+
+### Backend
+
+Single Node.js server:
+
 - `server.js`
-- `data/proposal_<proposal_id>.csv`
-- `README.md`
 
-### Da tenere privati
+Responsibilities:
 
-- `.env`
-- `node_modules`
-- `data/used-mints.json`
+- serve static files
+- handle wallet NFT lookup
+- validate vote signatures
+- validate admin signatures
+- persist proposal CSV data
+- publish updates to GitHub
+- expose verification endpoints
 
-`data/used-mints.json` viene tenuto privato perche' e' uno stato tecnico interno del server. Serve a prevenire il doppio voto degli NFT, ma non e' il file principale di trasparenza verso la community. Il file pubblico di riferimento resta il CSV della proposta.
+### Data storage
 
-## Avvio locale
+- active proposal state: `data/proposal.json`
+- used NFT registry: `data/used-mints.json`
+- public proposal archives: `data/proposal_<proposal_id>.csv`
 
-1. Copia `.env.example` in `.env`
-2. Imposta `HELIUS_RPC` con il tuo endpoint Helius
-3. Avvia il server con `npm start`
-4. Apri `http://localhost:3000`
+## API Endpoints
 
-## Endpoint principali
+### Public
 
-- `GET /api/wallet-nfts?address=WALLET_ADDRESS`
+- `GET /api/wallet-nfts?address=<WALLET>`
 - `GET /api/proposal`
 - `GET /api/results`
 - `POST /api/vote`
+- `POST /api/verify-vote-record`
+
+### Admin
+
 - `POST /api/admin/proposal`
 - `POST /api/admin/reset-voting`
 
-## Live voting platform
+## Environment
 
-https://happydev.fi/torrino.dao.voting/
+Required environment variables:
 
-## Nota finale
+- `HELIUS_RPC`
 
-Questo progetto non basa la fiducia su un pannello admin nascosto, ma sulla combinazione di:
+Optional:
 
-- wallet confirmation
-- controlli backend
-- file CSV verificabili
-- storico pubblico su GitHub
+- `PORT`
+- `ADMIN_WALLET`
 
-La sicurezza percepita dalla community aumenta quando il codice e i risultati sono leggibili, mentre i soli dati realmente sensibili restano esclusi dal repository pubblico.
+The code also includes a secondary admin wallet constant in the server configuration.
+
+## Local Development
+
+### Requirements
+
+- Node.js
+- a Solana RPC endpoint
+- git configured on the host if GitHub sync is enabled
+
+### Install and run
+
+```bash
+npm install
+npm start
+```
+
+Then open:
+
+```text
+http://localhost:3000
+```
+
+## Production Notes
+
+The live deployment typically uses:
+
+- Nginx for public routing
+- PM2 for the Node.js process
+
+Important routing note:
+
+- frontend pages can be served directly by Nginx
+- API paths must proxy to the Node backend
+- custom pages such as `/vote.verifier` may require an explicit Nginx route or redirect depending on your static file setup
+
+## Recommended Public Repository Contents
+
+Recommended to keep public:
+
+- `public/`
+- `server.js`
+- `README.md`
+- proposal CSV files under `data/`
+
+Recommended to keep private:
+
+- `.env`
+- `node_modules/`
+- `data/used-mints.json`
+- any local operational secrets
+
+`used-mints.json` is internal runtime state. The public transparency artifact is the proposal CSV.
+
+## What Makes This Useful For Other DAOs
+
+This project may be useful for other Solana communities that want:
+
+- a visible and understandable voting process
+- lightweight operations without a heavy governance stack
+- cryptographic proof of both votes and admin actions
+- public CSV archives instead of hidden result tables
+- a verifier page the community can use without asking the admin
+
+It is especially relevant for DAO teams that want a custom governance surface while preserving strong transparency.
+
+## Limitations
+
+- voting is off-chain, even if signatures are cryptographically verifiable
+- final trust still depends on operating the backend honestly and publishing updates as designed
+- hardware wallet support for `signMessage` is not universal
+- current logic is tailored to the Torrino DAO collections and weights
+
+## Summary
+
+Torrino DAO Voting is not trying to hide governance complexity behind a closed admin panel.
+
+It turns governance into something the community can:
+
+- read
+- inspect
+- verify
+- archive
+
+That is the core design principle of the project.
