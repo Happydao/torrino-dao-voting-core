@@ -539,10 +539,6 @@ function renderResultsCards() {
           <strong>${formatVotingPower(results.total_power || 0)}</strong>
           <span class="results-stat__detail">Participation rate: ${formatParticipationRate(results.total_power, TOTAL_VOTING_POWER)} of ${TOTAL_VOTING_POWER.toFixed(1)} total power</span>
         </article>
-        <article class="results-stat">
-          <span class="label label--subtle">Results Refresh</span>
-          <strong>10s</strong>
-        </article>
       </div>
       <div class="results-bars"></div>
     `;

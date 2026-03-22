@@ -758,6 +758,14 @@ p {
   width: 100%;
 }
 
+.proposal-card--slot .proposal-tag,
+.results-card .proposal-tag {
+  color: #ff6b6b;
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
 .proposal-empty-card {
   min-height: 220px;
 }
