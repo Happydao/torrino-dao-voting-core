@@ -1,6 +1,8 @@
 proposal_created_by,5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc
 proposal_created_timestamp,1773860275
 proposal_created_iso,2026-03-18T18:57:55.000Z
+proposal_created_signed_message,
+proposal_created_signature,
 proposal_lifecycle_status,Voting completed successfully
 proposal_lifecycle_updated_timestamp,1774130400
 proposal_lifecycle_updated_iso,2026-03-21T22:00:00.000Z
@@ -8,6 +10,11 @@ voting_start_timestamp,1773860400
 voting_start_iso,2026-03-18T19:00:00.000Z
 voting_end_timestamp,1774130400
 voting_end_iso,2026-03-21T22:00:00.000Z
+proposal_reset_by,
+proposal_reset_timestamp,
+proposal_reset_iso,
+proposal_reset_signed_message,
+proposal_reset_signature,
 proposal_title,APPOINTMENT OF THE NEW GOVERNANCE COUNCIL
 proposal_description,"1. Eugenio Benetazzo | @EugenioBenetazo
 2. Andrea Savoca Corona | @ASavocaCorona
