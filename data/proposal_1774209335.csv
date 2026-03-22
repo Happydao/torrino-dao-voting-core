@@ -4,8 +4,8 @@ proposal_created_iso,2026-03-22T19:55:35.000Z
 proposal_created_signed_message,Torrino DAO admin action:start:wallet:5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc:payload_hash:c8a5a3d74bad2ab089fcad02d81571983ce7f957ab468150d1b6cf0e0a8514e5:timestamp:1774209328592
 proposal_created_signature,Qn3FFR6r53qy68fVQ9paD9wbJExUzTayJeeqGrH3gYHsr2NfK7Tm616XwnmC43vK9UJ7SxVBQc1UJTTbNyb6wB6
 proposal_lifecycle_status,Voting in progress
-proposal_lifecycle_updated_timestamp,1774211735
-proposal_lifecycle_updated_iso,2026-03-22T20:35:35.000Z
+proposal_lifecycle_updated_timestamp,1774212335
+proposal_lifecycle_updated_iso,2026-03-22T20:45:35.000Z
 voting_start_timestamp,1774209300
 voting_start_iso,2026-03-22T19:55:00.000Z
 voting_end_timestamp,1774295700
@@ -20,9 +20,9 @@ proposal_description,"Quale funzione miglioreresti o aggiungeresti alla piattafo
 
 Puoi selezionare una sola opzione."
 proposal_options,"Stabilità e connessione wallet | Classifica utenti più attivi nel voto | Notifiche per nuove proposal | Migliorare la grafica | Nessuno, va bene così"
-torrino_participation_rate,4.2%
-solnauta_participation_rate,3.6%
-total_voting_power_participation_rate,4.1%
+torrino_participation_rate,5.4%
+solnauta_participation_rate,3.7%
+total_voting_power_participation_rate,5.1%
 
 wallet,solnauta_nfts,torrino_nfts,Stabilità e connessione wallet,Classifica utenti più attivi nel voto,Notifiche per nuove proposal,Migliorare la grafica,"Nessuno, va bene così",voting_power,timestamp,signed_message,signature
 4S9CvpCSKxpv6RtSHDXLXevJyaiYANtphDvrpsPYkaJ3,GswVRSiEjZQzoc7kzrXs9RmKU7qJGYdPoGRanmdt3qFN,,0.0,0.0,0.1,0.0,0.0,0.1,1774209780,Torrino DAO governance vote:proposal:1774209335:option:Notifiche per nuove proposal:wallet:4S9CvpCSKxpv6RtSHDXLXevJyaiYANtphDvrpsPYkaJ3:timestamp:1774209778744,4fsQWFnVgTeWwrErfTpsaokBwNDgvjdjY765ZbYqkbkyJz97PgTZXZdaKtcKvRiEfxtWtyXCMX5uMShebGJUozbF
@@ -71,3 +71,9 @@ iWzgTQoYNxRNgTba2vinwspyaxzmHTnfCMABwsfVDfz",0.0,0.0,0.0,0.0,3.5,3.5,1774211046,
 2fvEbUVcQvhiXFN7hFTrRYaXHVcnScuMdTg551hQqKXE",0.0,1.9,0.0,0.0,0.0,1.9,1774211154,Torrino DAO governance vote:proposal:1774209335:option:Classifica utenti più attivi nel voto:wallet:7AsjAA6YPKQQmBgdb6CeSgP3cQMVq4TxUszguox7tQXE:timestamp:1774211151798,3ZsNLUtWn2uYTznrTtasqkn8puRU3PcMwSdH73EuTHoTCQNxvAzwMy5wL2vrvsSduBsHZd2YNaSHKVrTyaNcTHPd
 qKkFK4n5AEGk1GG2NXVsxxNT9ntGWMq2EEGNKjQeW7h,8carPoqupwQuXt5gmpaDr3voM6UfiJDy9bBtuQ66UTzJ,7hvGms3rRvoRkbFx5CBnS6VLXSLuzu2VFn4RzW3wpSjm,0.0,0.0,1.0,0.0,0.0,1.0,1774211525,Torrino DAO governance vote:proposal:1774209335:option:Notifiche per nuove proposal:wallet:qKkFK4n5AEGk1GG2NXVsxxNT9ntGWMq2EEGNKjQeW7h:timestamp:1774211514521,5Bu9AoQKnfmTzVayHmPeStbJN7PeGneSXspZF5xgodMxntNEnVSwvD5TvW6ySgF3Jb9ZUHca2wY2Cs18i4yxyjCt
 GXerAK7bX5WaeBW7PWqJ7LAqz5ynaZE1YYNgWNXbgkUv,48p8zAM53mxcHgt56nZuD5SerCH8vvZEJqYVuxc2tzLW,,0.0,0.0,0.1,0.0,0.0,0.1,1774211573,Torrino DAO governance vote:proposal:1774209335:option:Notifiche per nuove proposal:wallet:GXerAK7bX5WaeBW7PWqJ7LAqz5ynaZE1YYNgWNXbgkUv:timestamp:1774211570683,5tmqvsypbcQXaHYoWtedeL396Y8H7wB7fy47G6VxCGQw7PKtkPVkWgakYACuHMAQGJijVUAG2hgUfCnu1oV3AYrH
+3Djwa3yvVHwMzEXonCzobUqvRx7k9RwKss48ATYTwbVS,CQiHG5cNm47UboTjpp2Kqjvb33GjzDHhvktB9uSuYqy1,"HvXLEuk8zPRS2TEvHBFrmLLGpwEyRyLek3FnNd213wBJ
+HJZrafJJDdMV6qVAkgj7FmLAi74PSe5gh9fL9kect3es
+CnUkEYfkURizbQa993EoK3Y9K5rk8xSbJyRvHdj14RCf
+BMtAKXPxa2Zcp3G8tG45R3nrVo6uW7GemKRJLwiSw4xX
+5jqqRAuP6KcrZPji2Tyazk4CiUFktBewfMcHntrsVENQ",0.0,0.0,4.6,0.0,0.0,4.6,1774212142,Torrino DAO governance vote:proposal:1774209335:option:Notifiche per nuove proposal:wallet:3Djwa3yvVHwMzEXonCzobUqvRx7k9RwKss48ATYTwbVS:timestamp:1774212132623,45Mejo5Hw1V6Gtvvf77BqHzj3gwiQ6HVb2sPADWfGKURMStC7fiuqyfacMDGXysJ1uFqszDJ7VKDJQUWSjfoqfaK
+CZf96AaiCv1LqygvM6VL2vm9YvRK7uTv5rMpDf2RexBb,,VCWAyRrT1pqmJY3rQZu9o5Wszf6ofWQuWoTs35Yi7Aj,0.0,0.0,0.9,0.0,0.0,0.9,1774212309,Torrino DAO governance vote:proposal:1774209335:option:Notifiche per nuove proposal:wallet:CZf96AaiCv1LqygvM6VL2vm9YvRK7uTv5rMpDf2RexBb:timestamp:1774212305708,QtHbkj4HkCH6yvN7BBmnyXXKa1Z3EV3udNS1fbgJEEByZfqENh3dhTFT719LSdmZM6tXr8gkmABxaVEHaekM75Y
