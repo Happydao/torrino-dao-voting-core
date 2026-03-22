@@ -8,6 +8,9 @@ const textEncoder = new TextEncoder();
 const state = {
   adminWallet: null,
   adminProvider: null,
+  currentProposal: null,
+  proposalRefreshIntervalId: null,
+  proposalCountdownIntervalId: null,
 };
 
 const ui = {
@@ -24,6 +27,10 @@ const ui = {
   walletAddress: document.getElementById("adminWalletAddress"),
   startVotingButton: document.getElementById("startVotingButton"),
   resetVotingButton: document.getElementById("resetVotingButton"),
+  proposalNotice: document.getElementById("adminProposalNotice"),
+  proposalNoticeBadge: document.getElementById("adminProposalNoticeBadge"),
+  proposalNoticeTitle: document.getElementById("adminProposalNoticeTitle"),
+  proposalNoticeCountdown: document.getElementById("adminProposalNoticeCountdown"),
   title: document.getElementById("proposalTitleInput"),
   description: document.getElementById("proposalDescriptionInput"),
   optionA: document.getElementById("optionAInput"),
@@ -44,6 +51,7 @@ ui.openStartTimePickerButton.addEventListener("click", () => openDateTimePicker(
 ui.openEndTimePickerButton.addEventListener("click", () => openDateTimePicker(ui.endTime));
 updateAdminConnectButtonLabel();
 initializeAdminFeedbackModal();
+initializeAdminProposalNotice();
 
 async function handleAdminWalletButtonClick() {
   if (state.adminWallet && state.adminProvider) {
@@ -83,6 +91,7 @@ async function connectAdminWallet() {
     ui.dashboard.hidden = false;
     ui.status.textContent = "Admin wallet autorizzato. Puoi gestire la governance.";
     setActionStatus("", "");
+    await refreshAdminProposalNotice();
   } catch (error) {
     console.error(error);
     ui.status.textContent = "Errore durante la connessione del wallet admin.";
@@ -161,6 +170,7 @@ async function startVoting() {
       throw new Error(result && result.error ? result.error : "SERVER_ERROR");
     }
 
+    await refreshAdminProposalNotice();
     setActionStatus("Voting started successfully.", "success");
     openAdminFeedbackModal("Voting Started", "Voting started successfully.", "success");
   } catch (error) {
@@ -234,6 +244,7 @@ async function resetVoting() {
       throw new Error(result && result.error ? result.error : "SERVER_ERROR");
     }
 
+    await refreshAdminProposalNotice();
     clearForm();
     ui.dashboard.hidden = false;
     setActionStatus("Voting reset successfully.", "success");
@@ -452,10 +463,82 @@ function clearForm() {
 function clearAdminSession() {
   state.adminWallet = null;
   state.adminProvider = null;
+  state.currentProposal = null;
   ui.walletAddress.textContent = "Not connected";
   ui.dashboard.hidden = true;
   ui.status.textContent = "Admin wallet disconnected.";
   setActionStatus("", "");
+  renderAdminProposalNotice();
+}
+
+function initializeAdminProposalNotice() {
+  refreshAdminProposalNotice();
+
+  state.proposalRefreshIntervalId = window.setInterval(() => {
+    refreshAdminProposalNotice();
+  }, 30000);
+
+  state.proposalCountdownIntervalId = window.setInterval(() => {
+    renderAdminProposalNotice();
+  }, 1000);
+}
+
+async function refreshAdminProposalNotice() {
+  try {
+    state.currentProposal = await getCurrentProposal();
+  } catch (error) {
+    console.error(error);
+    state.currentProposal = null;
+  }
+
+  renderAdminProposalNotice();
+}
+
+function renderAdminProposalNotice() {
+  const proposal = state.currentProposal;
+
+  if (!proposal || !ui.proposalNotice) {
+    ui.proposalNotice.hidden = true;
+    return;
+  }
+
+  if (proposal.status !== "active" && proposal.status !== "scheduled") {
+    ui.proposalNotice.hidden = true;
+    return;
+  }
+
+  const isScheduled = proposal.status === "scheduled";
+  ui.proposalNotice.hidden = false;
+  ui.proposalNoticeBadge.textContent = isScheduled ? "Proposal scheduled" : "Voting in progress";
+  ui.proposalNoticeTitle.textContent = proposal.title || "Active proposal";
+  ui.proposalNoticeCountdown.textContent = isScheduled
+    ? `Starts in: ${formatAdminCountdown(proposal.start_time)}`
+    : `Ends in: ${formatAdminCountdown(proposal.end_time)}`;
+}
+
+function formatAdminCountdown(unixTimestampSeconds) {
+  const targetMs = Number(unixTimestampSeconds) * 1000;
+
+  if (!Number.isFinite(targetMs)) {
+    return "--";
+  }
+
+  const remainingMs = Math.max(0, targetMs - Date.now());
+  const totalSeconds = Math.floor(remainingMs / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (days > 0) {
+    return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+  }
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${seconds}s`;
+  }
+
+  return `${minutes}m ${seconds}s`;
 }
 
 function initializeAdminFeedbackModal() {

@@ -368,11 +368,14 @@ async function handleAdminReset(req, res) {
   }
 
   const proposal = readProposal();
+  const isValidAdminReset = proposal
+    ? verifyAdminActionRequest(adminWallet, adminSignedMessage, adminSignature, {
+      action: "stop",
+      proposalId: proposal.proposal_id,
+    })
+    : verifyWalletSignature(adminWallet, adminSignedMessage, adminSignature);
 
-  if (proposal && !verifyAdminActionRequest(adminWallet, adminSignedMessage, adminSignature, {
-    action: "stop",
-    proposalId: proposal.proposal_id,
-  })) {
+  if (!isValidAdminReset) {
     sendJson(res, 403, { error: "INVALID_ADMIN_SIGNATURE" });
     return;
   }

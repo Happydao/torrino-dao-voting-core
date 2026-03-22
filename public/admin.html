@@ -118,6 +118,14 @@
             <button id="resetVotingButton" class="admin-button admin-button--secondary" type="button">
               Stop Voting
             </button>
+            <div id="adminProposalNotice" class="admin-proposal-notice" hidden>
+              <p id="adminProposalNoticeBadge" class="admin-proposal-notice__badge">Voting in progress</p>
+              <strong id="adminProposalNoticeTitle" class="admin-proposal-notice__title">Active proposal</strong>
+              <p id="adminProposalNoticeCountdown" class="admin-proposal-notice__countdown">Countdown: --</p>
+              <p class="admin-proposal-notice__copy">
+                Starting a new proposal or stopping voting will invalidate the current one.
+              </p>
+            </div>
           </div>
           <div id="admin-status" class="admin-feedback" aria-live="polite"></div>
         </section>
