@@ -519,7 +519,7 @@ function renderResultsCards() {
     card.className = "results-card";
     card.innerHTML = `
       <div class="results-header">
-        <p class="proposal-tag">Live Voting Results</p>
+        <p class="results-overline">Live Voting Results</p>
         <h2>Proposal ${escapeHtml(results.proposal_id || "--")}</h2>
         <p class="results-status">${getProposalStatusLabel(liveStatus)}</p>
       </div>

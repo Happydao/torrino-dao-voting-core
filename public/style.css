@@ -758,12 +758,23 @@ p {
   width: 100%;
 }
 
-.proposal-card--slot .proposal-tag,
-.results-card .proposal-tag {
+.proposal-card--slot .proposal-tag {
   color: #ff6b6b;
   font-size: 0.9rem;
   font-weight: 800;
   letter-spacing: 0.16em;
+}
+
+.results-overline {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.results-card h2 {
+  color: #ff6b6b;
 }
 
 .proposal-empty-card {
