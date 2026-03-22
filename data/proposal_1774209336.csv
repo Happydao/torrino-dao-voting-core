@@ -1,0 +1,27 @@
+proposal_created_by,5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc
+proposal_created_timestamp,1774209336
+proposal_created_iso,2026-03-22T19:55:36.000Z
+proposal_created_signed_message,Torrino DAO admin action:start:wallet:5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc:payload_hash:c8a5a3d74bad2ab089fcad02d81571983ce7f957ab468150d1b6cf0e0a8514e5:timestamp:1774209328592
+proposal_created_signature,Qn3FFR6r53qy68fVQ9paD9wbJExUzTayJeeqGrH3gYHsr2NfK7Tm616XwnmC43vK9UJ7SxVBQc1UJTTbNyb6wB6
+proposal_lifecycle_status,Voting in progress
+proposal_lifecycle_updated_timestamp,1774209345
+proposal_lifecycle_updated_iso,2026-03-22T19:55:45.000Z
+voting_start_timestamp,1774209300
+voting_start_iso,2026-03-22T19:55:00.000Z
+voting_end_timestamp,1774295700
+voting_end_iso,2026-03-23T19:55:00.000Z
+proposal_reset_by,
+proposal_reset_timestamp,
+proposal_reset_iso,
+proposal_reset_signed_message,
+proposal_reset_signature,
+proposal_title,ESPERIENZA DELLA PIATTAFORMA
+proposal_description,"Come valuti l’esperienza complessiva della piattaforma di voto?
+
+Puoi selezionare una sola opzione."
+proposal_options,Molto semplice e chiara | Semplice | Nella media | Poco chiara | Da migliorare
+torrino_participation_rate,0.0%
+solnauta_participation_rate,0.0%
+total_voting_power_participation_rate,0.0%
+
+wallet,solnauta_nfts,torrino_nfts,Molto semplice e chiara,Semplice,Nella media,Poco chiara,Da migliorare,voting_power,timestamp,signed_message,signature
