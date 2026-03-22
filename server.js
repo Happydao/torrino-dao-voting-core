@@ -344,6 +344,18 @@ async function handleAdminProposal(req, res) {
 
   try {
     await withMutationLock(() => {
+      const existingProposal = readProposal();
+
+      if (existingProposal) {
+        const existingStatus = getProposalStatus(existingProposal);
+
+        if (existingStatus === "active" || existingStatus === "scheduled") {
+          const error = new Error("PROPOSAL_ALREADY_ACTIVE");
+          error.code = "PROPOSAL_ALREADY_ACTIVE";
+          throw error;
+        }
+      }
+
       ensureDataDir();
       initializeVoteStorageForProposal(proposal, adminWallet);
       writeFileAtomic(PROPOSAL_PATH, JSON.stringify(proposal, null, 2) + "\n");
@@ -352,6 +364,10 @@ async function handleAdminProposal(req, res) {
     sendJson(res, 200, { success: true, proposal });
   } catch (error) {
     console.error(error);
+    if (error && (error.code === "PROPOSAL_ALREADY_ACTIVE" || error.message === "PROPOSAL_ALREADY_ACTIVE")) {
+      sendJson(res, 409, { error: "PROPOSAL_ALREADY_ACTIVE" });
+      return;
+    }
     sendJson(res, 500, { error: "SERVER_ERROR" });
   }
 }

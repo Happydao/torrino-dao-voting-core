@@ -121,6 +121,18 @@ async function startVoting() {
     return;
   }
 
+  await refreshAdminProposalNotice();
+
+  if (
+    state.currentProposal &&
+    (state.currentProposal.status === "active" || state.currentProposal.status === "scheduled")
+  ) {
+    const message = "A proposal is already active or scheduled. Stop the current proposal before starting a new one.";
+    setActionStatus(message, "error");
+    openAdminFeedbackModal("Active Proposal", message, "error");
+    return;
+  }
+
   const title = ui.title.value.trim();
   const description = ui.description.value.trim();
   const options = [
@@ -189,6 +201,13 @@ async function startVoting() {
 
     if (error.message === "INVALID_PROPOSAL") {
       setActionStatus("Fill in title, description and at least one option.", "error");
+      return;
+    }
+
+    if (error.message === "PROPOSAL_ALREADY_ACTIVE") {
+      const message = "A proposal is already active or scheduled. Stop the current proposal before starting a new one.";
+      setActionStatus(message, "error");
+      openAdminFeedbackModal("Active Proposal", message, "error");
       return;
     }
 
