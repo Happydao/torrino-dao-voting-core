@@ -1087,7 +1087,7 @@ p {
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 18px;
-  align-items: stretch;
+  align-items: flex-start;
 }
 
 .admin-button {
@@ -1102,6 +1102,8 @@ p {
     box-shadow 0.18s ease,
     filter 0.18s ease,
     opacity 0.18s ease;
+  align-self: flex-start;
+  flex: 0 0 auto;
 }
 
 .admin-button--primary {
