@@ -10,16 +10,19 @@ const TOTAL_VOTING_POWER = 538.8;
 const GOVERNANCE_HISTORY_API = "https://api.github.com/repos/Happydao/torrino-dao-voting-core/contents/data";
 const GOVERNANCE_HISTORY_RAW_BASE = "https://raw.githubusercontent.com/Happydao/torrino-dao-voting-core/main/data/";
 const textEncoder = new TextEncoder();
+
 const state = {
   walletAddress: null,
   walletProvider: null,
   walletData: null,
-  proposal: null,
-  voteFeedbackTimeoutId: null,
+  proposals: [],
+  proposalStatus: "inactive",
+  results: [],
   resultsPollIntervalId: null,
   countdownIntervalId: null,
   governanceHistory: [],
   governanceHistoryLoaded: false,
+  votingProposalId: "",
 };
 
 const ui = {
@@ -31,27 +34,14 @@ const ui = {
   torrinoNames: document.getElementById("torrinoNames"),
   solnautaNames: document.getElementById("solnautaNames"),
   votingPower: document.getElementById("votingPower"),
-  proposalVotingPower: document.getElementById("proposalVotingPower"),
-  proposalTag: document.getElementById("proposalTag"),
-  proposalTitle: document.getElementById("proposalTitle"),
-  proposalDescription: document.getElementById("proposalDescription"),
-  proposalStatus: document.getElementById("proposalStatus"),
-  proposalCountdown: document.getElementById("proposalCountdown"),
-  voteOptions: document.getElementById("voteOptions"),
+  proposalCards: document.getElementById("proposalCards"),
+  resultsCards: document.getElementById("resultsCards"),
   voteFeedback: document.getElementById("voteFeedback"),
   feedbackModal: document.getElementById("feedbackModal"),
   feedbackModalBadge: document.getElementById("feedbackModalBadge"),
   feedbackModalTitle: document.getElementById("feedbackModalTitle"),
   feedbackModalMessage: document.getElementById("feedbackModalMessage"),
   closeFeedbackModal: document.getElementById("closeFeedbackModal"),
-  resultsStatus: document.getElementById("resultsStatus"),
-  solnautaVoted: document.getElementById("solnautaVoted"),
-  torrinoVoted: document.getElementById("torrinoVoted"),
-  solnautaParticipation: document.getElementById("solnautaParticipation"),
-  torrinoParticipation: document.getElementById("torrinoParticipation"),
-  totalPower: document.getElementById("totalPower"),
-  powerParticipation: document.getElementById("powerParticipation"),
-  resultsBars: document.getElementById("resultsBars"),
   historyModal: document.getElementById("historyModal"),
   openHistoryModal: document.getElementById("openHistoryModal"),
   closeHistoryModal: document.getElementById("closeHistoryModal"),
@@ -107,13 +97,14 @@ async function connectWallet() {
     const walletData = await getWalletNfts(walletAddress);
     state.walletData = walletData;
     updateWalletDashboard(walletAddress, walletData);
-    setStatus("NFTs loaded successfully. You can vote if the proposal is active.");
+    renderProposalCards();
+    setStatus("NFTs loaded successfully. You can vote on every active proposal separately.");
   } catch (error) {
     console.error(error);
     setStatus(getErrorMessage(error));
   } finally {
     setConnectBusy(false);
-    syncVoteButtons();
+    syncProposalButtons();
   }
 }
 
@@ -128,7 +119,7 @@ async function disconnectWallet() {
   } finally {
     clearWalletSession();
     setConnectBusy(false);
-    syncVoteButtons();
+    syncProposalButtons();
   }
 }
 
@@ -156,12 +147,7 @@ function initializeWalletStatus() {
 function getWalletProvider() {
   const providers = getInstalledWalletProviders();
   const connectedProvider = providers.find((provider) => provider && provider.isConnected);
-
-  if (connectedProvider) {
-    return connectedProvider;
-  }
-
-  return providers[0] || null;
+  return connectedProvider || providers[0] || null;
 }
 
 function getInstalledWalletProviders() {
@@ -258,8 +244,10 @@ async function refreshProposal() {
       throw new Error("SERVER_ERROR");
     }
 
-    state.proposal = payload && payload.proposal === null ? null : payload;
-    renderProposal();
+    state.proposals = Array.isArray(payload.proposals) ? payload.proposals : [];
+    state.proposalStatus = payload.status || "inactive";
+    renderProposalCards();
+    startCountdownLoop();
   } catch (error) {
     console.error(error);
   }
@@ -274,93 +262,136 @@ async function refreshResults() {
       throw new Error("SERVER_ERROR");
     }
 
-    updateResultsDashboard(payload);
+    state.results = Array.isArray(payload.results) ? payload.results : [];
+    renderResultsCards();
   } catch (error) {
     console.error(error);
   }
 }
 
-function renderProposal() {
-  const proposal = state.proposal;
+function renderProposalCards() {
+  ui.proposalCards.replaceChildren();
 
-  if (!proposal) {
-    ui.proposalTag.textContent = "PROPOSAL";
-    ui.proposalTitle.textContent = "No active proposal";
-    ui.proposalDescription.textContent = "The admin has not started a vote yet.";
-    ui.proposalStatus.textContent = "Voting inactive";
-    ui.proposalCountdown.textContent = "--";
-    renderVoteOptions([]);
-    stopCountdown();
-    syncVoteButtons();
+  if (state.proposals.length === 0) {
+    const empty = document.createElement("section");
+    empty.className = "proposal-card proposal-card--featured proposal-empty-card";
+    empty.innerHTML = `
+      <p class="proposal-tag">PROPOSAL</p>
+      <h2>No active proposal</h2>
+      <p class="proposal-copy">The admin has not started a vote yet.</p>
+    `;
+    ui.proposalCards.appendChild(empty);
+    syncProposalButtons();
     return;
   }
 
-  ui.proposalTag.textContent = proposal.proposal_id ? `PROPOSAL ${proposal.proposal_id}` : "PROPOSAL";
-  ui.proposalTitle.textContent = proposal.title;
-  ui.proposalDescription.textContent = proposal.description;
-  ui.proposalStatus.textContent = getProposalStatusLabel(proposal.status);
-  renderVoteOptions(Array.isArray(proposal.options) ? proposal.options : []);
-  startCountdown(proposal);
-  syncVoteButtons();
+  for (const proposal of state.proposals) {
+    const proposalState = getWalletProposalState(proposal.proposal_id);
+    const card = document.createElement("section");
+    card.className = "proposal-card proposal-card--featured proposal-card--slot";
+    card.dataset.proposalId = proposal.proposal_id;
+    card.innerHTML = `
+      <p class="proposal-tag">PROPOSAL ${escapeHtml(proposal.proposal_id || "")}</p>
+      <h2>${escapeHtml(proposal.title || "Untitled proposal")}</h2>
+      <p class="proposal-copy">${escapeHtml(proposal.description || "")}</p>
+      <div class="proposal-details">
+        <div class="proposal-detail">
+          <span>Your available voting power</span>
+          <strong>${formatVotingPower(proposalState ? proposalState.voting_power : 0)}</strong>
+        </div>
+        <div class="proposal-detail">
+          <span>Voting status</span>
+          <strong class="proposal-state" data-role="status">${getProposalStatusLabel(proposal.status)}</strong>
+        </div>
+        <div class="proposal-detail proposal-detail--countdown">
+          <span>Countdown</span>
+          <strong data-role="countdown">${getProposalCountdownLabel(proposal)}</strong>
+        </div>
+      </div>
+      <div class="proposal-card__footer">
+        <p class="proposal-card__note">
+          ${proposalState
+            ? `Wallet-confirmed voting power for this proposal: ${formatVotingPower(proposalState.voting_power)}`
+            : "Connect a wallet to see your proposal-specific voting power."}
+        </p>
+      </div>
+      <div class="vote-options"></div>
+    `;
+
+    const optionsContainer = card.querySelector(".vote-options");
+    renderVoteOptions(optionsContainer, proposal);
+    ui.proposalCards.appendChild(card);
+  }
+
+  syncProposalButtons();
 }
 
-function renderVoteOptions(options) {
-  ui.voteOptions.replaceChildren();
+function renderVoteOptions(container, proposal) {
+  container.replaceChildren();
+  const options = Array.isArray(proposal.options) ? proposal.options : [];
 
-  if (!options.length) {
+  if (options.length === 0) {
     const empty = document.createElement("p");
     empty.className = "vote-options__empty";
     empty.textContent = "No options available.";
-    ui.voteOptions.appendChild(empty);
+    container.appendChild(empty);
     return;
   }
 
   for (const option of options) {
     const button = document.createElement("button");
+    const colorName = getOptionColorName(container.childElementCount);
     button.type = "button";
-    button.className = `vote-button vote-option-button vote-option-button--${getOptionColorName(
-      ui.voteOptions.childElementCount
-    )}`;
+    button.className = `vote-button vote-option-button vote-option-button--${colorName}`;
     button.textContent = option;
     button.dataset.voteOption = option;
-    button.dataset.colorName = getOptionColorName(ui.voteOptions.childElementCount);
-    button.addEventListener("click", () => submitVote(option));
-    ui.voteOptions.appendChild(button);
+    button.dataset.proposalId = proposal.proposal_id;
+    button.dataset.colorName = colorName;
+    button.addEventListener("click", () => submitVote(proposal.proposal_id, option));
+    container.appendChild(button);
   }
 }
 
-async function submitVote(voteOption) {
+async function submitVote(proposalId, voteOption) {
   const provider = state.walletProvider || getWalletProvider();
+  const proposal = state.proposals.find((item) => item.proposal_id === proposalId);
 
   if (!provider || !state.walletAddress || !state.walletData) {
     setStatus("Connect your wallet before voting.");
-    showVoteFeedback("An error occurred while submitting the vote.", "error");
+    showVoteFeedback("Connect your wallet before voting.", "error");
     return;
   }
 
-  if (!state.proposal || state.proposal.status !== "active") {
-    setStatus("Voting is not active.");
-    showVoteFeedback(state.proposal && state.proposal.status === "ended"
-      ? "Voting has ended."
-      : "An error occurred while submitting the vote.", "error");
+  if (!proposal || proposal.status !== "active") {
+    setStatus("Voting is not active for this proposal.");
+    showVoteFeedback(
+      proposal && proposal.status === "ended"
+        ? "Voting has ended for this proposal."
+        : "Voting is not active for this proposal.",
+      "error"
+    );
     return;
   }
 
-  if ((state.walletData.gen1_count + state.walletData.gen2_count) === 0) {
-    setStatus("The connected wallet does not hold valid NFTs for voting.");
-    showVoteFeedback("This wallet does not hold any eligible NFTs for voting.", "error");
+  const proposalState = getWalletProposalState(proposalId);
+
+  if (!proposalState || (proposalState.gen1_available_count + proposalState.gen2_available_count) === 0) {
+    setStatus(`All NFTs from this wallet are already used in proposal ${proposalId}.`);
+    showVoteFeedback(`All NFTs from this wallet are already used in proposal ${proposalId}.`, "error");
     return;
   }
 
   try {
     clearVoteFeedback();
+    state.votingProposalId = proposalId;
     setVoteButtonsBusy(true);
-    setStatus(`Submitting vote "${voteOption}"...`);
-    const signedVote = await signVoteMessage(provider, voteOption);
+    setStatus(`Submitting vote "${voteOption}" for proposal ${proposalId}...`);
+    const signedVote = await signVoteMessage(provider, proposalId, voteOption);
     const response = await fetch(VOTE_ENDPOINT, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
+        proposal_id: proposalId,
         wallet: state.walletAddress,
         vote: voteOption,
         signature: signedVote.signature,
@@ -370,27 +401,39 @@ async function submitVote(voteOption) {
     const payload = await response.json().catch(() => null);
 
     if (response.ok && payload && payload.success === true) {
-      setStatus(`Vote recorded. Voting power used: ${formatVotingPower(payload.voting_power)}.`);
-      showVoteFeedback("Vote successfully recorded.", "success");
+      setStatus(`Vote recorded for proposal ${proposalId}. Voting power used: ${formatVotingPower(payload.voting_power)}.`);
+      showVoteFeedback(`Vote for proposal ${proposalId} successfully recorded.`, "success");
+      const walletData = await getWalletNfts(state.walletAddress);
+      state.walletData = walletData;
+      updateWalletDashboard(state.walletAddress, walletData);
+      await refreshProposal();
       await refreshResults();
       return;
     }
 
     if (payload && payload.error === "ALL_NFTS_ALREADY_VOTED") {
-      setStatus("All NFTs from this wallet have already been used for voting.");
+      setStatus(`All NFTs from this wallet have already been used in proposal ${proposalId}.`);
       showVoteFeedback(
-        payload.message || "All NFTs from this wallet have already voted.",
+        payload.message || `All NFTs from this wallet have already been used in proposal ${proposalId}.`,
         "error"
       );
       const walletData = await getWalletNfts(state.walletAddress);
       state.walletData = walletData;
       updateWalletDashboard(state.walletAddress, walletData);
+      renderProposalCards();
       return;
     }
 
     if (payload && payload.error === "VOTING_ENDED") {
-      setStatus("Voting has ended.");
-      showVoteFeedback("Voting has ended.", "error");
+      setStatus("Voting has ended for this proposal.");
+      showVoteFeedback("Voting has ended for this proposal.", "error");
+      await refreshProposal();
+      return;
+    }
+
+    if (payload && payload.error === "VOTING_NOT_STARTED") {
+      setStatus("Voting has not started yet for this proposal.");
+      showVoteFeedback("Voting has not started yet for this proposal.", "error");
       await refreshProposal();
       return;
     }
@@ -402,17 +445,18 @@ async function submitVote(voteOption) {
     setStatus(errorMessage);
     showVoteFeedback(errorMessage, "error");
   } finally {
+    state.votingProposalId = "";
     setVoteButtonsBusy(false);
-    syncVoteButtons();
+    syncProposalButtons();
   }
 }
 
-async function signVoteMessage(provider, voteOption) {
+async function signVoteMessage(provider, proposalId, voteOption) {
   if (typeof provider.signMessage !== "function") {
     throw new Error("SIGNATURE_UNAVAILABLE");
   }
 
-  const message = `Torrino DAO governance vote:${voteOption}:wallet:${state.walletAddress}:timestamp:${Date.now()}`;
+  const message = `Torrino DAO governance vote:proposal:${proposalId}:option:${voteOption}:wallet:${state.walletAddress}:timestamp:${Date.now()}`;
   const signed = await provider.signMessage(textEncoder.encode(message), "utf8");
   const signatureBytes = extractSignatureBytes(signed);
 
@@ -431,7 +475,6 @@ function updateWalletDashboard(walletAddress, walletData) {
   ui.torrinoCount.textContent = String(walletData.gen1_count);
   ui.solnautaCount.textContent = String(walletData.gen2_count);
   ui.votingPower.textContent = formatVotingPower(walletData.voting_power);
-  ui.proposalVotingPower.textContent = formatVotingPower(walletData.voting_power);
   renderNftStatusList(ui.torrinoNames, walletData.gen1_nfts, "No Torrino DAO NFTs found.");
   renderNftStatusList(ui.solnautaNames, walletData.gen2_nfts, "No Solnauta NFTs found.");
 }
@@ -444,38 +487,86 @@ function clearWalletSession() {
   ui.torrinoCount.textContent = "0";
   ui.solnautaCount.textContent = "0";
   ui.votingPower.textContent = "0.0";
-  ui.proposalVotingPower.textContent = "0.0";
   renderNftStatusList(ui.torrinoNames, [], "No Torrino DAO NFTs found.");
   renderNftStatusList(ui.solnautaNames, [], "No Solnauta NFTs found.");
   clearVoteFeedback();
   setStatus("Wallet disconnected.");
+  renderProposalCards();
 }
 
-function updateResultsDashboard(results) {
-  const solnautaVoted = Number(results.solnauta_voted || 0);
-  const torrinoVoted = Number(results.torrino_voted || 0);
-  const totalPower = Number(results.total_power || 0);
-  ui.resultsStatus.textContent = getProposalStatusLabel(results.status || "inactive");
-  ui.solnautaVoted.textContent = String(solnautaVoted);
-  ui.torrinoVoted.textContent = String(torrinoVoted);
-  ui.totalPower.textContent = formatVotingPower(totalPower);
-  ui.torrinoParticipation.textContent = `${formatParticipationRate(torrinoVoted, TORRINO_TOTAL_NFTS)} of ${TORRINO_TOTAL_NFTS} collection NFTs`;
-  ui.solnautaParticipation.textContent = `${formatParticipationRate(solnautaVoted, SOLNAUTA_TOTAL_NFTS)} of ${SOLNAUTA_TOTAL_NFTS} collection NFTs`;
-  ui.powerParticipation.textContent = `Participation rate: ${formatParticipationRate(totalPower, TOTAL_VOTING_POWER)} of ${TOTAL_VOTING_POWER.toFixed(1)} total power`;
-  ui.resultsBars.replaceChildren();
+function renderResultsCards() {
+  ui.resultsCards.replaceChildren();
 
+  if (!Array.isArray(state.results) || state.results.length === 0) {
+    const empty = document.createElement("section");
+    empty.className = "results-card";
+    empty.innerHTML = `
+      <div class="results-header">
+        <p class="proposal-tag">Live Voting Results</p>
+        <h2>No results available</h2>
+        <p class="results-status">Voting inactive</p>
+      </div>
+      <p class="proposal-copy">Results will appear here as soon as at least one proposal is created.</p>
+    `;
+    ui.resultsCards.appendChild(empty);
+    return;
+  }
+
+  for (const results of state.results) {
+    const liveProposal = state.proposals.find((item) => item.proposal_id === results.proposal_id);
+    const liveStatus = liveProposal ? liveProposal.status : (results.status || "inactive");
+    const card = document.createElement("section");
+    card.className = "results-card";
+    card.innerHTML = `
+      <div class="results-header">
+        <p class="proposal-tag">Live Voting Results</p>
+        <h2>Proposal ${escapeHtml(results.proposal_id || "--")}</h2>
+        <p class="results-status">${getProposalStatusLabel(liveStatus)}</p>
+      </div>
+      <div class="results-grid">
+        <article class="results-stat">
+          <span class="label">Torrino DAO NFTs voted</span>
+          <strong>${escapeHtml(String(results.torrino_voted || 0))}</strong>
+          <span class="results-stat__detail">${formatParticipationRate(results.torrino_voted, TORRINO_TOTAL_NFTS)} of ${TORRINO_TOTAL_NFTS} collection NFTs</span>
+        </article>
+        <article class="results-stat">
+          <span class="label">Solnauta NFTs voted</span>
+          <strong>${escapeHtml(String(results.solnauta_voted || 0))}</strong>
+          <span class="results-stat__detail">${formatParticipationRate(results.solnauta_voted, SOLNAUTA_TOTAL_NFTS)} of ${SOLNAUTA_TOTAL_NFTS} collection NFTs</span>
+        </article>
+        <article class="results-stat results-stat--yes">
+          <span class="label">Total Voting Power</span>
+          <strong>${formatVotingPower(results.total_power || 0)}</strong>
+          <span class="results-stat__detail">Participation rate: ${formatParticipationRate(results.total_power, TOTAL_VOTING_POWER)} of ${TOTAL_VOTING_POWER.toFixed(1)} total power</span>
+        </article>
+        <article class="results-stat">
+          <span class="label label--subtle">Results Refresh</span>
+          <strong>10s</strong>
+        </article>
+      </div>
+      <div class="results-bars"></div>
+    `;
+
+    const bars = card.querySelector(".results-bars");
+    renderResultsBars(bars, results);
+    ui.resultsCards.appendChild(card);
+  }
+}
+
+function renderResultsBars(container, results) {
+  container.replaceChildren();
   const optionResults = Array.isArray(results.option_results) ? results.option_results : [];
 
   if (optionResults.length === 0) {
     const empty = document.createElement("p");
     empty.className = "vote-options__empty";
     empty.textContent = "No results available.";
-    ui.resultsBars.appendChild(empty);
+    container.appendChild(empty);
     return;
   }
 
   for (const item of optionResults) {
-    const colorName = getOptionColorName(ui.resultsBars.childElementCount);
+    const colorName = getOptionColorName(container.childElementCount);
     const row = document.createElement("div");
     row.className = "results-row";
     row.innerHTML = `
@@ -487,7 +578,7 @@ function updateResultsDashboard(results) {
         <div class="results-fill results-fill--${colorName}" style="width: ${Number(item.percent || 0)}%"></div>
       </div>
     `;
-    ui.resultsBars.appendChild(row);
+    container.appendChild(row);
   }
 }
 
@@ -504,9 +595,7 @@ function renderNftStatusList(listElement, nfts, emptyMessage) {
 
   for (const nft of nfts) {
     const item = document.createElement("li");
-    item.className = nft.status === "USED"
-      ? "nft-list__item nft-list__item--used"
-      : "nft-list__item nft-list__item--available";
+    item.className = getNftStatusClassName(nft.status);
     const link = document.createElement("a");
     link.href = getSolscanTokenUrl(nft.mint);
     link.target = "_blank";
@@ -518,64 +607,128 @@ function renderNftStatusList(listElement, nfts, emptyMessage) {
     statusText.className = "nft-list__status";
     statusText.textContent = ` (${nft.status})`;
 
-    item.appendChild(link);
-    item.appendChild(statusText);
+    item.append(link, statusText);
     listElement.appendChild(item);
   }
 }
 
-function startCountdown(proposal) {
-  stopCountdown();
-  updateCountdown(proposal);
-  state.countdownIntervalId = window.setInterval(() => {
-    updateCountdown(proposal);
-  }, 1000);
-}
-
-function stopCountdown() {
-  if (state.countdownIntervalId) {
-    window.clearInterval(state.countdownIntervalId);
-    state.countdownIntervalId = null;
+function getNftStatusClassName(status) {
+  if (status === "AVAILABLE") {
+    return "nft-list__item nft-list__item--available";
   }
+
+  if (String(status).startsWith("USED IN PROPOSALS")) {
+    return "nft-list__item nft-list__item--used-all";
+  }
+
+  if (String(status).startsWith("USED IN PROPOSAL")) {
+    return "nft-list__item nft-list__item--used-partial";
+  }
+
+  return "nft-list__item nft-list__item--used";
 }
 
-function updateCountdown(proposal) {
-  const now = Math.floor(Date.now() / 1000);
-  const currentStatus = now < proposal.start_time ? "scheduled" : now > proposal.end_time ? "ended" : "active";
-  const target = currentStatus === "scheduled" ? proposal.start_time : proposal.end_time;
-  const diff = Math.max(target - now, 0);
-
-  if (currentStatus === "ended") {
-    ui.proposalCountdown.textContent = "Voting has ended.";
-    state.proposal = { ...proposal, status: "ended" };
-    ui.proposalStatus.textContent = getProposalStatusLabel("ended");
-    syncVoteButtons();
-    stopCountdown();
+function startCountdownLoop() {
+  if (state.countdownIntervalId) {
     return;
   }
 
+  state.countdownIntervalId = window.setInterval(() => {
+    updateProposalCountdowns();
+  }, 1000);
+  updateProposalCountdowns();
+}
+
+function updateProposalCountdowns() {
+  if (!Array.isArray(state.proposals) || state.proposals.length === 0) {
+    return;
+  }
+
+  let hasChanged = false;
+
+  for (const proposal of state.proposals) {
+    const nextStatus = getLiveProposalStatus(proposal);
+    if (proposal.status !== nextStatus) {
+      proposal.status = nextStatus;
+      hasChanged = true;
+    }
+  }
+
+  for (const card of ui.proposalCards.querySelectorAll("[data-proposal-id]")) {
+    const proposal = state.proposals.find((item) => item.proposal_id === card.dataset.proposalId);
+    if (!proposal) {
+      continue;
+    }
+
+    const statusNode = card.querySelector('[data-role="status"]');
+    const countdownNode = card.querySelector('[data-role="countdown"]');
+
+    if (statusNode) {
+      statusNode.textContent = getProposalStatusLabel(proposal.status);
+    }
+
+    if (countdownNode) {
+      countdownNode.textContent = getProposalCountdownLabel(proposal);
+    }
+  }
+
+  if (hasChanged) {
+    syncProposalButtons();
+    renderResultsCards();
+  } else {
+    syncProposalButtons();
+  }
+}
+
+function getLiveProposalStatus(proposal) {
+  const now = Math.floor(Date.now() / 1000);
+
+  if (now < Number(proposal.start_time)) {
+    return "scheduled";
+  }
+
+  if (now >= Number(proposal.end_time)) {
+    return "ended";
+  }
+
+  return "active";
+}
+
+function getProposalCountdownLabel(proposal) {
+  const status = getLiveProposalStatus(proposal);
+
+  if (status === "ended") {
+    return "Voting has ended.";
+  }
+
+  const target = status === "scheduled" ? Number(proposal.start_time) : Number(proposal.end_time);
+  const diff = Math.max(target - Math.floor(Date.now() / 1000), 0);
   const days = Math.floor(diff / 86400);
   const hours = Math.floor((diff % 86400) / 3600);
   const minutes = Math.floor((diff % 3600) / 60);
   const seconds = diff % 60;
-  state.proposal = { ...proposal, status: currentStatus };
-  ui.proposalStatus.textContent = getProposalStatusLabel(currentStatus);
-  const prefix = currentStatus === "scheduled" ? "Starts in" : "Ends in";
-  ui.proposalCountdown.textContent = `${prefix} ${days}d ${hours}h ${minutes}m ${seconds}s`;
+  const prefix = status === "scheduled" ? "Starts in" : "Ends in";
+
+  return `${prefix} ${days}d ${hours}h ${minutes}m ${seconds}s`;
 }
 
-function syncVoteButtons() {
-  const buttons = ui.voteOptions.querySelectorAll("button");
-  const shouldDisable = !state.proposal || state.proposal.status !== "active";
+function syncProposalButtons() {
+  const buttons = ui.proposalCards.querySelectorAll(".vote-option-button");
 
   buttons.forEach((button) => {
+    const proposal = state.proposals.find((item) => item.proposal_id === button.dataset.proposalId);
+    const proposalState = getWalletProposalState(button.dataset.proposalId);
+    const noAvailablePower = !proposalState || Number(proposalState.voting_power || 0) <= 0;
+    const shouldDisable = (
+      !state.walletAddress ||
+      !proposal ||
+      proposal.status !== "active" ||
+      state.votingProposalId !== "" ||
+      noAvailablePower
+    );
+
     button.disabled = shouldDisable;
   });
-
-  if (shouldDisable && state.proposal && state.proposal.status === "ended") {
-    ui.voteFeedback.textContent = "Voting has ended.";
-    ui.voteFeedback.classList.add("is-visible", "is-error");
-  }
 }
 
 function setConnectBusy(isBusy, message) {
@@ -600,12 +753,13 @@ function getConnectButtonLabel() {
 }
 
 function setVoteButtonsBusy(isBusy) {
-  const buttons = ui.voteOptions.querySelectorAll("button");
+  const buttons = ui.proposalCards.querySelectorAll(".vote-option-button");
 
   buttons.forEach((button) => {
-    button.disabled = isBusy;
-    button.textContent = isBusy
-      ? "Invio..."
+    const isCurrentProposal = button.dataset.proposalId === state.votingProposalId;
+    button.disabled = isBusy || button.disabled;
+    button.textContent = isBusy && isCurrentProposal
+      ? "Submitting..."
       : button.dataset.voteOption;
   });
 }
@@ -637,7 +791,11 @@ function getErrorMessage(error) {
     }
 
     if (error.message === "VOTING_ENDED") {
-      return "Voting has ended.";
+      return "Voting has ended for this proposal.";
+    }
+
+    if (error.message === "VOTING_NOT_STARTED") {
+      return "Voting has not started yet for this proposal.";
     }
 
     if (error.message === "INVALID_WALLET_SIGNATURE") {
@@ -819,6 +977,14 @@ function closeHistoryModal() {
   ui.historyModal.setAttribute("aria-hidden", "true");
   ui.openHistoryModal.setAttribute("aria-expanded", "false");
   document.body.style.overflow = "";
+}
+
+function getWalletProposalState(proposalId) {
+  if (!state.walletData || !Array.isArray(state.walletData.proposal_states)) {
+    return null;
+  }
+
+  return state.walletData.proposal_states.find((item) => item.proposal_id === proposalId) || null;
 }
 
 function getOptionColorName(index) {

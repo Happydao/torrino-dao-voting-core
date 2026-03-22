@@ -7,10 +7,11 @@ const API_BASE_PATH = `${APP_BASE_PATH}/api`;
 const GOVERNANCE_HISTORY_API = "https://api.github.com/repos/Happydao/torrino-dao-voting-core/contents/data";
 const GOVERNANCE_HISTORY_RAW_BASE = "https://raw.githubusercontent.com/Happydao/torrino-dao-voting-core/main/data/";
 const textEncoder = new TextEncoder();
+
 const state = {
   adminWallet: null,
   adminProvider: null,
-  currentProposal: null,
+  currentSession: null,
   proposalRefreshIntervalId: null,
   proposalCountdownIntervalId: null,
   governanceHistory: [],
@@ -34,24 +35,41 @@ const ui = {
   proposalNotice: document.getElementById("adminProposalNotice"),
   proposalNoticeBadge: document.getElementById("adminProposalNoticeBadge"),
   proposalNoticeTitle: document.getElementById("adminProposalNoticeTitle"),
-  proposalNoticeId: document.getElementById("adminProposalNoticeId"),
+  proposalNoticeList: document.getElementById("adminProposalNoticeList"),
   proposalNoticeCountdown: document.getElementById("adminProposalNoticeCountdown"),
   proposalNoticeLink: document.getElementById("adminProposalNoticeLink"),
   historyModal: document.getElementById("adminHistoryModal"),
   openHistoryModal: document.getElementById("openAdminHistoryModal"),
   closeHistoryModal: document.getElementById("closeAdminHistoryModal"),
   historyTableBody: document.getElementById("adminHistoryTableBody"),
-  title: document.getElementById("proposalTitleInput"),
-  description: document.getElementById("proposalDescriptionInput"),
-  optionA: document.getElementById("optionAInput"),
-  optionB: document.getElementById("optionBInput"),
-  optionC: document.getElementById("optionCInput"),
-  optionD: document.getElementById("optionDInput"),
-  optionE: document.getElementById("optionEInput"),
   startTime: document.getElementById("startTimeInput"),
   endTime: document.getElementById("endTimeInput"),
   openStartTimePickerButton: document.getElementById("openStartTimePickerButton"),
   openEndTimePickerButton: document.getElementById("openEndTimePickerButton"),
+  slots: [
+    {
+      title: document.getElementById("proposalOneTitleInput"),
+      description: document.getElementById("proposalOneDescriptionInput"),
+      options: [
+        document.getElementById("proposalOneOptionAInput"),
+        document.getElementById("proposalOneOptionBInput"),
+        document.getElementById("proposalOneOptionCInput"),
+        document.getElementById("proposalOneOptionDInput"),
+        document.getElementById("proposalOneOptionEInput"),
+      ],
+    },
+    {
+      title: document.getElementById("proposalTwoTitleInput"),
+      description: document.getElementById("proposalTwoDescriptionInput"),
+      options: [
+        document.getElementById("proposalTwoOptionAInput"),
+        document.getElementById("proposalTwoOptionBInput"),
+        document.getElementById("proposalTwoOptionCInput"),
+        document.getElementById("proposalTwoOptionDInput"),
+        document.getElementById("proposalTwoOptionEInput"),
+      ],
+    },
+  ],
 };
 
 ui.connectButton.addEventListener("click", handleAdminWalletButtonClick);
@@ -82,23 +100,21 @@ async function connectAdminWallet() {
   }
 
   try {
-    ui.connectButton.disabled = true;
+    setAdminConnectBusy(true);
     ui.status.textContent = "Connecting admin wallet...";
     const walletAddress = await connectWalletProvider(provider);
 
+    state.adminWallet = walletAddress;
+    state.adminProvider = provider;
+    ui.walletAddress.textContent = walletAddress;
+
     if (!AUTHORIZED_ADMIN_WALLETS.has(walletAddress)) {
-      state.adminWallet = walletAddress;
-      state.adminProvider = provider;
       ui.dashboard.hidden = true;
-      ui.walletAddress.textContent = walletAddress;
       ui.status.textContent = "Unauthorized admin wallet.";
       setActionStatus("Unauthorized admin wallet.", "error");
       return;
     }
 
-    state.adminWallet = walletAddress;
-    state.adminProvider = provider;
-    ui.walletAddress.textContent = walletAddress;
     ui.dashboard.hidden = false;
     ui.status.textContent = "Authorized admin wallet connected. You can manage governance.";
     setActionStatus("", "");
@@ -134,32 +150,22 @@ async function startVoting() {
 
   await refreshAdminProposalNotice();
 
-  if (
-    state.currentProposal &&
-    (state.currentProposal.status === "active" || state.currentProposal.status === "scheduled")
-  ) {
-    const message = "A proposal is already active or scheduled. Stop the current proposal before starting a new one.";
+  if (hasActiveOrScheduledSession()) {
+    const message = "A proposal round is already active or scheduled. Stop the current round before starting a new one.";
     setActionStatus(message, "error");
-    openAdminFeedbackModal("Active Proposal", message, "error");
+    openAdminFeedbackModal("Active Proposal Round", message, "error");
     return;
   }
 
-  const title = ui.title.value.trim();
-  const description = ui.description.value.trim();
-  const options = [
-    ui.optionA.value.trim(),
-    ui.optionB.value.trim(),
-    ui.optionC.value.trim(),
-    ui.optionD.value.trim(),
-    ui.optionE.value.trim(),
-  ].filter(Boolean);
+  const proposals = collectProposalInputs();
+
+  if (proposals.error) {
+    setActionStatus(proposals.error, "error");
+    return;
+  }
+
   const startTime = toUnixTimestamp(ui.startTime.value);
   const endTime = toUnixTimestamp(ui.endTime.value);
-
-  if (!title || !description || options.length === 0) {
-    setActionStatus("Fill in title, description and at least one option.", "error");
-    return;
-  }
 
   if (!Number.isFinite(startTime) || !Number.isFinite(endTime) || endTime <= startTime) {
     setActionStatus("Set a valid start and end date. End must be after start.", "error");
@@ -168,9 +174,7 @@ async function startVoting() {
 
   const payload = {
     admin_wallet: state.adminWallet,
-    title,
-    description,
-    options,
+    proposals: proposals.items,
     start_time: startTime,
     end_time: endTime,
   };
@@ -181,7 +185,8 @@ async function startVoting() {
     payload.admin_signed_message = await buildStartProposalAdminMessage(payload);
     payload.admin_signature = await confirmAdminAction(payload.admin_signed_message);
     setAdminBusy(true, "Saving...", "Stop Voting");
-    setActionStatus("Signature confirmed. Starting voting...", "");
+    setActionStatus("Signature confirmed. Starting voting round...", "");
+
     const response = await fetch(`${API_BASE_PATH}/admin/proposal`, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -194,47 +199,13 @@ async function startVoting() {
     }
 
     await refreshAdminProposalNotice();
-    setActionStatus("Voting started successfully.", "success");
-    openAdminFeedbackModal("Voting Started", "Voting started successfully.", "success");
+    setActionStatus("Voting round started successfully.", "success");
+    openAdminFeedbackModal("Voting Started", "The proposal round was started successfully.", "success");
   } catch (error) {
     console.error(error);
-    if (error.message === "UNAUTHORIZED_ADMIN") {
-      setActionStatus("Unauthorized admin wallet.", "error");
-      openAdminFeedbackModal("Admin Error", "Unauthorized admin wallet.", "error");
-      return;
-    }
-
-    if (error.message === "INVALID_ADMIN_SIGNATURE") {
-      setActionStatus("Action failed: admin signature is not valid.", "error");
-      openAdminFeedbackModal("Admin Error", "Action failed: admin signature is not valid.", "error");
-      return;
-    }
-
-    if (error.message === "INVALID_PROPOSAL") {
-      setActionStatus("Fill in title, description and at least one option.", "error");
-      return;
-    }
-
-    if (error.message === "PROPOSAL_ALREADY_ACTIVE") {
-      const message = "A proposal is already active or scheduled. Stop the current proposal before starting a new one.";
-      setActionStatus(message, "error");
-      openAdminFeedbackModal("Active Proposal", message, "error");
-      return;
-    }
-
-    if (error.message === "INVALID_TIME_RANGE") {
-      setActionStatus("Set a valid start and end date. End must be after start.", "error");
-      return;
-    }
-
-    if (error.message === "SIGNATURE_REJECTED") {
-      setActionStatus("Action cancelled: wallet signature was rejected.", "error");
-      openAdminFeedbackModal("Admin Error", "Action cancelled: wallet signature was rejected.", "error");
-      return;
-    }
-
-    setActionStatus("Action failed while starting voting.", "error");
-    openAdminFeedbackModal("Admin Error", "Action failed while starting voting.", "error");
+    const message = getAdminErrorMessage(error, "start");
+    setActionStatus(message, "error");
+    openAdminFeedbackModal("Admin Error", message, "error");
   } finally {
     setAdminBusy(false);
   }
@@ -247,18 +218,20 @@ async function resetVoting() {
   }
 
   try {
-    const proposal = await getCurrentProposal();
+    const session = await getCurrentProposal();
+    const proposals = session && Array.isArray(session.proposals) ? session.proposals : [];
 
-    if (!proposal || !proposal.proposal_id) {
+    if (proposals.length === 0) {
       throw new Error("NO_ACTIVE_PROPOSAL");
     }
 
     setAdminBusy(true, "Start Voting", "Signing...");
     setActionStatus("Awaiting wallet signature...", "");
-    const adminSignedMessage = await buildResetProposalAdminMessage(proposal.proposal_id);
+    const adminSignedMessage = await buildResetProposalAdminMessage(proposals.map((proposal) => proposal.proposal_id));
     const adminSignature = await confirmAdminAction(adminSignedMessage);
     setAdminBusy(true, "Start Voting", "Working...");
-    setActionStatus("Signature confirmed. Resetting voting...", "");
+    setActionStatus("Signature confirmed. Stopping voting round...", "");
+
     const response = await fetch(`${API_BASE_PATH}/admin/reset-voting`, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -277,39 +250,65 @@ async function resetVoting() {
     await refreshAdminProposalNotice();
     clearForm();
     ui.dashboard.hidden = false;
-    setActionStatus("Voting reset successfully.", "success");
-    openAdminFeedbackModal("Voting Stopped", "Voting reset successfully.", "success");
+    setActionStatus("Voting round stopped successfully.", "success");
+    openAdminFeedbackModal("Voting Stopped", "The current proposal round was stopped successfully.", "success");
   } catch (error) {
     console.error(error);
-    if (error.message === "SIGNATURE_REJECTED") {
-      setActionStatus("Action cancelled: wallet signature was rejected.", "error");
-      openAdminFeedbackModal("Admin Error", "Action cancelled: wallet signature was rejected.", "error");
-      return;
-    }
-
-    const errorMessage = error.message === "UNAUTHORIZED_ADMIN"
-      ? "Unauthorized admin wallet."
-      : error.message === "NO_ACTIVE_PROPOSAL"
-        ? "No active proposal found."
-      : error.message === "INVALID_ADMIN_SIGNATURE"
-        ? "Action failed: admin signature is not valid."
-        : "Action failed while resetting voting.";
-    setActionStatus(errorMessage, "error");
-    openAdminFeedbackModal("Admin Error", errorMessage, "error");
+    const message = getAdminErrorMessage(error, "stop");
+    setActionStatus(message, "error");
+    openAdminFeedbackModal("Admin Error", message, "error");
   } finally {
     setAdminBusy(false);
   }
 }
 
+function collectProposalInputs() {
+  const items = [];
+
+  for (let index = 0; index < ui.slots.length; index += 1) {
+    const slot = ui.slots[index];
+    const title = slot.title.value.trim();
+    const description = slot.description.value.trim();
+    const options = slot.options.map((input) => input.value.trim()).filter(Boolean);
+    const hasAnyValue = Boolean(title || description || options.length > 0);
+
+    if (!hasAnyValue) {
+      continue;
+    }
+
+    if (!title || !description || options.length === 0) {
+      return {
+        error: `Complete or clear Proposal Slot ${index + 1}. Each active slot needs title, description and at least one option.`,
+        items: [],
+      };
+    }
+
+    items.push({ title, description, options });
+  }
+
+  if (items.length === 0) {
+    return {
+      error: "Fill in at least one proposal slot before starting voting.",
+      items: [],
+    };
+  }
+
+  return { error: "", items };
+}
+
+function hasActiveOrScheduledSession() {
+  return Boolean(
+    state.currentSession &&
+    (state.currentSession.status === "active" || state.currentSession.status === "scheduled") &&
+    Array.isArray(state.currentSession.proposals) &&
+    state.currentSession.proposals.length > 0
+  );
+}
+
 function getWalletProvider() {
   const providers = getInstalledWalletProviders();
   const connectedProvider = providers.find((provider) => provider && provider.isConnected);
-
-  if (connectedProvider) {
-    return connectedProvider;
-  }
-
-  return providers[0] || null;
+  return connectedProvider || providers[0] || null;
 }
 
 function getInstalledWalletProviders() {
@@ -442,7 +441,7 @@ async function getCurrentProposal() {
   const response = await fetch(`${API_BASE_PATH}/proposal`);
   const payload = await response.json().catch(() => null);
 
-  if (!response.ok || !payload || payload.proposal === null) {
+  if (!response.ok || !payload || !Array.isArray(payload.proposals) || payload.proposals.length === 0) {
     return null;
   }
 
@@ -451,9 +450,7 @@ async function getCurrentProposal() {
 
 async function buildStartProposalAdminMessage(payload) {
   const payloadHash = await hashAdminActionPayload({
-    title: payload.title,
-    description: payload.description,
-    options: payload.options,
+    proposals: Array.isArray(payload.proposals) ? payload.proposals : [],
     start_time: payload.start_time,
     end_time: payload.end_time,
   });
@@ -461,12 +458,24 @@ async function buildStartProposalAdminMessage(payload) {
   return `Torrino DAO admin action:start:wallet:${payload.admin_wallet}:payload_hash:${payloadHash}:timestamp:${Date.now()}`;
 }
 
-async function buildResetProposalAdminMessage(proposalId) {
-  return `Torrino DAO admin action:stop:wallet:${state.adminWallet}:proposal:${proposalId}:timestamp:${Date.now()}`;
+async function buildResetProposalAdminMessage(proposalIds) {
+  return `Torrino DAO admin action:stop:wallet:${state.adminWallet}:proposals:${proposalIds.join("|")}:timestamp:${Date.now()}`;
 }
 
 async function hashAdminActionPayload(value) {
-  const normalized = JSON.stringify(value);
+  const normalized = JSON.stringify({
+    proposals: Array.isArray(value && value.proposals)
+      ? value.proposals.map((proposal) => ({
+        title: String(proposal.title || "").trim(),
+        description: String(proposal.description || "").trim(),
+        options: Array.isArray(proposal.options)
+          ? proposal.options.map((option) => String(option || "").trim()).filter(Boolean).slice(0, 5)
+          : [],
+      })).filter((proposal) => proposal.title && proposal.description && proposal.options.length > 0).slice(0, 2)
+      : [],
+    start_time: Number(value && value.start_time),
+    end_time: Number(value && value.end_time),
+  });
   const digest = await crypto.subtle.digest("SHA-256", textEncoder.encode(normalized));
   return Array.from(new Uint8Array(digest))
     .map((byte) => byte.toString(16).padStart(2, "0"))
@@ -479,13 +488,14 @@ function isSignatureRejected(error) {
 }
 
 function clearForm() {
-  ui.title.value = "";
-  ui.description.value = "";
-  ui.optionA.value = "";
-  ui.optionB.value = "";
-  ui.optionC.value = "";
-  ui.optionD.value = "";
-  ui.optionE.value = "";
+  for (const slot of ui.slots) {
+    slot.title.value = "";
+    slot.description.value = "";
+    slot.options.forEach((input) => {
+      input.value = "";
+    });
+  }
+
   ui.startTime.value = "";
   ui.endTime.value = "";
 }
@@ -493,7 +503,7 @@ function clearForm() {
 function clearAdminSession() {
   state.adminWallet = null;
   state.adminProvider = null;
-  state.currentProposal = null;
+  state.currentSession = null;
   ui.walletAddress.textContent = "Not connected";
   ui.dashboard.hidden = true;
   ui.status.textContent = "Admin wallet disconnected.";
@@ -515,37 +525,49 @@ function initializeAdminProposalNotice() {
 
 async function refreshAdminProposalNotice() {
   try {
-    state.currentProposal = await getCurrentProposal();
+    state.currentSession = await getCurrentProposal();
   } catch (error) {
     console.error(error);
-    state.currentProposal = null;
+    state.currentSession = null;
   }
 
   renderAdminProposalNotice();
 }
 
 function renderAdminProposalNotice() {
-  const proposal = state.currentProposal;
+  const session = state.currentSession;
+  const proposals = session && Array.isArray(session.proposals) ? session.proposals : [];
 
-  if (!proposal || !ui.proposalNotice) {
+  ui.proposalNoticeList.replaceChildren();
+
+  if (!session || proposals.length === 0) {
     ui.proposalNotice.hidden = true;
     return;
   }
 
-  if (proposal.status !== "active" && proposal.status !== "scheduled") {
+  if (session.status !== "active" && session.status !== "scheduled") {
     ui.proposalNotice.hidden = true;
     return;
   }
 
-  const isScheduled = proposal.status === "scheduled";
+  const isScheduled = session.status === "scheduled";
   ui.proposalNotice.hidden = false;
-  ui.proposalNoticeBadge.textContent = isScheduled ? "Proposal scheduled" : "Voting in progress";
-  ui.proposalNoticeTitle.textContent = proposal.title || "Active proposal";
-  ui.proposalNoticeId.textContent = `Proposal ID: ${proposal.proposal_id || "--"}`;
+  ui.proposalNoticeBadge.textContent = isScheduled ? "Proposal round scheduled" : "Voting in progress";
+  ui.proposalNoticeTitle.textContent = proposals.length > 1 ? "2 proposals currently loaded" : "1 proposal currently loaded";
   ui.proposalNoticeCountdown.textContent = isScheduled
-    ? `Starts in: ${formatAdminCountdown(proposal.start_time)}`
-    : `Ends in: ${formatAdminCountdown(proposal.end_time)}`;
+    ? `Starts in: ${formatAdminCountdown(proposals[0].start_time)}`
+    : `Ends in: ${formatAdminCountdown(proposals[0].end_time)}`;
   ui.proposalNoticeLink.href = `${APP_BASE_PATH}/`;
+
+  for (const proposal of proposals) {
+    const item = document.createElement("div");
+    item.className = "admin-proposal-notice__item";
+    item.innerHTML = `
+      <strong>Proposal ${escapeHtml(proposal.proposal_id || "--")}</strong>
+      <span>${escapeHtml(proposal.title || "Untitled proposal")}</span>
+    `;
+    ui.proposalNoticeList.appendChild(item);
+  }
 }
 
 function formatAdminCountdown(unixTimestampSeconds) {
@@ -777,6 +799,44 @@ function openDateTimePicker(input) {
   }
 
   input.click();
+}
+
+function getAdminErrorMessage(error, action) {
+  if (error.message === "UNAUTHORIZED_ADMIN") {
+    return "Unauthorized admin wallet.";
+  }
+
+  if (error.message === "INVALID_ADMIN_SIGNATURE") {
+    return "Action failed: admin signature is not valid.";
+  }
+
+  if (error.message === "INVALID_PROPOSAL") {
+    return "Fill in at least one complete proposal slot.";
+  }
+
+  if (error.message === "PROPOSAL_ALREADY_ACTIVE") {
+    return "A proposal round is already active or scheduled. Stop the current round before starting a new one.";
+  }
+
+  if (error.message === "INVALID_TIME_RANGE") {
+    return "Set a valid start and end date. End must be after start.";
+  }
+
+  if (error.message === "SIGNATURE_REJECTED") {
+    return "Action cancelled: wallet signature was rejected.";
+  }
+
+  if (error.message === "SIGNATURE_UNAVAILABLE") {
+    return "Hardware wallet message signing not supported.";
+  }
+
+  if (error.message === "NO_ACTIVE_PROPOSAL") {
+    return "No active proposal round found.";
+  }
+
+  return action === "stop"
+    ? "Action failed while stopping the voting round."
+    : "Action failed while starting the voting round.";
 }
 
 function bytesToBase58(bytes) {

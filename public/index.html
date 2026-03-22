@@ -84,60 +84,32 @@
       </section>
 
       <main class="main-content">
-        <section class="proposal-card proposal-card--featured">
-          <p id="proposalTag" class="proposal-tag">PROPOSAL</p>
-          <h2 id="proposalTitle">No active proposal</h2>
-          <p id="proposalDescription" class="proposal-copy">
-            The admin has not started a vote yet.
-          </p>
-
-          <div class="proposal-details">
-            <div class="proposal-detail">
-              <span>Your voting power</span>
-              <strong id="proposalVotingPower">0.0</strong>
+        <section class="proposal-section">
+          <div class="proposal-section__header">
+            <div>
+              <p class="proposal-tag">Active Governance Proposals</p>
+              <h2>Cast your vote proposal by proposal</h2>
             </div>
-            <div class="proposal-detail">
-              <span>Voting status</span>
-              <strong id="proposalStatus" class="proposal-state">Voting inactive</strong>
-            </div>
-            <div class="proposal-detail proposal-detail--countdown">
-              <span>Countdown</span>
-              <strong id="proposalCountdown">--</strong>
-            </div>
+            <p class="proposal-section__copy">
+              If two proposals are live at the same time, each one requires its own wallet confirmation and keeps its own CSV record.
+            </p>
           </div>
-          <div id="voteOptions" class="vote-options"></div>
+          <div id="proposalCards" class="proposal-stack" aria-live="polite"></div>
           <p id="voteFeedback" class="vote-feedback" aria-live="polite"></p>
         </section>
       </main>
 
-      <section class="results-card" aria-live="polite">
-        <div class="results-header">
-          <p class="proposal-tag">Live Voting Results</p>
-          <h2>Live results dashboard</h2>
-          <p id="resultsStatus" class="results-status">Voting inactive</p>
+      <section class="results-section" aria-live="polite">
+        <div class="proposal-section__header">
+          <div>
+            <p class="proposal-tag">Live Voting Results</p>
+            <h2>Proposal dashboards</h2>
+          </div>
+          <p class="proposal-section__copy">
+            Each proposal keeps its own participation metrics and live weighted result bars.
+          </p>
         </div>
-        <div class="results-grid">
-          <article class="results-stat">
-            <span class="label">Torrino DAO NFTs voted</span>
-            <strong id="torrinoVoted">0</strong>
-            <span id="torrinoParticipation" class="results-stat__detail">0.0% of 500 collection NFTs</span>
-          </article>
-          <article class="results-stat">
-            <span class="label">Solnauta NFTs voted</span>
-            <strong id="solnautaVoted">0</strong>
-            <span id="solnautaParticipation" class="results-stat__detail">0.0% of 888 collection NFTs</span>
-          </article>
-          <article class="results-stat results-stat--yes">
-            <span class="label">Total Voting Power</span>
-            <strong id="totalPower">0.0</strong>
-            <span id="powerParticipation" class="results-stat__detail">Participation rate: 0.0% of 538.8 total power</span>
-          </article>
-          <article class="results-stat">
-            <span class="label label--subtle">Results Refresh</span>
-            <strong>10s</strong>
-          </article>
-        </div>
-        <div id="resultsBars" class="results-bars"></div>
+        <div id="resultsCards" class="results-stack"></div>
       </section>
 
       <section class="info-grid">

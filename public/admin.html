@@ -34,8 +34,8 @@
           <h1 class="title">TORRINO DAO ADMIN</h1>
         </div>
         <p class="tagline">
-          Connect an authorized admin wallet with Phantom or Solflare to create
-          a proposal, set the timer, and start or reset governance voting.
+          Connect an authorized admin wallet with Phantom or Solflare to configure up to two parallel proposals,
+          apply one shared schedule, and start or stop the full governance round.
         </p>
         <div class="admin-actions">
           <button id="connectAdminButton" class="admin-button admin-button--primary" type="button">
@@ -52,36 +52,83 @@
         </section>
 
         <section class="admin-form">
-          <p class="eyebrow">Create Proposal</p>
-          <div class="admin-grid">
-            <div class="admin-field admin-field--full">
-              <label for="proposalTitleInput">Proposal title</label>
-              <input id="proposalTitleInput" type="text" />
-            </div>
-            <div class="admin-field admin-field--full">
-              <label for="proposalDescriptionInput">Proposal description</label>
-              <textarea id="proposalDescriptionInput"></textarea>
-            </div>
-            <div class="admin-field">
-              <label for="optionAInput">Option A</label>
-              <input id="optionAInput" type="text" />
-            </div>
-            <div class="admin-field">
-              <label for="optionBInput">Option B</label>
-              <input id="optionBInput" type="text" />
-            </div>
-            <div class="admin-field">
-              <label for="optionCInput">Option C</label>
-              <input id="optionCInput" type="text" />
-            </div>
-            <div class="admin-field">
-              <label for="optionDInput">Option D</label>
-              <input id="optionDInput" type="text" />
-            </div>
-            <div class="admin-field admin-field--full">
-              <label for="optionEInput">Option E</label>
-              <input id="optionEInput" type="text" />
-            </div>
+          <p class="eyebrow">Create Proposals</p>
+          <div class="admin-proposal-columns">
+            <section class="admin-proposal-slot">
+              <div class="admin-proposal-slot__header">
+                <p class="proposal-tag">Proposal Slot 1</p>
+                <p class="admin-proposal-slot__copy">Fill this slot to publish the first proposal in the round.</p>
+              </div>
+              <div class="admin-grid">
+                <div class="admin-field admin-field--full">
+                  <label for="proposalOneTitleInput">Proposal title</label>
+                  <input id="proposalOneTitleInput" type="text" />
+                </div>
+                <div class="admin-field admin-field--full">
+                  <label for="proposalOneDescriptionInput">Proposal description</label>
+                  <textarea id="proposalOneDescriptionInput"></textarea>
+                </div>
+                <div class="admin-field">
+                  <label for="proposalOneOptionAInput">Option A</label>
+                  <input id="proposalOneOptionAInput" type="text" />
+                </div>
+                <div class="admin-field">
+                  <label for="proposalOneOptionBInput">Option B</label>
+                  <input id="proposalOneOptionBInput" type="text" />
+                </div>
+                <div class="admin-field">
+                  <label for="proposalOneOptionCInput">Option C</label>
+                  <input id="proposalOneOptionCInput" type="text" />
+                </div>
+                <div class="admin-field">
+                  <label for="proposalOneOptionDInput">Option D</label>
+                  <input id="proposalOneOptionDInput" type="text" />
+                </div>
+                <div class="admin-field admin-field--full">
+                  <label for="proposalOneOptionEInput">Option E</label>
+                  <input id="proposalOneOptionEInput" type="text" />
+                </div>
+              </div>
+            </section>
+
+            <section class="admin-proposal-slot">
+              <div class="admin-proposal-slot__header">
+                <p class="proposal-tag">Proposal Slot 2</p>
+                <p class="admin-proposal-slot__copy">Optional. Leave it empty if the governance round contains one proposal only.</p>
+              </div>
+              <div class="admin-grid">
+                <div class="admin-field admin-field--full">
+                  <label for="proposalTwoTitleInput">Proposal title</label>
+                  <input id="proposalTwoTitleInput" type="text" />
+                </div>
+                <div class="admin-field admin-field--full">
+                  <label for="proposalTwoDescriptionInput">Proposal description</label>
+                  <textarea id="proposalTwoDescriptionInput"></textarea>
+                </div>
+                <div class="admin-field">
+                  <label for="proposalTwoOptionAInput">Option A</label>
+                  <input id="proposalTwoOptionAInput" type="text" />
+                </div>
+                <div class="admin-field">
+                  <label for="proposalTwoOptionBInput">Option B</label>
+                  <input id="proposalTwoOptionBInput" type="text" />
+                </div>
+                <div class="admin-field">
+                  <label for="proposalTwoOptionCInput">Option C</label>
+                  <input id="proposalTwoOptionCInput" type="text" />
+                </div>
+                <div class="admin-field">
+                  <label for="proposalTwoOptionDInput">Option D</label>
+                  <input id="proposalTwoOptionDInput" type="text" />
+                </div>
+                <div class="admin-field admin-field--full">
+                  <label for="proposalTwoOptionEInput">Option E</label>
+                  <input id="proposalTwoOptionEInput" type="text" />
+                </div>
+              </div>
+            </section>
+          </div>
+          <div class="admin-grid admin-grid--schedule">
             <div class="admin-field">
               <label for="startTimeInput">Start date/time</label>
               <div class="admin-datetime-control">
@@ -120,8 +167,8 @@
             </button>
             <div id="adminProposalNotice" class="admin-proposal-notice" hidden>
               <p id="adminProposalNoticeBadge" class="admin-proposal-notice__badge">Voting in progress</p>
-              <strong id="adminProposalNoticeTitle" class="admin-proposal-notice__title">Active proposal</strong>
-              <p id="adminProposalNoticeId" class="admin-proposal-notice__meta">Proposal ID: --</p>
+              <strong id="adminProposalNoticeTitle" class="admin-proposal-notice__title">Active proposals</strong>
+              <div id="adminProposalNoticeList" class="admin-proposal-notice__list"></div>
               <p id="adminProposalNoticeCountdown" class="admin-proposal-notice__countdown">Countdown: --</p>
               <div class="admin-proposal-notice__actions">
                 <a

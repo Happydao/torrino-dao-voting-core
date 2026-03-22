@@ -157,7 +157,8 @@ async function handleWalletNfts(requestUrl, res) {
 
   try {
     const assets = await getCachedAssetsByOwner(walletAddress);
-    sendJson(res, 200, summarizeWalletAssets(assets, getUsedNftState()));
+    const session = readProposal();
+    sendJson(res, 200, summarizeWalletAssets(assets, getUsedNftState(session), getSessionProposals(session)));
   } catch (error) {
     console.error(error);
     sendJson(res, 502, { error: "SERVER_ERROR" });
@@ -165,16 +166,21 @@ async function handleWalletNfts(requestUrl, res) {
 }
 
 function handleProposal(res) {
-  const proposal = readProposal();
+  const session = readProposal();
+  const proposals = getSessionProposals(session);
 
-  if (!proposal) {
-    sendJson(res, 200, { proposal: null, status: "inactive", is_voting_open: false });
+  if (proposals.length === 0) {
+    sendJson(res, 200, { proposals: [], status: "inactive", is_voting_open: false });
     return;
   }
 
-  const status = getProposalStatus(proposal);
+  const status = getSessionStatus(session);
   sendJson(res, 200, {
-    ...proposal,
+    proposals: proposals.map((proposal) => ({
+      ...proposal,
+      status: getProposalStatus(proposal),
+      is_voting_open: getProposalStatus(proposal) === "active",
+    })),
     status,
     is_voting_open: status === "active",
   });
@@ -200,31 +206,39 @@ async function handleVote(req, res) {
     return;
   }
 
-  const proposal = readProposal();
-  const proposalStatus = proposal ? getProposalStatus(proposal) : "inactive";
+  const session = readProposal();
+  const sessionStatus = getSessionStatus(session);
 
-  if (!proposal || proposalStatus === "inactive" || proposalStatus === "ended") {
+  if (!session || getSessionProposals(session).length === 0 || sessionStatus === "inactive" || sessionStatus === "ended") {
     sendJson(res, 403, { error: "VOTING_ENDED" });
     return;
   }
 
-  if (proposalStatus === "scheduled") {
+  if (sessionStatus === "scheduled") {
     sendJson(res, 403, { error: "VOTING_NOT_STARTED" });
     return;
   }
 
   const body = await readJsonBody(req);
+  const proposalId = getString(body.proposal_id);
   const wallet = getString(body.wallet);
   const vote = getString(body.vote);
   const signature = getString(body.signature) || "not-signed";
   const signedMessage = getString(body.signed_message);
+  const proposal = findProposalById(session, proposalId);
+  const proposalStatus = proposal ? getProposalStatus(proposal) : "inactive";
 
-  if (!wallet || !vote || !proposal.options.includes(vote)) {
+  if (!proposal || !wallet || !vote || !proposal.options.includes(vote)) {
     sendJson(res, 400, { error: "SERVER_ERROR" });
     return;
   }
 
-  if (!verifyVoteRequest(wallet, vote, signedMessage, signature)) {
+  if (proposalStatus !== "active") {
+    sendJson(res, 403, { error: proposalStatus === "ended" ? "VOTING_ENDED" : "VOTING_NOT_STARTED" });
+    return;
+  }
+
+  if (!verifyVoteRequest(wallet, proposalId, vote, signedMessage, signature)) {
     sendJson(res, 403, { error: "INVALID_WALLET_SIGNATURE" });
     return;
   }
@@ -232,10 +246,13 @@ async function handleVote(req, res) {
   try {
     const assets = await getCachedAssetsByOwner(wallet, { forceRefresh: true });
     const result = await withMutationLock(() => {
-      ensureVoteStorageFiles();
-      const summary = summarizeWalletAssets(assets, getUsedNftState());
-      const usableGen1Nfts = summary.gen1_nfts.filter((nft) => nft.status === "AVAILABLE");
-      const usableGen2Nfts = summary.gen2_nfts.filter((nft) => nft.status === "AVAILABLE");
+      ensureVoteStorageFiles(session);
+      const summary = summarizeWalletAssets(assets, getUsedNftState(session), getSessionProposals(session));
+      const proposalState = Array.isArray(summary.proposal_states)
+        ? summary.proposal_states.find((item) => item.proposal_id === proposalId)
+        : null;
+      const usableGen1Nfts = proposalState ? proposalState.gen1_nfts.filter((nft) => nft.status === "AVAILABLE") : [];
+      const usableGen2Nfts = proposalState ? proposalState.gen2_nfts.filter((nft) => nft.status === "AVAILABLE") : [];
       const usableNfts = [...usableGen2Nfts, ...usableGen1Nfts];
 
       if (usableNfts.length === 0) {
@@ -249,7 +266,7 @@ async function handleVote(req, res) {
         ).toFixed(1)
       );
 
-      appendVoteRow({
+      appendVoteRow(proposal, {
         wallet,
         solnautaNfts: usableGen2Nfts.map((nft) => nft.mint),
         torrinoNfts: usableGen1Nfts.map((nft) => nft.mint),
@@ -259,7 +276,7 @@ async function handleVote(req, res) {
         signedMessage,
         signature,
       });
-      registerUsedMints(usableNfts.map((nft) => nft.mint));
+      registerUsedMints(proposalId, usableNfts.map((nft) => nft.mint));
 
       return { votingPower };
     });
@@ -292,20 +309,16 @@ async function handleAdminProposal(req, res) {
   const adminWallet = getString(body.admin_wallet);
   const adminSignedMessage = getString(body.admin_signed_message);
   const adminSignature = getString(body.admin_signature);
-  const title = getString(body.title);
-  const description = getString(body.description);
-  const options = Array.isArray(body.options)
-    ? body.options.map(getString).filter(Boolean).slice(0, 5)
-    : [];
   const startTime = Number(body.start_time);
   const endTime = Number(body.end_time);
+  const proposalInputs = getAdminProposalInputs(body);
 
   if (!isAuthorizedAdminWallet(adminWallet)) {
     sendJson(res, 403, { error: "UNAUTHORIZED_ADMIN" });
     return;
   }
 
-  if (!title || !description || options.length === 0) {
+  if (proposalInputs.length === 0) {
     sendJson(res, 400, { error: "INVALID_PROPOSAL" });
     return;
   }
@@ -317,37 +330,33 @@ async function handleAdminProposal(req, res) {
 
   if (!verifyAdminActionRequest(adminWallet, adminSignedMessage, adminSignature, {
     action: "start",
-    proposalPayload: {
-      title,
-      description,
-      options,
-      start_time: Math.floor(startTime),
-      end_time: Math.floor(endTime),
-    },
+    proposalPayload: buildAdminProposalPayload(proposalInputs, startTime, endTime),
   })) {
     sendJson(res, 403, { error: "INVALID_ADMIN_SIGNATURE" });
     return;
   }
 
-  const proposal = {
-    proposal_id: String(Math.floor(Date.now() / 1000)),
-    created_by: adminWallet,
-    created_signed_message: adminSignedMessage,
-    created_signature: adminSignature,
-    title,
-    description,
-    options,
-    start_time: Math.floor(startTime),
-    end_time: Math.floor(endTime),
-    status: getStatusForTimes(startTime, endTime),
+  const baseProposalId = Math.floor(Date.now() / 1000);
+  const session = {
+    proposals: proposalInputs.map((item, index) => ({
+      proposal_id: String(baseProposalId + index),
+      created_by: adminWallet,
+      created_signed_message: adminSignedMessage,
+      created_signature: adminSignature,
+      title: item.title,
+      description: item.description,
+      options: item.options,
+      start_time: Math.floor(startTime),
+      end_time: Math.floor(endTime),
+    })),
   };
 
   try {
     await withMutationLock(() => {
-      const existingProposal = readProposal();
+      const existingSession = readProposal();
 
-      if (existingProposal) {
-        const existingStatus = getProposalStatus(existingProposal);
+      if (existingSession) {
+        const existingStatus = getSessionStatus(existingSession);
 
         if (existingStatus === "active" || existingStatus === "scheduled") {
           const error = new Error("PROPOSAL_ALREADY_ACTIVE");
@@ -357,11 +366,14 @@ async function handleAdminProposal(req, res) {
       }
 
       ensureDataDir();
-      initializeVoteStorageForProposal(proposal, adminWallet);
-      writeFileAtomic(PROPOSAL_PATH, JSON.stringify(proposal, null, 2) + "\n");
-      configureVotingSyncTimers(proposal);
+      for (const proposal of session.proposals) {
+        initializeVoteStorageForProposal(proposal, adminWallet);
+      }
+      writeFileAtomic(USED_MINTS_PATH, JSON.stringify(buildEmptyUsedMintsRegistry(session), null, 2) + "\n");
+      writeFileAtomic(PROPOSAL_PATH, JSON.stringify(session, null, 2) + "\n");
+      configureVotingSyncTimers(session);
     });
-    sendJson(res, 200, { success: true, proposal });
+    sendJson(res, 200, { success: true, proposals: session.proposals });
   } catch (error) {
     console.error(error);
     if (error && (error.code === "PROPOSAL_ALREADY_ACTIVE" || error.message === "PROPOSAL_ALREADY_ACTIVE")) {
@@ -388,11 +400,12 @@ async function handleAdminReset(req, res) {
     return;
   }
 
-  const proposal = readProposal();
-  const isValidAdminReset = proposal
+  const session = readProposal();
+  const proposalIds = getSessionProposals(session).map((proposal) => proposal.proposal_id);
+  const isValidAdminReset = session
     ? verifyAdminActionRequest(adminWallet, adminSignedMessage, adminSignature, {
       action: "stop",
-      proposalId: proposal.proposal_id,
+      proposalIds,
     })
     : verifyWalletSignature(adminWallet, adminSignedMessage, adminSignature);
 
@@ -402,18 +415,21 @@ async function handleAdminReset(req, res) {
   }
 
   try {
-    if (proposal) {
+    if (session) {
       await withMutationLock(async () => {
         stopVotingSyncTimers();
-        markProposalCsvAsReset(
-          proposal,
-          adminWallet,
-          Math.floor(Date.now() / 1000),
-          adminSignedMessage,
-          adminSignature
-        );
-        await commitVotesCsvToGit(buildLifecycleCommitMessage("stopped", proposal, adminWallet), {
-          proposal,
+        const resetTimestamp = Math.floor(Date.now() / 1000);
+        for (const proposal of getSessionProposals(session)) {
+          markProposalCsvAsReset(
+            proposal,
+            adminWallet,
+            resetTimestamp,
+            adminSignedMessage,
+            adminSignature
+          );
+        }
+        await commitVotesCsvToGit(buildLifecycleCommitMessage("stopped", session, adminWallet), {
+          session,
           allowStatuses: ["scheduled", "active", "ended"],
           skipMetadataRewrite: true,
         });
@@ -548,38 +564,72 @@ function cleanupNftCache(now = Date.now()) {
   }
 }
 
-function summarizeWalletAssets(assets, usedState) {
+function summarizeWalletAssets(assets, usedState, proposals = []) {
   const gen1Names = [];
   const gen2Names = [];
   const gen1Mints = [];
   const gen2Mints = [];
   const gen1Nfts = [];
   const gen2Nfts = [];
-  const usedMints = usedState ? usedState.usedMints : new Set();
+  const usedMintsByProposal = usedState && usedState.usedMintsByProposal
+    ? usedState.usedMintsByProposal
+    : new Map();
 
   for (const asset of assets) {
     const assetName = getAssetName(asset);
     const assetMint = getAssetMint(asset);
-    const assetStatus = usedMints.has(assetMint) ? "USED" : "AVAILABLE";
+    const usedInProposalIds = proposals
+      .filter((proposal) => {
+        const usedMints = usedMintsByProposal.get(proposal.proposal_id) || new Set();
+        return usedMints.has(assetMint);
+      })
+      .map((proposal) => proposal.proposal_id);
+    const assetStatus = formatNftUsageStatus(usedInProposalIds);
 
     if (assetBelongsToCollection(asset, COLLECTIONS.torrino.address)) {
       gen1Names.push(assetName);
       gen1Mints.push(assetMint);
-      gen1Nfts.push({ mint: assetMint, name: assetName, status: assetStatus });
+      gen1Nfts.push({ mint: assetMint, name: assetName, status: assetStatus, used_in_proposals: usedInProposalIds });
     } else if (assetBelongsToCollection(asset, COLLECTIONS.solnauta.address)) {
       gen2Names.push(assetName);
       gen2Mints.push(assetMint);
-      gen2Nfts.push({ mint: assetMint, name: assetName, status: assetStatus });
+      gen2Nfts.push({ mint: assetMint, name: assetName, status: assetStatus, used_in_proposals: usedInProposalIds });
     }
   }
 
   const gen1Count = gen1Nfts.length;
   const gen2Count = gen2Nfts.length;
-  const availableGen1Count = gen1Nfts.filter((nft) => nft.status === "AVAILABLE").length;
-  const availableGen2Count = gen2Nfts.filter((nft) => nft.status === "AVAILABLE").length;
+  const availableGen1Count = gen1Count;
+  const availableGen2Count = gen2Count;
   const votingPower = Number(
-    (availableGen1Count * COLLECTIONS.torrino.weight + availableGen2Count * COLLECTIONS.solnauta.weight).toFixed(1)
+    (gen1Count * COLLECTIONS.torrino.weight + gen2Count * COLLECTIONS.solnauta.weight).toFixed(1)
   );
+  const proposalStates = proposals.map((proposal) => {
+    const proposalGen1Nfts = gen1Nfts.map((nft) => ({
+      ...nft,
+      status: nft.used_in_proposals.includes(proposal.proposal_id) ? "USED" : "AVAILABLE",
+    }));
+    const proposalGen2Nfts = gen2Nfts.map((nft) => ({
+      ...nft,
+      status: nft.used_in_proposals.includes(proposal.proposal_id) ? "USED" : "AVAILABLE",
+    }));
+    const proposalAvailableGen1Count = proposalGen1Nfts.filter((nft) => nft.status === "AVAILABLE").length;
+    const proposalAvailableGen2Count = proposalGen2Nfts.filter((nft) => nft.status === "AVAILABLE").length;
+
+    return {
+      proposal_id: proposal.proposal_id,
+      gen1_available_count: proposalAvailableGen1Count,
+      gen2_available_count: proposalAvailableGen2Count,
+      gen1_nfts: proposalGen1Nfts,
+      gen2_nfts: proposalGen2Nfts,
+      voting_power: Number(
+        (
+          proposalAvailableGen1Count * COLLECTIONS.torrino.weight +
+          proposalAvailableGen2Count * COLLECTIONS.solnauta.weight
+        ).toFixed(1)
+      ),
+    };
+  });
 
   return {
     gen1_count: gen1Count,
@@ -593,11 +643,21 @@ function summarizeWalletAssets(assets, usedState) {
     gen1_nfts: gen1Nfts,
     gen2_nfts: gen2Nfts,
     voting_power: votingPower,
+    proposal_states: proposalStates,
   };
 }
 
 function calculateResults() {
-  const proposal = readProposal();
+  const session = readProposal();
+  const proposals = getSessionProposals(session);
+
+  return {
+    status: getSessionStatus(session),
+    results: proposals.map((proposal) => calculateProposalResults(proposal)),
+  };
+}
+
+function calculateProposalResults(proposal) {
   const baseResults = {
     proposal_id: proposal ? proposal.proposal_id : null,
     status: proposal ? getProposalStatus(proposal) : "inactive",
@@ -615,7 +675,7 @@ function calculateResults() {
     return baseResults;
   }
 
-  const csvData = readVotesCsv();
+  const csvData = readVotesCsv(proposal);
   const lines = csvData.rows;
   const optionColumns = proposal.options;
 
@@ -663,6 +723,18 @@ function calculateResults() {
   };
 }
 
+function formatNftUsageStatus(usedInProposalIds) {
+  if (!Array.isArray(usedInProposalIds) || usedInProposalIds.length === 0) {
+    return "AVAILABLE";
+  }
+
+  if (usedInProposalIds.length === 1) {
+    return `USED IN PROPOSAL ${usedInProposalIds[0]}`;
+  }
+
+  return `USED IN PROPOSALS ${usedInProposalIds.join(", ")}`;
+}
+
 function assetBelongsToCollection(asset, collectionId) {
   const grouping = Array.isArray(asset.grouping) ? asset.grouping : [];
 
@@ -685,7 +757,7 @@ function getAssetName(asset) {
     asset.content.metadata &&
     asset.content.metadata.name;
 
-  return typeof name === "string" && name.trim() ? name.trim() : "NFT senza nome";
+  return typeof name === "string" && name.trim() ? name.trim() : "Unnamed NFT";
 }
 
 function getAssetMint(asset) {
@@ -738,22 +810,27 @@ function ensureDataDir() {
 
 function resetVoteStorage(createFreshFiles) {
   ensureDataDir();
-  const proposal = readProposal();
-  const header = getVotesCsvHeader(proposal);
-  const proposalCsvPath = getProposalCsvPath(proposal);
+  const session = readProposal();
+  const proposals = getSessionProposals(session);
 
-  if (createFreshFiles && proposalCsvPath) {
-    writeFileAtomic(proposalCsvPath, header);
-    writeFileAtomic(USED_MINTS_PATH, "[]\n");
+  if (createFreshFiles && proposals.length > 0) {
+    for (const proposal of proposals) {
+      writeFileAtomic(getProposalCsvPath(proposal), getVotesCsvHeader(proposal));
+    }
+    writeFileAtomic(USED_MINTS_PATH, JSON.stringify(buildEmptyUsedMintsRegistry(session), null, 2) + "\n");
     return;
   }
 
-  if (proposalCsvPath && !fs.existsSync(proposalCsvPath)) {
-    writeFileAtomic(proposalCsvPath, header);
+  for (const proposal of proposals) {
+    const proposalCsvPath = getProposalCsvPath(proposal);
+
+    if (proposalCsvPath && !fs.existsSync(proposalCsvPath)) {
+      writeFileAtomic(proposalCsvPath, getVotesCsvHeader(proposal));
+    }
   }
 
   if (!fs.existsSync(USED_MINTS_PATH)) {
-    writeFileAtomic(USED_MINTS_PATH, "[]\n");
+    writeFileAtomic(USED_MINTS_PATH, JSON.stringify(buildEmptyUsedMintsRegistry(session), null, 2) + "\n");
   }
 }
 
@@ -767,7 +844,6 @@ function initializeVoteStorageForProposal(proposal, adminWallet) {
   ].join("\n") + "\n";
 
   writeFileAtomic(proposalCsvPath, fileContents);
-  writeFileAtomic(USED_MINTS_PATH, "[]\n");
 }
 
 function buildProposalMetadataLines(proposal, adminWallet, metadataOptions = {}) {
@@ -843,23 +919,23 @@ function markProposalCsvAsReset(proposal, adminWallet, resetTimestamp, resetSign
   writeFileAtomic(proposalCsvPath, nextFileContents);
 }
 
-function ensureVoteStorageFiles() {
+function ensureVoteStorageFiles(session = readProposal()) {
   ensureDataDir();
 
   if (!fs.existsSync(USED_MINTS_PATH)) {
-    writeFileAtomic(USED_MINTS_PATH, "[]\n");
+    writeFileAtomic(USED_MINTS_PATH, JSON.stringify(buildEmptyUsedMintsRegistry(session), null, 2) + "\n");
   }
 
-  const proposal = readProposal();
-  const proposalCsvPath = getProposalCsvPath(proposal);
+  for (const proposal of getSessionProposals(session)) {
+    const proposalCsvPath = getProposalCsvPath(proposal);
 
-  if (proposal && proposalCsvPath && !fs.existsSync(proposalCsvPath)) {
-    initializeVoteStorageForProposal(proposal, ADMIN_WALLET);
+    if (proposalCsvPath && !fs.existsSync(proposalCsvPath)) {
+      initializeVoteStorageForProposal(proposal, ADMIN_WALLET);
+    }
   }
 }
 
-function appendVoteRow(row) {
-  const proposal = readProposal();
+function appendVoteRow(proposal, row) {
   const proposalCsvPath = getProposalCsvPath(proposal);
   const optionValues = getOptionColumns(proposal).map((optionLabel) => {
     return escapeCsvValue(formatDecimal(optionLabel === row.vote ? row.votingPower : 0));
@@ -903,28 +979,30 @@ function rewriteProposalMetadata(proposal, adminWallet, metadataOptions = {}) {
 
 function readUsedMintsRegistry() {
   if (!fs.existsSync(USED_MINTS_PATH)) {
-    return new Set();
+    return {};
   }
 
   try {
     const parsed = JSON.parse(fs.readFileSync(USED_MINTS_PATH, "utf8"));
-    return new Set(Array.isArray(parsed) ? parsed.filter(isValidMint) : []);
+    return normalizeUsedMintsRegistry(parsed, readProposal());
   } catch (error) {
     console.error("Impossibile leggere used-mints.json", error);
-    return new Set();
+    return {};
   }
 }
 
-function registerUsedMints(mints) {
+function registerUsedMints(proposalId, mints) {
   const currentMints = readUsedMintsRegistry();
+  const nextProposalMints = new Set(Array.isArray(currentMints[proposalId]) ? currentMints[proposalId].filter(isValidMint) : []);
 
   for (const mint of mints) {
     if (isValidMint(mint)) {
-      currentMints.add(mint);
+      nextProposalMints.add(mint);
     }
   }
 
-  writeFileAtomic(USED_MINTS_PATH, JSON.stringify(Array.from(currentMints).sort(), null, 2) + "\n");
+  currentMints[proposalId] = Array.from(nextProposalMints).sort();
+  writeFileAtomic(USED_MINTS_PATH, JSON.stringify(currentMints, null, 2) + "\n");
 }
 
 function isValidMint(value) {
@@ -965,19 +1043,20 @@ function verifyAdminActionRequest(walletAddress, signedMessage, signature, optio
 
   if (action === "stop") {
     const match = signedMessage.match(
-      /^Torrino DAO admin action:stop:wallet:([1-9A-HJ-NP-Za-km-z]+):proposal:([^:]+):timestamp:(\d+)$/
+      /^Torrino DAO admin action:stop:wallet:([1-9A-HJ-NP-Za-km-z]+):proposals:([^:]+):timestamp:(\d+)$/
     );
 
     if (!match) {
       return false;
     }
 
-    const [, signedWalletAddress, signedProposalId, signedTimestamp] = match;
+    const [, signedWalletAddress, signedProposalIds, signedTimestamp] = match;
     const timestampMs = Number(signedTimestamp);
+    const expectedProposalIds = Array.isArray(options.proposalIds) ? options.proposalIds.join("|") : "";
 
     return (
       signedWalletAddress === walletAddress &&
-      signedProposalId === getString(options.proposalId) &&
+      signedProposalIds === expectedProposalIds &&
       Number.isFinite(timestampMs) &&
       Math.abs(Date.now() - timestampMs) <= ADMIN_SIGNATURE_MAX_AGE_MS
     );
@@ -986,11 +1065,12 @@ function verifyAdminActionRequest(walletAddress, signedMessage, signature, optio
   return false;
 }
 
-function verifyVoteRequest(walletAddress, voteOption, signedMessage, signature) {
+function verifyVoteRequest(walletAddress, proposalId, voteOption, signedMessage, signature) {
   const verification = verifyVoteRecordSignature(walletAddress, signedMessage, signature);
 
   if (
     !verification.valid ||
+    verification.proposal_id !== proposalId ||
     verification.vote_option !== voteOption ||
     !Number.isFinite(verification.timestamp_ms) ||
     Math.abs(Date.now() - verification.timestamp_ms) > VOTE_SIGNATURE_MAX_AGE_MS
@@ -1013,26 +1093,57 @@ function verifyVoteRecordSignature(walletAddress, signedMessage, signature) {
   }
 
   const voteMatch = signedMessage.match(
+    /^Torrino DAO governance vote:proposal:([^:]+):option:(.+):wallet:([1-9A-HJ-NP-Za-km-z]+):timestamp:(\d+)$/
+  );
+
+  if (voteMatch) {
+    const [, signedProposalId, signedVoteOption, signedWalletAddress, signedTimestamp] = voteMatch;
+    const timestampMs = Number(signedTimestamp);
+
+    if (signedWalletAddress !== walletAddress || !Number.isFinite(timestampMs)) {
+      return {
+        valid: false,
+        wallet: walletAddress,
+        proposal_id: signedProposalId,
+        vote_option: signedVoteOption,
+        timestamp_ms: timestampMs,
+        reason: "MESSAGE_MISMATCH",
+      };
+    }
+
+    return {
+      valid: true,
+      wallet: signedWalletAddress,
+      proposal_id: signedProposalId,
+      vote_option: signedVoteOption,
+      timestamp_ms: timestampMs,
+      reason: "",
+    };
+  }
+
+  const legacyVoteMatch = signedMessage.match(
     /^Torrino DAO governance vote:(.+):wallet:([1-9A-HJ-NP-Za-km-z]+):timestamp:(\d+)$/
   );
 
-  if (!voteMatch) {
+  if (!legacyVoteMatch) {
     return {
       valid: false,
       wallet: walletAddress,
+      proposal_id: "",
       vote_option: "",
       timestamp_ms: NaN,
       reason: "INVALID_MESSAGE_FORMAT",
     };
   }
 
-  const [, signedVoteOption, signedWalletAddress, signedTimestamp] = voteMatch;
+  const [, signedVoteOption, signedWalletAddress, signedTimestamp] = legacyVoteMatch;
   const timestampMs = Number(signedTimestamp);
 
   if (signedWalletAddress !== walletAddress || !Number.isFinite(timestampMs)) {
     return {
       valid: false,
       wallet: walletAddress,
+      proposal_id: "",
       vote_option: signedVoteOption,
       timestamp_ms: timestampMs,
       reason: "MESSAGE_MISMATCH",
@@ -1042,6 +1153,7 @@ function verifyVoteRecordSignature(walletAddress, signedMessage, signature) {
   return {
     valid: true,
     wallet: signedWalletAddress,
+    proposal_id: "",
     vote_option: signedVoteOption,
     timestamp_ms: timestampMs,
     reason: "",
@@ -1116,16 +1228,55 @@ function decodeBase58(value) {
 function hashAdminProposalPayload(proposalPayload) {
   return crypto
     .createHash("sha256")
-    .update(JSON.stringify({
-      title: getString(proposalPayload && proposalPayload.title),
-      description: getString(proposalPayload && proposalPayload.description),
-      options: Array.isArray(proposalPayload && proposalPayload.options)
-        ? proposalPayload.options.map(getString).filter(Boolean).slice(0, 5)
+    .update(JSON.stringify(buildAdminProposalPayload(
+      Array.isArray(proposalPayload && proposalPayload.proposals)
+        ? proposalPayload.proposals
         : [],
-      start_time: Number(proposalPayload && proposalPayload.start_time),
-      end_time: Number(proposalPayload && proposalPayload.end_time),
-    }))
+      Number(proposalPayload && proposalPayload.start_time),
+      Number(proposalPayload && proposalPayload.end_time)
+    )))
     .digest("hex");
+}
+
+function buildAdminProposalPayload(proposals, startTime, endTime) {
+  return {
+    proposals: Array.isArray(proposals)
+      ? proposals.map((proposal) => ({
+        title: getString(proposal && proposal.title),
+        description: getString(proposal && proposal.description),
+        options: Array.isArray(proposal && proposal.options)
+          ? proposal.options.map(getString).filter(Boolean).slice(0, 5)
+          : [],
+      })).filter((proposal) => proposal.title && proposal.description && proposal.options.length > 0).slice(0, 2)
+      : [],
+    start_time: Number(startTime),
+    end_time: Number(endTime),
+  };
+}
+
+function getAdminProposalInputs(body) {
+  if (Array.isArray(body && body.proposals)) {
+    return body.proposals
+      .map((proposal) => ({
+        title: getString(proposal && proposal.title),
+        description: getString(proposal && proposal.description),
+        options: Array.isArray(proposal && proposal.options)
+          ? proposal.options.map(getString).filter(Boolean).slice(0, 5)
+          : [],
+      }))
+      .filter((proposal) => proposal.title && proposal.description && proposal.options.length > 0)
+      .slice(0, 2);
+  }
+
+  const legacyTitle = getString(body && body.title);
+  const legacyDescription = getString(body && body.description);
+  const legacyOptions = Array.isArray(body && body.options)
+    ? body.options.map(getString).filter(Boolean).slice(0, 5)
+    : [];
+
+  return legacyTitle && legacyDescription && legacyOptions.length > 0
+    ? [{ title: legacyTitle, description: legacyDescription, options: legacyOptions }]
+    : [];
 }
 
 function readProposal() {
@@ -1134,11 +1285,105 @@ function readProposal() {
   }
 
   try {
-    return JSON.parse(fs.readFileSync(PROPOSAL_PATH, "utf8"));
+    return normalizeVotingSession(JSON.parse(fs.readFileSync(PROPOSAL_PATH, "utf8")));
   } catch (error) {
     console.error("Impossibile leggere proposal.json", error);
     return null;
   }
+}
+
+function normalizeVotingSession(value) {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  if (Array.isArray(value.proposals)) {
+    const proposals = value.proposals
+      .map((proposal) => normalizeSessionProposal(proposal, value))
+      .filter(Boolean)
+      .slice(0, 2);
+
+    if (proposals.length === 0) {
+      return null;
+    }
+
+    return {
+      proposals,
+    };
+  }
+
+  if (value.proposal_id) {
+    const proposal = normalizeSessionProposal(value, value);
+
+    return proposal
+      ? { proposals: [proposal] }
+      : null;
+  }
+
+  return null;
+}
+
+function normalizeSessionProposal(proposal, parent = {}) {
+  if (!proposal || typeof proposal !== "object") {
+    return null;
+  }
+
+  const proposalId = getString(proposal.proposal_id);
+  const title = getString(proposal.title);
+  const description = getString(proposal.description);
+  const options = Array.isArray(proposal.options)
+    ? proposal.options.map(getString).filter(Boolean).slice(0, 5)
+    : [];
+  const startTime = Number(proposal.start_time ?? parent.start_time);
+  const endTime = Number(proposal.end_time ?? parent.end_time);
+
+  if (!proposalId || !title || !description || options.length === 0) {
+    return null;
+  }
+
+  return {
+    ...proposal,
+    proposal_id: proposalId,
+    title,
+    description,
+    options,
+    start_time: Math.floor(startTime),
+    end_time: Math.floor(endTime),
+  };
+}
+
+function getSessionProposals(session) {
+  return session && Array.isArray(session.proposals) ? session.proposals : [];
+}
+
+function getSessionStatus(session) {
+  const proposals = getSessionProposals(session);
+
+  if (proposals.length === 0) {
+    return "inactive";
+  }
+
+  const statuses = proposals.map((proposal) => getProposalStatus(proposal));
+
+  if (statuses.includes("active")) {
+    return "active";
+  }
+
+  if (statuses.includes("scheduled")) {
+    return "scheduled";
+  }
+
+  return "ended";
+}
+
+function getSessionKey(session) {
+  return getSessionProposals(session)
+    .map((proposal) => proposal.proposal_id)
+    .join("|");
+}
+
+function findProposalById(session, proposalId) {
+  return getSessionProposals(session).find((proposal) => proposal.proposal_id === proposalId) || null;
 }
 
 function getProposalStatus(proposal) {
@@ -1159,8 +1404,7 @@ function getStatusForTimes(startTime, endTime) {
   return "active";
 }
 
-function readVotesCsv() {
-  const proposal = readProposal();
+function readVotesCsv(proposal) {
   const proposalCsvPath = getProposalCsvPath(proposal);
 
   if (!proposalCsvPath || !fs.existsSync(proposalCsvPath)) {
@@ -1186,6 +1430,38 @@ function readVotesCsv() {
   ].includes(column));
 
   return { rows, header, optionColumns };
+}
+
+function buildEmptyUsedMintsRegistry(session) {
+  return Object.fromEntries(
+    getSessionProposals(session).map((proposal) => [proposal.proposal_id, []])
+  );
+}
+
+function normalizeUsedMintsRegistry(value, session) {
+  const proposals = getSessionProposals(session);
+  const proposalIds = proposals.map((proposal) => proposal.proposal_id);
+
+  if (Array.isArray(value)) {
+    if (proposalIds.length === 1) {
+      return {
+        [proposalIds[0]]: value.filter(isValidMint),
+      };
+    }
+
+    return buildEmptyUsedMintsRegistry(session);
+  }
+
+  if (!value || typeof value !== "object") {
+    return buildEmptyUsedMintsRegistry(session);
+  }
+
+  return Object.fromEntries(
+    proposalIds.map((proposalId) => [
+      proposalId,
+      Array.isArray(value[proposalId]) ? value[proposalId].filter(isValidMint) : [],
+    ])
+  );
 }
 
 function parseVoteCsvLine(line, header) {
@@ -1260,15 +1536,24 @@ function getVotesCsvHeader(proposal) {
   return `${columns.join(",")}\n`;
 }
 
-function getUsedNftState() {
-  const usedMints = readUsedMintsRegistry();
+function getUsedNftState(session = readProposal()) {
+  const proposals = getSessionProposals(session);
+  const registry = readUsedMintsRegistry();
+  const usedMintsByProposal = new Map();
 
-  for (const mint of readUsedMintsFromCsv()) {
-    usedMints.add(mint);
+  for (const proposal of proposals) {
+    const proposalId = proposal.proposal_id;
+    const proposalUsedMints = new Set(Array.isArray(registry[proposalId]) ? registry[proposalId].filter(isValidMint) : []);
+
+    for (const mint of readUsedMintsFromCsv(proposal)) {
+      proposalUsedMints.add(mint);
+    }
+
+    usedMintsByProposal.set(proposalId, proposalUsedMints);
   }
 
   return {
-    usedMints,
+    usedMintsByProposal,
   };
 }
 
@@ -1309,29 +1594,32 @@ function splitCsvRecords(csvText) {
   return records;
 }
 
-function configureVotingSyncTimers(proposal) {
+function configureVotingSyncTimers(session) {
   stopVotingSyncTimers();
 
-  if (!proposal) {
+  const proposals = getSessionProposals(session);
+  const primaryProposal = proposals[0];
+
+  if (!primaryProposal) {
     return;
   }
 
-  voteSyncState.proposalId = proposal.proposal_id;
+  voteSyncState.proposalId = getSessionKey(session);
   const nowMs = Date.now();
-  const startMs = Number(proposal.start_time) * 1000;
-  const endMs = Number(proposal.end_time) * 1000;
+  const startMs = Number(primaryProposal.start_time) * 1000;
+  const endMs = Number(primaryProposal.end_time) * 1000;
   console.log("[voting-sync] configure", {
-    proposalId: proposal.proposal_id,
+    proposalId: primaryProposal.proposal_id,
     nowIso: new Date(nowMs).toISOString(),
     startIso: Number.isFinite(startMs) ? new Date(startMs).toISOString() : "invalid",
     endIso: Number.isFinite(endMs) ? new Date(endMs).toISOString() : "invalid",
-    status: getProposalStatus(proposal),
+    status: getSessionStatus(session),
   });
 
   voteSyncState.initialCommitTimeoutId = setTimeout(() => {
-    console.log("[voting-sync] initial commit", { proposalId: proposal.proposal_id });
-    commitVotesCsvToGit(buildLifecycleCommitMessage("active", proposal), {
-      proposal,
+    console.log("[voting-sync] initial commit", { proposalId: primaryProposal.proposal_id });
+    commitVotesCsvToGit(buildLifecycleCommitMessage("active", session), {
+      session,
       allowStatuses: ["scheduled", "active", "ended"],
     }).catch((error) => {
       console.error("Errore commit Git iniziale", error);
@@ -1339,57 +1627,60 @@ function configureVotingSyncTimers(proposal) {
   }, 10 * 1000);
 
   if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= nowMs) {
-    console.log("[voting-sync] immediate final scheduling", { proposalId: proposal.proposal_id });
-    scheduleFinalVotingCommit(proposal);
+    console.log("[voting-sync] immediate final scheduling", { proposalId: primaryProposal.proposal_id });
+    scheduleFinalVotingCommit(session);
     return;
   }
 
   if (startMs <= nowMs) {
-    console.log("[voting-sync] start periodic immediately", { proposalId: proposal.proposal_id });
-    startPeriodicVotingSync(proposal);
+    console.log("[voting-sync] start periodic immediately", { proposalId: primaryProposal.proposal_id });
+    startPeriodicVotingSync(session);
   } else {
     voteSyncState.startTimeoutId = setTimeout(() => {
-      console.log("[voting-sync] delayed periodic start", { proposalId: proposal.proposal_id });
-      startPeriodicVotingSync(proposal);
+      console.log("[voting-sync] delayed periodic start", { proposalId: primaryProposal.proposal_id });
+      startPeriodicVotingSync(session);
     }, startMs - nowMs);
   }
 
   voteSyncState.endTimeoutId = setTimeout(() => {
-    console.log("[voting-sync] end timeout fired", { proposalId: proposal.proposal_id });
-    scheduleFinalVotingCommit(proposal);
+    console.log("[voting-sync] end timeout fired", { proposalId: primaryProposal.proposal_id });
+    scheduleFinalVotingCommit(session);
   }, Math.max(endMs - nowMs, 0));
 }
 
-function startPeriodicVotingSync(proposal) {
-  if (!proposal || voteSyncState.proposalId !== proposal.proposal_id) {
+function startPeriodicVotingSync(session) {
+  const primaryProposal = getSessionProposals(session)[0];
+  const sessionKey = getSessionKey(session);
+
+  if (!primaryProposal || voteSyncState.proposalId !== sessionKey) {
     console.log("[voting-sync] periodic skipped", {
-      proposalId: proposal ? proposal.proposal_id : null,
+      proposalId: primaryProposal ? primaryProposal.proposal_id : null,
       activeProposalId: voteSyncState.proposalId,
     });
     return;
   }
 
-  if (getProposalStatus(proposal) !== "active") {
+  if (getSessionStatus(session) !== "active") {
     console.log("[voting-sync] periodic not active", {
-      proposalId: proposal.proposal_id,
-      status: getProposalStatus(proposal),
+      proposalId: primaryProposal.proposal_id,
+      status: getSessionStatus(session),
     });
     return;
   }
 
-  console.log("[voting-sync] periodic started", { proposalId: proposal.proposal_id });
+  console.log("[voting-sync] periodic started", { proposalId: primaryProposal.proposal_id });
   voteSyncState.intervalId = setInterval(() => {
-    if (getProposalStatus(proposal) !== "active") {
+    if (getSessionStatus(session) !== "active") {
       console.log("[voting-sync] periodic tick skipped", {
-        proposalId: proposal.proposal_id,
-        status: getProposalStatus(proposal),
+        proposalId: primaryProposal.proposal_id,
+        status: getSessionStatus(session),
       });
       return;
     }
 
-    console.log("[voting-sync] periodic tick commit", { proposalId: proposal.proposal_id });
-    commitVotesCsvToGit(buildLifecycleCommitMessage("active", proposal), {
-      proposal,
+    console.log("[voting-sync] periodic tick commit", { proposalId: primaryProposal.proposal_id });
+    commitVotesCsvToGit(buildLifecycleCommitMessage("active", session), {
+      session,
       allowStatuses: ["active"],
     }).catch((error) => {
       console.error("Errore sync Git periodico", error);
@@ -1397,22 +1688,25 @@ function startPeriodicVotingSync(proposal) {
   }, GIT_UPDATE_INTERVAL_MS);
 }
 
-function scheduleFinalVotingCommit(proposal) {
-  if (!proposal || voteSyncState.proposalId !== proposal.proposal_id) {
+function scheduleFinalVotingCommit(session) {
+  const primaryProposal = getSessionProposals(session)[0];
+  const sessionKey = getSessionKey(session);
+
+  if (!primaryProposal || voteSyncState.proposalId !== sessionKey) {
     console.log("[voting-sync] final skipped", {
-      proposalId: proposal ? proposal.proposal_id : null,
+      proposalId: primaryProposal ? primaryProposal.proposal_id : null,
       activeProposalId: voteSyncState.proposalId,
     });
     return;
   }
 
   console.log("[voting-sync] final commit start", {
-    proposalId: proposal.proposal_id,
-    status: getProposalStatus(proposal),
+    proposalId: primaryProposal.proposal_id,
+    status: getSessionStatus(session),
   });
   stopVotingSyncTimers();
-  commitVotesCsvToGit(buildLifecycleCommitMessage("completed", proposal), {
-    proposal,
+  commitVotesCsvToGit(buildLifecycleCommitMessage("completed", session), {
+    session,
     allowStatuses: ["ended"],
   }).catch((error) => {
     console.error("Errore commit Git finale", error);
@@ -1444,40 +1738,43 @@ function stopVotingSyncTimers() {
 }
 
 function restoreVotingSyncTimers() {
-  const proposal = readProposal();
+  const session = readProposal();
+  const primaryProposal = getSessionProposals(session)[0];
 
-  if (!proposal) {
+  if (!primaryProposal) {
     console.log("[voting-sync] restore skipped: no proposal");
     return;
   }
 
   console.log("[voting-sync] restore", {
-    proposalId: proposal.proposal_id,
-    status: getProposalStatus(proposal),
+    proposalId: primaryProposal.proposal_id,
+    status: getSessionStatus(session),
   });
-  configureVotingSyncTimers(proposal);
+  configureVotingSyncTimers(session);
 }
 
 async function commitVotesCsvToGit(message, options = {}) {
-  const proposal = options.proposal || readProposal();
-  const proposalCsvPath = getProposalCsvPath(proposal);
+  const session = options.session || readProposal();
+  const proposals = getSessionProposals(session);
+  const proposalCsvPaths = proposals.map((proposal) => getProposalCsvPath(proposal)).filter(Boolean);
+  const primaryProposal = proposals[0];
 
-  if (!proposal || !proposalCsvPath || !fs.existsSync(proposalCsvPath)) {
+  if (!primaryProposal || proposalCsvPaths.length === 0 || proposalCsvPaths.some((filePath) => !fs.existsSync(filePath))) {
     console.log("[voting-sync] commit skipped: missing proposal or csv", {
       message,
-      proposalId: proposal ? proposal.proposal_id : null,
-      proposalCsvPath,
+      proposalId: primaryProposal ? primaryProposal.proposal_id : null,
+      proposalCsvPath: proposalCsvPaths,
     });
     return;
   }
 
-  const status = getProposalStatus(proposal);
+  const status = getSessionStatus(session);
   const allowStatuses = Array.isArray(options.allowStatuses) ? options.allowStatuses : ["active"];
 
   if (!allowStatuses.includes(status)) {
     console.log("[voting-sync] commit skipped: status not allowed", {
       message,
-      proposalId: proposal.proposal_id,
+      proposalId: primaryProposal.proposal_id,
       status,
       allowStatuses,
     });
@@ -1486,18 +1783,20 @@ async function commitVotesCsvToGit(message, options = {}) {
 
   console.log("[voting-sync] commit start", {
     message,
-    proposalId: proposal.proposal_id,
+    proposalId: primaryProposal.proposal_id,
     status,
   });
   if (!options.skipMetadataRewrite) {
-    rewriteProposalMetadata(proposal, ADMIN_WALLET, {
-      lifecycleTimestamp: status === "ended"
-        ? Number(proposal.end_time) || Math.floor(Date.now() / 1000)
-        : Math.floor(Date.now() / 1000),
-    });
+    const lifecycleTimestamp = status === "ended"
+      ? Number(primaryProposal.end_time) || Math.floor(Date.now() / 1000)
+      : Math.floor(Date.now() / 1000);
+
+    for (const proposal of proposals) {
+      rewriteProposalMetadata(proposal, ADMIN_WALLET, { lifecycleTimestamp });
+    }
   }
 
-  await runGitCommand(["add", getProposalCsvRelativePath(proposal)]);
+  await runGitCommand(["add", ...proposals.map((proposal) => getProposalCsvRelativePath(proposal)).filter(Boolean)]);
 
   try {
     await runGitCommand(["commit", "-m", message]);
@@ -1510,14 +1809,14 @@ async function commitVotesCsvToGit(message, options = {}) {
 
     console.log("[voting-sync] commit noop", {
       message,
-      proposalId: proposal.proposal_id,
+      proposalId: primaryProposal.proposal_id,
     });
   }
 
   await runGitCommand(["push", "origin", "main"]);
   console.log("[voting-sync] commit pushed", {
     message,
-    proposalId: proposal.proposal_id,
+    proposalId: primaryProposal.proposal_id,
   });
 }
 
@@ -1527,8 +1826,8 @@ async function runGitCommand(args) {
   });
 }
 
-function readUsedMintsFromCsv() {
-  const csvData = readVotesCsv();
+function readUsedMintsFromCsv(proposal) {
+  const csvData = readVotesCsv(proposal);
   const usedMints = new Set();
 
   if (csvData.rows.length <= 1) {
@@ -1609,20 +1908,24 @@ function getProposalLifecycleMetadata(proposal, adminWallet, metadataOptions = {
   };
 }
 
-function buildLifecycleCommitMessage(statusKey, proposal, adminWallet = "") {
-  if (!proposal || !proposal.proposal_id) {
+function buildLifecycleCommitMessage(statusKey, session, adminWallet = "") {
+  const proposalIds = getSessionProposals(session).map((proposal) => proposal.proposal_id);
+
+  if (proposalIds.length === 0) {
     return "voting status update";
   }
 
+  const proposalLabel = proposalIds.join(" ");
+
   if (statusKey === "stopped") {
-    return `voting stopped by admin ${adminWallet} ${proposal.proposal_id}`;
+    return `voting stopped by admin ${adminWallet} ${proposalLabel}`;
   }
 
   if (statusKey === "completed") {
-    return `voting completed successfully ${proposal.proposal_id}`;
+    return `voting completed successfully ${proposalLabel}`;
   }
 
-  return `voting in progress ${proposal.proposal_id}`;
+  return `voting in progress ${proposalLabel}`;
 }
 
 function getProposalParticipationMetadata(proposal) {
@@ -1636,7 +1939,7 @@ function getProposalParticipationMetadata(proposal) {
     };
   }
 
-  const results = calculateResults();
+  const results = calculateProposalResults(proposal);
 
   return {
     torrinoParticipationRate: formatParticipationRate(results.torrino_voted, TORRINO_TOTAL_NFTS),
