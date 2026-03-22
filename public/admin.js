@@ -2,7 +2,6 @@ const AUTHORIZED_ADMIN_WALLETS = new Set([
   "5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc",
   "4hcKvjU4EMzz5TSjgk7CMwhTwy4gXTuhdEYHyd5Shaz8",
 ]);
-const ADMIN_CONFIRMATION_MESSAGE = "Confirm admin action for Torrino DAO voting";
 const APP_BASE_PATH = "/torrino.dao.voting";
 const API_BASE_PATH = `${APP_BASE_PATH}/api`;
 const textEncoder = new TextEncoder();
@@ -147,7 +146,8 @@ async function startVoting() {
   try {
     setAdminBusy(true, "Signing...", "Signing...");
     setActionStatus("Awaiting wallet signature...", "");
-    payload.admin_signature = await confirmAdminAction();
+    payload.admin_signed_message = await buildStartProposalAdminMessage(payload);
+    payload.admin_signature = await confirmAdminAction(payload.admin_signed_message);
     setAdminBusy(true, "Saving...", "Stop Voting");
     setActionStatus("Signature confirmed. Starting voting...", "");
     const response = await fetch(`${API_BASE_PATH}/admin/proposal`, {
@@ -207,9 +207,16 @@ async function resetVoting() {
   }
 
   try {
+    const proposal = await getCurrentProposal();
+
+    if (!proposal || !proposal.proposal_id) {
+      throw new Error("NO_ACTIVE_PROPOSAL");
+    }
+
     setAdminBusy(true, "Start Voting", "Signing...");
     setActionStatus("Awaiting wallet signature...", "");
-    const adminSignature = await confirmAdminAction();
+    const adminSignedMessage = await buildResetProposalAdminMessage(proposal.proposal_id);
+    const adminSignature = await confirmAdminAction(adminSignedMessage);
     setAdminBusy(true, "Start Voting", "Working...");
     setActionStatus("Signature confirmed. Resetting voting...", "");
     const response = await fetch(`${API_BASE_PATH}/admin/reset-voting`, {
@@ -217,6 +224,7 @@ async function resetVoting() {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         admin_wallet: state.adminWallet,
+        admin_signed_message: adminSignedMessage,
         admin_signature: adminSignature,
       }),
     });
@@ -240,6 +248,8 @@ async function resetVoting() {
 
     const errorMessage = error.message === "UNAUTHORIZED_ADMIN"
       ? "Unauthorized admin wallet."
+      : error.message === "NO_ACTIVE_PROPOSAL"
+        ? "No active proposal found."
       : error.message === "INVALID_ADMIN_SIGNATURE"
         ? "Action failed: admin signature is not valid."
         : "Action failed while resetting voting.";
@@ -361,7 +371,7 @@ function toUnixTimestamp(value) {
   return Number.isFinite(timestamp) ? Math.floor(timestamp / 1000) : NaN;
 }
 
-async function confirmAdminAction() {
+async function confirmAdminAction(message) {
   const provider = state.adminProvider || getWalletProvider();
 
   if (!provider || typeof provider.signMessage !== "function") {
@@ -369,7 +379,7 @@ async function confirmAdminAction() {
   }
 
   try {
-    const encodedMessage = textEncoder.encode(ADMIN_CONFIRMATION_MESSAGE);
+    const encodedMessage = textEncoder.encode(message);
     const signed = await provider.signMessage(encodedMessage, "utf8");
     const signatureBytes = extractSignatureBytes(signed);
 
@@ -385,6 +395,41 @@ async function confirmAdminAction() {
 
     throw error;
   }
+}
+
+async function getCurrentProposal() {
+  const response = await fetch(`${API_BASE_PATH}/proposal`);
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok || !payload || payload.proposal === null) {
+    return null;
+  }
+
+  return payload;
+}
+
+async function buildStartProposalAdminMessage(payload) {
+  const payloadHash = await hashAdminActionPayload({
+    title: payload.title,
+    description: payload.description,
+    options: payload.options,
+    start_time: payload.start_time,
+    end_time: payload.end_time,
+  });
+
+  return `Torrino DAO admin action:start:wallet:${payload.admin_wallet}:payload_hash:${payloadHash}:timestamp:${Date.now()}`;
+}
+
+async function buildResetProposalAdminMessage(proposalId) {
+  return `Torrino DAO admin action:stop:wallet:${state.adminWallet}:proposal:${proposalId}:timestamp:${Date.now()}`;
+}
+
+async function hashAdminActionPayload(value) {
+  const normalized = JSON.stringify(value);
+  const digest = await crypto.subtle.digest("SHA-256", textEncoder.encode(normalized));
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 function isSignatureRejected(error) {

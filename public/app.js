@@ -398,8 +398,9 @@ async function submitVote(voteOption) {
     throw new Error(payload && payload.error ? payload.error : "SERVER_ERROR");
   } catch (error) {
     console.error(error);
-    setStatus(getErrorMessage(error));
-    showVoteFeedback("An error occurred while submitting the vote.", "error");
+    const errorMessage = getErrorMessage(error);
+    setStatus(errorMessage);
+    showVoteFeedback(errorMessage, "error");
   } finally {
     setVoteButtonsBusy(false);
     syncVoteButtons();
@@ -632,7 +633,7 @@ function getErrorMessage(error) {
     }
 
     if (error.message === "SIGNATURE_UNAVAILABLE") {
-      return "The connected wallet does not support the signature required to confirm the vote.";
+      return "Hardware wallet message signing not supported.";
     }
 
     if (error.message === "VOTING_ENDED") {

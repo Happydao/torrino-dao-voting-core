@@ -27,7 +27,7 @@ const RATE_LIMIT_WINDOW_MS = 10 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 20;
 const JSON_BODY_MAX_BYTES = 16 * 1024;
 const VOTE_SIGNATURE_MAX_AGE_MS = 5 * 60 * 1000;
-const ADMIN_CONFIRMATION_MESSAGE = "Confirm admin action for Torrino DAO voting";
+const ADMIN_SIGNATURE_MAX_AGE_MS = 5 * 60 * 1000;
 const COLLECTIONS = {
   torrino: {
     name: "Torrino DAO",
@@ -285,18 +285,8 @@ async function handleAdminProposal(req, res) {
 
   const body = await readJsonBody(req);
   const adminWallet = getString(body.admin_wallet);
+  const adminSignedMessage = getString(body.admin_signed_message);
   const adminSignature = getString(body.admin_signature);
-
-  if (!isAuthorizedAdminWallet(adminWallet)) {
-    sendJson(res, 403, { error: "UNAUTHORIZED_ADMIN" });
-    return;
-  }
-
-  if (!verifyWalletSignature(adminWallet, ADMIN_CONFIRMATION_MESSAGE, adminSignature)) {
-    sendJson(res, 403, { error: "INVALID_ADMIN_SIGNATURE" });
-    return;
-  }
-
   const title = getString(body.title);
   const description = getString(body.description);
   const options = Array.isArray(body.options)
@@ -304,6 +294,11 @@ async function handleAdminProposal(req, res) {
     : [];
   const startTime = Number(body.start_time);
   const endTime = Number(body.end_time);
+
+  if (!isAuthorizedAdminWallet(adminWallet)) {
+    sendJson(res, 403, { error: "UNAUTHORIZED_ADMIN" });
+    return;
+  }
 
   if (!title || !description || options.length === 0) {
     sendJson(res, 400, { error: "INVALID_PROPOSAL" });
@@ -315,8 +310,25 @@ async function handleAdminProposal(req, res) {
     return;
   }
 
+  if (!verifyAdminActionRequest(adminWallet, adminSignedMessage, adminSignature, {
+    action: "start",
+    proposalPayload: {
+      title,
+      description,
+      options,
+      start_time: Math.floor(startTime),
+      end_time: Math.floor(endTime),
+    },
+  })) {
+    sendJson(res, 403, { error: "INVALID_ADMIN_SIGNATURE" });
+    return;
+  }
+
   const proposal = {
     proposal_id: String(Math.floor(Date.now() / 1000)),
+    created_by: adminWallet,
+    created_signed_message: adminSignedMessage,
+    created_signature: adminSignature,
     title,
     description,
     options,
@@ -347,6 +359,7 @@ async function handleAdminReset(req, res) {
 
   const body = await readJsonBody(req);
   const adminWallet = getString(body.admin_wallet);
+  const adminSignedMessage = getString(body.admin_signed_message);
   const adminSignature = getString(body.admin_signature);
 
   if (!isAuthorizedAdminWallet(adminWallet)) {
@@ -354,18 +367,27 @@ async function handleAdminReset(req, res) {
     return;
   }
 
-  if (!verifyWalletSignature(adminWallet, ADMIN_CONFIRMATION_MESSAGE, adminSignature)) {
+  const proposal = readProposal();
+
+  if (proposal && !verifyAdminActionRequest(adminWallet, adminSignedMessage, adminSignature, {
+    action: "stop",
+    proposalId: proposal.proposal_id,
+  })) {
     sendJson(res, 403, { error: "INVALID_ADMIN_SIGNATURE" });
     return;
   }
 
   try {
-    const proposal = readProposal();
-
     if (proposal) {
       await withMutationLock(async () => {
         stopVotingSyncTimers();
-        markProposalCsvAsReset(proposal, adminWallet, Math.floor(Date.now() / 1000));
+        markProposalCsvAsReset(
+          proposal,
+          adminWallet,
+          Math.floor(Date.now() / 1000),
+          adminSignedMessage,
+          adminSignature
+        );
         await commitVotesCsvToGit(buildLifecycleCommitMessage("stopped", proposal, adminWallet), {
           proposal,
           allowStatuses: ["scheduled", "active", "ended"],
@@ -710,21 +732,29 @@ function initializeVoteStorageForProposal(proposal, adminWallet) {
 }
 
 function buildProposalMetadataLines(proposal, adminWallet, metadataOptions = {}) {
+  const creatorWallet = getString(proposal && proposal.created_by) || adminWallet;
+  const creationSignedMessage = getString(proposal && proposal.created_signed_message);
+  const creationSignature = getString(proposal && proposal.created_signature);
   const createdTimestamp = Number(proposal.proposal_id) || Math.floor(Date.now() / 1000);
   const startTimestamp = Number(proposal.start_time) || "";
   const endTimestamp = Number(proposal.end_time) || "";
   const resetTimestamp = Number.isFinite(metadataOptions.resetTimestamp)
     ? Math.floor(metadataOptions.resetTimestamp)
     : "";
+  const resetWallet = getString(metadataOptions.resetWallet);
+  const resetSignedMessage = getString(metadataOptions.resetSignedMessage);
+  const resetSignature = getString(metadataOptions.resetSignature);
   const lifecycle = getProposalLifecycleMetadata(proposal, adminWallet, {
     resetTimestamp,
     lifecycleTimestamp: metadataOptions.lifecycleTimestamp,
   });
   const participation = getProposalParticipationMetadata(proposal);
   const metadataRows = [
-    ["proposal_created_by", adminWallet],
+    ["proposal_created_by", creatorWallet],
     ["proposal_created_timestamp", createdTimestamp],
     ["proposal_created_iso", formatTimestampIso(createdTimestamp)],
+    ["proposal_created_signed_message", creationSignedMessage],
+    ["proposal_created_signature", creationSignature],
     ["proposal_lifecycle_status", lifecycle.status],
     ["proposal_lifecycle_updated_timestamp", lifecycle.timestamp],
     ["proposal_lifecycle_updated_iso", formatTimestampIso(lifecycle.timestamp)],
@@ -732,6 +762,11 @@ function buildProposalMetadataLines(proposal, adminWallet, metadataOptions = {})
     ["voting_start_iso", formatTimestampIso(startTimestamp)],
     ["voting_end_timestamp", endTimestamp],
     ["voting_end_iso", formatTimestampIso(endTimestamp)],
+    ["proposal_reset_by", resetWallet],
+    ["proposal_reset_timestamp", resetTimestamp],
+    ["proposal_reset_iso", formatTimestampIso(resetTimestamp)],
+    ["proposal_reset_signed_message", resetSignedMessage],
+    ["proposal_reset_signature", resetSignature],
     ["proposal_title", proposal.title],
     ["proposal_description", proposal.description],
     ["proposal_options", proposal.options.join(" | ")],
@@ -743,7 +778,7 @@ function buildProposalMetadataLines(proposal, adminWallet, metadataOptions = {})
   return metadataRows.map(([label, value]) => `${escapeCsvValue(label)},${escapeCsvValue(value)}`);
 }
 
-function markProposalCsvAsReset(proposal, adminWallet, resetTimestamp) {
+function markProposalCsvAsReset(proposal, adminWallet, resetTimestamp, resetSignedMessage = "", resetSignature = "") {
   const proposalCsvPath = getProposalCsvPath(proposal);
 
   if (!proposalCsvPath || !fs.existsSync(proposalCsvPath)) {
@@ -756,7 +791,12 @@ function markProposalCsvAsReset(proposal, adminWallet, resetTimestamp) {
     ? [getVotesCsvHeader(proposal).trimEnd()]
     : allRecords.slice(headerIndex).filter(Boolean);
   const nextFileContents = [
-    ...buildProposalMetadataLines(proposal, adminWallet, { resetTimestamp }),
+    ...buildProposalMetadataLines(proposal, adminWallet, {
+      resetWallet: adminWallet,
+      resetTimestamp,
+      resetSignedMessage,
+      resetSignature,
+    }),
     "",
     ...voteSectionLines,
   ].join("\n") + "\n";
@@ -856,6 +896,57 @@ function isAuthorizedAdminWallet(walletAddress) {
   return typeof walletAddress === "string" && AUTHORIZED_ADMIN_WALLETS.has(walletAddress);
 }
 
+function verifyAdminActionRequest(walletAddress, signedMessage, signature, options = {}) {
+  if (!verifyWalletSignature(walletAddress, signedMessage, signature)) {
+    return false;
+  }
+
+  const action = getString(options.action);
+
+  if (action === "start") {
+    const match = signedMessage.match(
+      /^Torrino DAO admin action:start:wallet:([1-9A-HJ-NP-Za-km-z]+):payload_hash:([a-f0-9]{64}):timestamp:(\d+)$/
+    );
+
+    if (!match) {
+      return false;
+    }
+
+    const [, signedWalletAddress, signedPayloadHash, signedTimestamp] = match;
+    const timestampMs = Number(signedTimestamp);
+    const expectedPayloadHash = hashAdminProposalPayload(options.proposalPayload);
+
+    return (
+      signedWalletAddress === walletAddress &&
+      signedPayloadHash === expectedPayloadHash &&
+      Number.isFinite(timestampMs) &&
+      Math.abs(Date.now() - timestampMs) <= ADMIN_SIGNATURE_MAX_AGE_MS
+    );
+  }
+
+  if (action === "stop") {
+    const match = signedMessage.match(
+      /^Torrino DAO admin action:stop:wallet:([1-9A-HJ-NP-Za-km-z]+):proposal:([^:]+):timestamp:(\d+)$/
+    );
+
+    if (!match) {
+      return false;
+    }
+
+    const [, signedWalletAddress, signedProposalId, signedTimestamp] = match;
+    const timestampMs = Number(signedTimestamp);
+
+    return (
+      signedWalletAddress === walletAddress &&
+      signedProposalId === getString(options.proposalId) &&
+      Number.isFinite(timestampMs) &&
+      Math.abs(Date.now() - timestampMs) <= ADMIN_SIGNATURE_MAX_AGE_MS
+    );
+  }
+
+  return false;
+}
+
 function verifyVoteRequest(walletAddress, voteOption, signedMessage, signature) {
   if (!verifyWalletSignature(walletAddress, signedMessage, signature)) {
     return false;
@@ -947,6 +1038,21 @@ function decodeBase58(value) {
     ...new Array(leadingZeroes).fill(0),
     ...bytes.reverse(),
   ]);
+}
+
+function hashAdminProposalPayload(proposalPayload) {
+  return crypto
+    .createHash("sha256")
+    .update(JSON.stringify({
+      title: getString(proposalPayload && proposalPayload.title),
+      description: getString(proposalPayload && proposalPayload.description),
+      options: Array.isArray(proposalPayload && proposalPayload.options)
+        ? proposalPayload.options.map(getString).filter(Boolean).slice(0, 5)
+        : [],
+      start_time: Number(proposalPayload && proposalPayload.start_time),
+      end_time: Number(proposalPayload && proposalPayload.end_time),
+    }))
+    .digest("hex");
 }
 
 function readProposal() {
