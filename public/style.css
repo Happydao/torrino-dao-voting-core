@@ -817,6 +817,72 @@ p {
   font-size: 12px;
 }
 
+.verifier-topbar {
+  align-items: center;
+}
+
+.verifier-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.verifier-guide,
+.verifier-card {
+  margin-top: 18px;
+}
+
+.verifier-guide h2 {
+  margin-top: 8px;
+  font-size: clamp(1.2rem, 2vw, 1.5rem);
+  font-family: var(--font-display);
+}
+
+.verifier-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.verifier-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.verifier-form .admin-field span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.verifier-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.verifier-result {
+  margin-top: 18px;
+  padding: 24px 22px;
+  border-radius: 18px;
+  background: rgba(8, 12, 20, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.verifier-result__details {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+  word-break: break-word;
+}
+
 .admin-shell {
   width: min(980px, calc(100% - 32px));
   margin: 0 auto;
@@ -1168,7 +1234,8 @@ p {
   .summary-grid,
   .results-grid,
   .admin-grid,
-  .info-grid {
+  .info-grid,
+  .verifier-steps {
     grid-template-columns: 1fr;
   }
 
@@ -1215,6 +1282,12 @@ p {
     text-align: left;
     letter-spacing: 0.12em;
     line-height: 1.6;
+  }
+
+  .verifier-links,
+  .verifier-actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .transparency-actions {

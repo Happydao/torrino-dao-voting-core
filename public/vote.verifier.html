@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Torrino DAO Vote Verifier</title>
+    <link rel="icon" type="image/png" href="torrino-dao.png" />
+    <link rel="apple-touch-icon" href="torrino-dao.png" />
+    <meta
+      name="description"
+      content="Public verifier for Torrino DAO vote signatures stored in the governance CSV files."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="bg"></div>
+    <div class="scanlines"></div>
+
+    <div class="page-shell">
+      <header class="topbar verifier-topbar">
+        <div class="brand-block">
+          <p class="eyebrow">Torrino DAO</p>
+          <div class="title-row">
+            <img src="torrino-dao.png" alt="Torrino DAO logo" class="brand-logo" />
+            <h1 class="title">VOTE VERIFIER</h1>
+          </div>
+          <p class="tagline">
+            Verify for yourself that a vote recorded in the public CSV was really signed by the wallet that cast it.
+          </p>
+        </div>
+
+        <div class="verifier-links">
+          <a class="chip chip--ghost" href="/torrino.dao.voting/">Back to voting</a>
+          <a
+            class="chip chip--ghost"
+            href="https://github.com/Happydao/torrino-dao-voting-core/tree/main/data"
+            target="_blank"
+            rel="noopener"
+          >
+            Open CSV archive
+          </a>
+        </div>
+      </header>
+
+      <section class="results-card verifier-guide">
+        <p class="proposal-tag">How To Verify</p>
+        <h2>Public verification in 3 steps</h2>
+        <div class="verifier-steps">
+          <article class="results-stat">
+            <span class="label">Step 1</span>
+            <strong>Open the public CSV</strong>
+            <span class="results-stat__detail">
+              Go to the GitHub data folder and open the CSV file for the proposal you want to inspect.
+            </span>
+          </article>
+          <article class="results-stat">
+            <span class="label">Step 2</span>
+            <strong>Copy one vote row</strong>
+            <span class="results-stat__detail">
+              In the same row, copy the wallet, the signed message and the signature exactly as they appear.
+            </span>
+          </article>
+          <article class="results-stat">
+            <span class="label">Step 3</span>
+            <strong>Run the verifier</strong>
+            <span class="results-stat__detail">
+              Paste the three values below and click verify. You will get <span class="mono-inline">TRUE</span>
+              if the row is authentic, or <span class="mono-inline">FALSE</span> if something was altered.
+            </span>
+          </article>
+        </div>
+      </section>
+
+      <section class="proposal-card verifier-card">
+        <p class="proposal-tag">Vote Verification</p>
+        <h2>Check one CSV row</h2>
+        <p class="proposal-copy">
+          This tool verifies the cryptographic integrity of a vote record. It checks that the signature matches the wallet and the signed message stored in the CSV.
+        </p>
+
+        <form id="voteVerifierForm" class="verifier-form">
+          <label class="admin-field admin-field--full">
+            <span>Wallet</span>
+            <input id="verifyWalletInput" type="text" autocomplete="off" spellcheck="false" />
+          </label>
+          <label class="admin-field admin-field--full">
+            <span>Signed message</span>
+            <textarea id="verifySignedMessageInput" rows="5" spellcheck="false"></textarea>
+          </label>
+          <label class="admin-field admin-field--full">
+            <span>Signature</span>
+            <textarea id="verifySignatureInput" rows="3" spellcheck="false"></textarea>
+          </label>
+          <div class="verifier-actions">
+            <button id="verifyVoteButton" class="admin-button admin-button--primary" type="submit">
+              Verify Vote
+            </button>
+            <a
+              class="chip chip--ghost"
+              href="https://github.com/Happydao/torrino-dao-voting-core/tree/main/data"
+              target="_blank"
+              rel="noopener"
+            >
+              Open GitHub CSV Files
+            </a>
+          </div>
+        </form>
+
+        <div id="verifyResultCard" class="verifier-result" hidden>
+          <p id="verifyResultBadge" class="feedback-modal__badge">Verification result</p>
+          <h3 id="verifyResultHeadline" class="feedback-modal__headline">TRUE</h3>
+          <p id="verifyResultMessage" class="modal__lead feedback-modal__message"></p>
+          <p id="verifyResultDetails" class="verifier-result__details"></p>
+        </div>
+
+        <p id="verifyStatus" class="admin-feedback" aria-live="polite"></p>
+      </section>
+    </div>
+
+    <script src="vote-verifier.js"></script>
+  </body>
+</html>

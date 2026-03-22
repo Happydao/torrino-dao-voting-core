@@ -116,6 +116,11 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (requestUrl.pathname === "/api/verify-vote-record") {
+      await handleVerifyVoteRecord(req, res);
+      return;
+    }
+
     if (req.method !== "GET" && req.method !== "HEAD") {
       sendJson(res, 405, { error: "METHOD_NOT_ALLOWED" });
       return;
@@ -409,6 +414,21 @@ async function handleAdminReset(req, res) {
     console.error(error);
     sendJson(res, 500, { error: "SERVER_ERROR" });
   }
+}
+
+async function handleVerifyVoteRecord(req, res) {
+  if (req.method !== "POST") {
+    sendJson(res, 405, { error: "METHOD_NOT_ALLOWED" });
+    return;
+  }
+
+  const body = await readJsonBody(req);
+  const wallet = getString(body.wallet);
+  const signedMessage = getString(body.signed_message);
+  const signature = getString(body.signature);
+  const verification = verifyVoteRecordSignature(wallet, signedMessage, signature);
+
+  sendJson(res, 200, verification);
 }
 
 async function getAllAssetsByOwner(ownerAddress) {
@@ -951,8 +971,29 @@ function verifyAdminActionRequest(walletAddress, signedMessage, signature, optio
 }
 
 function verifyVoteRequest(walletAddress, voteOption, signedMessage, signature) {
-  if (!verifyWalletSignature(walletAddress, signedMessage, signature)) {
+  const verification = verifyVoteRecordSignature(walletAddress, signedMessage, signature);
+
+  if (
+    !verification.valid ||
+    verification.vote_option !== voteOption ||
+    !Number.isFinite(verification.timestamp_ms) ||
+    Math.abs(Date.now() - verification.timestamp_ms) > VOTE_SIGNATURE_MAX_AGE_MS
+  ) {
     return false;
+  }
+
+  return true;
+}
+
+function verifyVoteRecordSignature(walletAddress, signedMessage, signature) {
+  if (!verifyWalletSignature(walletAddress, signedMessage, signature)) {
+    return {
+      valid: false,
+      wallet: walletAddress,
+      vote_option: "",
+      timestamp_ms: NaN,
+      reason: "INVALID_SIGNATURE",
+    };
   }
 
   const voteMatch = signedMessage.match(
@@ -960,22 +1001,35 @@ function verifyVoteRequest(walletAddress, voteOption, signedMessage, signature) 
   );
 
   if (!voteMatch) {
-    return false;
+    return {
+      valid: false,
+      wallet: walletAddress,
+      vote_option: "",
+      timestamp_ms: NaN,
+      reason: "INVALID_MESSAGE_FORMAT",
+    };
   }
 
   const [, signedVoteOption, signedWalletAddress, signedTimestamp] = voteMatch;
   const timestampMs = Number(signedTimestamp);
 
-  if (
-    signedVoteOption !== voteOption ||
-    signedWalletAddress !== walletAddress ||
-    !Number.isFinite(timestampMs) ||
-    Math.abs(Date.now() - timestampMs) > VOTE_SIGNATURE_MAX_AGE_MS
-  ) {
-    return false;
+  if (signedWalletAddress !== walletAddress || !Number.isFinite(timestampMs)) {
+    return {
+      valid: false,
+      wallet: walletAddress,
+      vote_option: signedVoteOption,
+      timestamp_ms: timestampMs,
+      reason: "MESSAGE_MISMATCH",
+    };
   }
 
-  return true;
+  return {
+    valid: true,
+    wallet: signedWalletAddress,
+    vote_option: signedVoteOption,
+    timestamp_ms: timestampMs,
+    reason: "",
+  };
 }
 
 function verifyWalletSignature(walletAddress, message, signature) {
@@ -1680,6 +1734,8 @@ function serveStaticFile(requestPath, res, headOnly) {
     ? "/index.html"
     : requestPath === "/admin"
       ? "/admin.html"
+      : requestPath === "/vote.verifier"
+        ? "/vote.verifier.html"
       : requestPath;
   const filePath = path.resolve(PUBLIC_DIR, `.${path.normalize(normalizedPath)}`);
   const relativePath = path.relative(PUBLIC_DIR, filePath);
@@ -1719,7 +1775,7 @@ function serveStaticFile(requestPath, res, headOnly) {
 }
 
 function isRateLimited(req, pathname) {
-  if (!["/api/wallet-nfts", "/api/vote", "/api/admin/challenge", "/api/admin/proposal", "/api/admin/reset-voting"].includes(pathname)) {
+  if (!["/api/wallet-nfts", "/api/vote", "/api/admin/challenge", "/api/admin/proposal", "/api/admin/reset-voting", "/api/verify-vote-record"].includes(pathname)) {
     return false;
   }
 
