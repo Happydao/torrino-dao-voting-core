@@ -4,8 +4,8 @@ proposal_created_iso,2026-03-22T19:55:35.000Z
 proposal_created_signed_message,Torrino DAO admin action:start:wallet:5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc:payload_hash:c8a5a3d74bad2ab089fcad02d81571983ce7f957ab468150d1b6cf0e0a8514e5:timestamp:1774209328592
 proposal_created_signature,Qn3FFR6r53qy68fVQ9paD9wbJExUzTayJeeqGrH3gYHsr2NfK7Tm616XwnmC43vK9UJ7SxVBQc1UJTTbNyb6wB6
 proposal_lifecycle_status,Voting in progress
-proposal_lifecycle_updated_timestamp,1774209345
-proposal_lifecycle_updated_iso,2026-03-22T19:55:45.000Z
+proposal_lifecycle_updated_timestamp,1774209935
+proposal_lifecycle_updated_iso,2026-03-22T20:05:35.000Z
 voting_start_timestamp,1774209300
 voting_start_iso,2026-03-22T19:55:00.000Z
 voting_end_timestamp,1774295700
@@ -20,8 +20,23 @@ proposal_description,"Quale funzione miglioreresti o aggiungeresti alla piattafo
 
 Puoi selezionare una sola opzione."
 proposal_options,"Stabilità e connessione wallet | Classifica utenti più attivi nel voto | Notifiche per nuove proposal | Migliorare la grafica | Nessuno, va bene così"
-torrino_participation_rate,0.0%
-solnauta_participation_rate,0.0%
-total_voting_power_participation_rate,0.0%
+torrino_participation_rate,1.2%
+solnauta_participation_rate,1.2%
+total_voting_power_participation_rate,1.2%
 
 wallet,solnauta_nfts,torrino_nfts,Stabilità e connessione wallet,Classifica utenti più attivi nel voto,Notifiche per nuove proposal,Migliorare la grafica,"Nessuno, va bene così",voting_power,timestamp,signed_message,signature
+4S9CvpCSKxpv6RtSHDXLXevJyaiYANtphDvrpsPYkaJ3,GswVRSiEjZQzoc7kzrXs9RmKU7qJGYdPoGRanmdt3qFN,,0.0,0.0,0.1,0.0,0.0,0.1,1774209780,Torrino DAO governance vote:proposal:1774209335:option:Notifiche per nuove proposal:wallet:4S9CvpCSKxpv6RtSHDXLXevJyaiYANtphDvrpsPYkaJ3:timestamp:1774209778744,4fsQWFnVgTeWwrErfTpsaokBwNDgvjdjY765ZbYqkbkyJz97PgTZXZdaKtcKvRiEfxtWtyXCMX5uMShebGJUozbF
+CiVp6EP6Wk595nPmBFphbzZdi3x4cHE3Vc16SCWkDQZN,"HjrDPku5MgLvdgeEDoqjrqCY4XBFF9GPh5h7SkPahVDu
+G5Fb1RUY6b9Me5tVdJb97R9UySpCBqhPszbj5FhsFkZa
+G2rYcCHtCEvQhUbR7wY38FdDLi5MQotUwT4imJVpaf5G
+EeB7afxNKojzUxQTgTEZCTqYTnqNd3ic8ANQQPiwxGMe
+CNMC3Vo2ALrA7iaKbvsZWDMeMSK1NPD33DTYzqxnKmnh
+9XUD1GvDR3S4iqK6hJWwg8qrvgz6PwoNVWc9YU7aJ3ax
+7utoNDLauzQPwnC2ibEnZkkp5f9FEbkmvA7xqTm8uqGE
+49KTvGWQD4XumFBomrtWYY7BxA8yhZ1JQawKZad8jyo3
+2zS3b9Y3WkBuS1Kh37yBoxJyiuxpXV2B4p5XDz3LrT3V","BMf76ZRFdkk3pYVL1h3AapyD2odWv16X9NKR9T66bXQM
+BB4qyn1kpD9rP32nJjCMsQuJj3AqAaS26czHFYL4dZ4V
+6wtkA4LMQ5dYoGbZt1vgFdTXSqWoRPccdMQasD8sJxz7
+6pByNt3B7cwePhH57j63DWpwwMEXKqY8wZdkbc9zhGn2
+3oNR2YSJZLbhfLKfWcAkkkV1h6FaXUKmjbZPv8JB9fxB",0.0,5.4,0.0,0.0,0.0,5.4,1774209857,Torrino DAO governance vote:proposal:1774209335:option:Classifica utenti più attivi nel voto:wallet:CiVp6EP6Wk595nPmBFphbzZdi3x4cHE3Vc16SCWkDQZN:timestamp:1774209840820,nBadV6KB1Zq6LvBCxkvr1qymrHp96gmETnAvc2h5rZV7tkYRuqMNgRUmFkHDENW6qLcomF4GnLQPJrMBNooxfPz
+59VJXPy3KPHtNvzgtfWXq7CAzxcaQ2PoHWRoUGbj7o7c,GecQy53HrZ6mUhgLkgL1Dc6EMnrLWVZuY1YHG5KHnNrq,DnDJN8BWx5XvwuYtzNKsmtcncGS8qYvuW9ABgBVsbSmx,0.0,0.0,0.0,0.0,1.0,1.0,1774209931,"Torrino DAO governance vote:proposal:1774209335:option:Nessuno, va bene così:wallet:59VJXPy3KPHtNvzgtfWXq7CAzxcaQ2PoHWRoUGbj7o7c:timestamp:1774209927332",2zkoVRaTydpHQ4L7GizoVY4m1mAzskq9ok9cb5BDwQDPjs9N7yiVFaa4RJg92781qY1KmuR27msoVPWFP12zYGNY
