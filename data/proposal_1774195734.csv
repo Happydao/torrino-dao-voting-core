@@ -1,0 +1,25 @@
+proposal_created_by,5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc
+proposal_created_timestamp,1774195734
+proposal_created_iso,2026-03-22T16:08:54.000Z
+proposal_created_signed_message,Torrino DAO admin action:start:wallet:5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc:payload_hash:dcf73d7936fbc0d37778f2d866854c1361252bee7cce44ed84a30bc1a171a6f1:timestamp:1774195732710
+proposal_created_signature,5dbQXAkNEir72YtZdnCHXbF5yoJcecgXdPWgEUWjrm7uzcyx1knTihae46JoFyzYbTUEqeMhvGDL1ovf8WDGh937
+proposal_lifecycle_status,Voting in progress
+proposal_lifecycle_updated_timestamp,1774195744
+proposal_lifecycle_updated_iso,2026-03-22T16:09:04.000Z
+voting_start_timestamp,1774195680
+voting_start_iso,2026-03-22T16:08:00.000Z
+voting_end_timestamp,1774196700
+voting_end_iso,2026-03-22T16:25:00.000Z
+proposal_reset_by,
+proposal_reset_timestamp,
+proposal_reset_iso,
+proposal_reset_signed_message,
+proposal_reset_signature,
+proposal_title,proposal 1
+proposal_description,test 1
+proposal_options,A | B | C
+torrino_participation_rate,0.0%
+solnauta_participation_rate,0.0%
+total_voting_power_participation_rate,0.0%
+
+wallet,solnauta_nfts,torrino_nfts,A,B,C,voting_power,timestamp,signed_message,signature
