@@ -18,7 +18,7 @@
     />
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body>
+  <body class="verifier-body">
     <div class="bg"></div>
     <div class="scanlines"></div>
 
@@ -36,15 +36,7 @@
         </div>
 
         <div class="verifier-links">
-          <a class="chip chip--ghost" href="/torrino.dao.voting/">Back to voting</a>
-          <a
-            class="chip chip--ghost"
-            href="https://github.com/Happydao/torrino-dao-voting-core/tree/main/data"
-            target="_blank"
-            rel="noopener"
-          >
-            Open CSV archive
-          </a>
+          <a class="chip chip--ghost verifier-back-link" href="/torrino.dao.voting/">Back to voting</a>
         </div>
       </header>
 
@@ -58,6 +50,14 @@
             <span class="results-stat__detail">
               Go to the GitHub data folder and open the CSV file for the proposal you want to inspect.
             </span>
+            <a
+              class="chip chip--ghost verifier-step-link"
+              href="https://github.com/Happydao/torrino-dao-voting-core/tree/main/data"
+              target="_blank"
+              rel="noopener"
+            >
+              Open CSV archive
+            </a>
           </article>
           <article class="results-stat">
             <span class="label">Step 2</span>
@@ -87,28 +87,20 @@
         <form id="voteVerifierForm" class="verifier-form">
           <label class="admin-field admin-field--full">
             <span>Wallet</span>
-            <input id="verifyWalletInput" type="text" autocomplete="off" spellcheck="false" />
+            <input id="verifyWalletInput" type="text" autocomplete="off" spellcheck="false" placeholder="Paste the wallet from the CSV row" />
           </label>
           <label class="admin-field admin-field--full">
             <span>Signed message</span>
-            <textarea id="verifySignedMessageInput" rows="5" spellcheck="false"></textarea>
+            <textarea id="verifySignedMessageInput" rows="5" spellcheck="false" placeholder="Paste the full signed_message exactly as shown in the CSV"></textarea>
           </label>
           <label class="admin-field admin-field--full">
             <span>Signature</span>
-            <textarea id="verifySignatureInput" rows="3" spellcheck="false"></textarea>
+            <textarea id="verifySignatureInput" rows="3" spellcheck="false" placeholder="Paste the full signature exactly as shown in the CSV"></textarea>
           </label>
           <div class="verifier-actions">
-            <button id="verifyVoteButton" class="admin-button admin-button--primary" type="submit">
+            <button id="verifyVoteButton" class="admin-button admin-button--primary verifier-submit-button" type="submit">
               Verify Vote
             </button>
-            <a
-              class="chip chip--ghost"
-              href="https://github.com/Happydao/torrino-dao-voting-core/tree/main/data"
-              target="_blank"
-              rel="noopener"
-            >
-              Open GitHub CSV Files
-            </a>
           </div>
         </form>
 
