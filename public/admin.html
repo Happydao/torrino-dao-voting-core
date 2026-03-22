@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -34,15 +34,15 @@
           <h1 class="title">TORRINO DAO ADMIN</h1>
         </div>
         <p class="tagline">
-          Connetti il wallet admin autorizzato con Phantom o Solflare per creare
-          una proposta, impostare il timer e avviare o resettare la votazione.
+          Connect an authorized admin wallet with Phantom or Solflare to create
+          a proposal, set the timer, and start or reset governance voting.
         </p>
         <div class="admin-actions">
           <button id="connectAdminButton" class="admin-button admin-button--primary" type="button">
             Connect Admin Wallet
           </button>
         </div>
-        <p id="adminStatus" class="status-message">Connetti il wallet admin per continuare.</p>
+        <p id="adminStatus" class="status-message">Connect an admin wallet to continue.</p>
       </section>
 
       <div id="adminDashboard" class="admin-layout" hidden>
@@ -90,7 +90,7 @@
                   id="openStartTimePickerButton"
                   class="admin-picker-button"
                   type="button"
-                  aria-label="Apri calendario e orario di inizio"
+                  aria-label="Open start date and time picker"
                 >
                   Pick
                 </button>
@@ -104,7 +104,7 @@
                   id="openEndTimePickerButton"
                   class="admin-picker-button"
                   type="button"
-                  aria-label="Apri calendario e orario di fine"
+                  aria-label="Open end date and time picker"
                 >
                   Pick
                 </button>
@@ -121,7 +121,27 @@
             <div id="adminProposalNotice" class="admin-proposal-notice" hidden>
               <p id="adminProposalNoticeBadge" class="admin-proposal-notice__badge">Voting in progress</p>
               <strong id="adminProposalNoticeTitle" class="admin-proposal-notice__title">Active proposal</strong>
+              <p id="adminProposalNoticeId" class="admin-proposal-notice__meta">Proposal ID: --</p>
               <p id="adminProposalNoticeCountdown" class="admin-proposal-notice__countdown">Countdown: --</p>
+              <div class="admin-proposal-notice__actions">
+                <a
+                  id="adminProposalNoticeLink"
+                  class="chip chip--ghost"
+                  href="/torrino.dao.voting/"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  Open Public Voting Page
+                </a>
+                <button
+                  id="openAdminHistoryModal"
+                  class="chip chip--ghost"
+                  type="button"
+                  aria-expanded="false"
+                >
+                  Governance History
+                </button>
+              </div>
               <p class="admin-proposal-notice__copy">
                 Starting a new proposal or stopping voting will invalidate the current one.
               </p>
@@ -148,6 +168,48 @@
           <button id="closeAdminFeedbackModal" class="admin-button admin-button--primary feedback-modal__button" type="button">
             OK
           </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="modal"
+      id="adminHistoryModal"
+      aria-hidden="true"
+      role="dialog"
+      aria-label="Governance History"
+    >
+      <div class="modal__inner">
+        <button
+          class="modal__close"
+          type="button"
+          id="closeAdminHistoryModal"
+          aria-label="Close Governance History"
+        >
+          ✕
+        </button>
+        <div class="modal__content">
+          <h3 class="modal__title">Governance History</h3>
+          <p class="modal__lead">
+            List of proposal CSV files published in the <span class="mono-inline">/data/</span>
+            folder of the GitHub repository.
+          </p>
+          <div class="history-table-wrap">
+            <table class="history-table">
+              <thead>
+                <tr>
+                  <th>Proposal file</th>
+                  <th>Date</th>
+                  <th>Download</th>
+                </tr>
+              </thead>
+              <tbody id="adminHistoryTableBody">
+                <tr>
+                  <td colspan="3" class="history-table__empty">Loading governance history...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

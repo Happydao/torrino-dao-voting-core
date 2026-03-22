@@ -4,6 +4,8 @@ const AUTHORIZED_ADMIN_WALLETS = new Set([
 ]);
 const APP_BASE_PATH = "/torrino.dao.voting";
 const API_BASE_PATH = `${APP_BASE_PATH}/api`;
+const GOVERNANCE_HISTORY_API = "https://api.github.com/repos/Happydao/torrino-dao-voting-core/contents/data";
+const GOVERNANCE_HISTORY_RAW_BASE = "https://raw.githubusercontent.com/Happydao/torrino-dao-voting-core/main/data/";
 const textEncoder = new TextEncoder();
 const state = {
   adminWallet: null,
@@ -11,6 +13,8 @@ const state = {
   currentProposal: null,
   proposalRefreshIntervalId: null,
   proposalCountdownIntervalId: null,
+  governanceHistory: [],
+  governanceHistoryLoaded: false,
 };
 
 const ui = {
@@ -30,7 +34,13 @@ const ui = {
   proposalNotice: document.getElementById("adminProposalNotice"),
   proposalNoticeBadge: document.getElementById("adminProposalNoticeBadge"),
   proposalNoticeTitle: document.getElementById("adminProposalNoticeTitle"),
+  proposalNoticeId: document.getElementById("adminProposalNoticeId"),
   proposalNoticeCountdown: document.getElementById("adminProposalNoticeCountdown"),
+  proposalNoticeLink: document.getElementById("adminProposalNoticeLink"),
+  historyModal: document.getElementById("adminHistoryModal"),
+  openHistoryModal: document.getElementById("openAdminHistoryModal"),
+  closeHistoryModal: document.getElementById("closeAdminHistoryModal"),
+  historyTableBody: document.getElementById("adminHistoryTableBody"),
   title: document.getElementById("proposalTitleInput"),
   description: document.getElementById("proposalDescriptionInput"),
   optionA: document.getElementById("optionAInput"),
@@ -52,6 +62,7 @@ ui.openEndTimePickerButton.addEventListener("click", () => openDateTimePicker(ui
 updateAdminConnectButtonLabel();
 initializeAdminFeedbackModal();
 initializeAdminProposalNotice();
+initializeHistoryModal();
 
 async function handleAdminWalletButtonClick() {
   if (state.adminWallet && state.adminProvider) {
@@ -66,13 +77,13 @@ async function connectAdminWallet() {
   const provider = getWalletProvider();
 
   if (!provider) {
-    ui.status.textContent = "Phantom o Solflare non rilevati.";
+    ui.status.textContent = "Phantom or Solflare were not detected.";
     return;
   }
 
   try {
     ui.connectButton.disabled = true;
-    ui.status.textContent = "Connessione wallet admin in corso...";
+    ui.status.textContent = "Connecting admin wallet...";
     const walletAddress = await connectWalletProvider(provider);
 
     if (!AUTHORIZED_ADMIN_WALLETS.has(walletAddress)) {
@@ -89,12 +100,12 @@ async function connectAdminWallet() {
     state.adminProvider = provider;
     ui.walletAddress.textContent = walletAddress;
     ui.dashboard.hidden = false;
-    ui.status.textContent = "Admin wallet autorizzato. Puoi gestire la governance.";
+    ui.status.textContent = "Authorized admin wallet connected. You can manage governance.";
     setActionStatus("", "");
     await refreshAdminProposalNotice();
   } catch (error) {
     console.error(error);
-    ui.status.textContent = "Errore durante la connessione del wallet admin.";
+    ui.status.textContent = "An error occurred while connecting the admin wallet.";
     setActionStatus("An error occurred while connecting the admin wallet.", "error");
   } finally {
     setAdminConnectBusy(false);
@@ -530,9 +541,11 @@ function renderAdminProposalNotice() {
   ui.proposalNotice.hidden = false;
   ui.proposalNoticeBadge.textContent = isScheduled ? "Proposal scheduled" : "Voting in progress";
   ui.proposalNoticeTitle.textContent = proposal.title || "Active proposal";
+  ui.proposalNoticeId.textContent = `Proposal ID: ${proposal.proposal_id || "--"}`;
   ui.proposalNoticeCountdown.textContent = isScheduled
     ? `Starts in: ${formatAdminCountdown(proposal.start_time)}`
     : `Ends in: ${formatAdminCountdown(proposal.end_time)}`;
+  ui.proposalNoticeLink.href = `${APP_BASE_PATH}/`;
 }
 
 function formatAdminCountdown(unixTimestampSeconds) {
@@ -577,6 +590,152 @@ function initializeAdminFeedbackModal() {
       closeAdminFeedbackModal();
     }
   });
+}
+
+function initializeHistoryModal() {
+  if (!ui.historyModal || !ui.openHistoryModal || !ui.closeHistoryModal) {
+    return;
+  }
+
+  ui.openHistoryModal.addEventListener("click", async () => {
+    ui.historyModal.classList.add("open");
+    ui.historyModal.setAttribute("aria-hidden", "false");
+    ui.openHistoryModal.setAttribute("aria-expanded", "true");
+    document.body.style.overflow = "hidden";
+    if (!state.governanceHistoryLoaded) {
+      await loadGovernanceHistory();
+    }
+  });
+
+  ui.closeHistoryModal.addEventListener("click", closeHistoryModal);
+
+  ui.historyModal.addEventListener("click", (event) => {
+    if (event.target === ui.historyModal) {
+      closeHistoryModal();
+    }
+  });
+
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && ui.historyModal.classList.contains("open")) {
+      closeHistoryModal();
+    }
+  });
+}
+
+async function loadGovernanceHistory() {
+  renderGovernanceHistoryRows([], "Loading governance history...");
+
+  try {
+    const response = await fetch(GOVERNANCE_HISTORY_API, {
+      headers: { accept: "application/vnd.github+json" },
+    });
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok || !Array.isArray(payload)) {
+      throw new Error("GOVERNANCE_HISTORY_UNAVAILABLE");
+    }
+
+    state.governanceHistory = payload
+      .filter((item) => item && item.type === "file" && /^proposal_(\d+)\.csv$/.test(item.name))
+      .map((item) => {
+        const match = item.name.match(/^proposal_(\d+)\.csv$/);
+        const timestamp = match ? Number(match[1]) : NaN;
+        return {
+          name: item.name,
+          timestamp,
+          dateLabel: formatHistoryDate(timestamp),
+          downloadUrl: `${GOVERNANCE_HISTORY_RAW_BASE}${item.name}`,
+        };
+      })
+      .sort((first, second) => second.timestamp - first.timestamp);
+
+    state.governanceHistoryLoaded = true;
+    renderGovernanceHistoryRows(state.governanceHistory);
+  } catch (error) {
+    console.error(error);
+    renderGovernanceHistoryRows([], "Unable to load governance history.");
+  }
+}
+
+function renderGovernanceHistoryRows(items, emptyMessage = "No governance history found.") {
+  ui.historyTableBody.replaceChildren();
+
+  if (!Array.isArray(items) || items.length === 0) {
+    const row = document.createElement("tr");
+    row.innerHTML = `<td colspan="3" class="history-table__empty">${escapeHtml(emptyMessage)}</td>`;
+    ui.historyTableBody.appendChild(row);
+    return;
+  }
+
+  for (const item of items) {
+    const row = document.createElement("tr");
+    const nameCell = document.createElement("td");
+    nameCell.className = "mono";
+    nameCell.textContent = item.name;
+
+    const dateCell = document.createElement("td");
+    dateCell.textContent = item.dateLabel;
+
+    const actionCell = document.createElement("td");
+    const downloadButton = document.createElement("button");
+    downloadButton.type = "button";
+    downloadButton.className = "chip chip--ghost";
+    downloadButton.textContent = "Download CSV";
+    downloadButton.addEventListener("click", () => {
+      downloadGovernanceCsv(item.downloadUrl, item.name).catch((error) => {
+        console.error(error);
+      });
+    });
+
+    actionCell.appendChild(downloadButton);
+    row.append(nameCell, dateCell, actionCell);
+    ui.historyTableBody.appendChild(row);
+  }
+}
+
+async function downloadGovernanceCsv(url, fileName) {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error("DOWNLOAD_FAILED");
+  }
+
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = objectUrl;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(objectUrl);
+}
+
+function closeHistoryModal() {
+  if (!ui.historyModal) {
+    return;
+  }
+
+  ui.historyModal.classList.remove("open");
+  ui.historyModal.setAttribute("aria-hidden", "true");
+  ui.openHistoryModal.setAttribute("aria-expanded", "false");
+  document.body.style.overflow = "";
+}
+
+function formatHistoryDate(timestamp) {
+  if (!Number.isFinite(timestamp)) {
+    return "Unknown date";
+  }
+
+  return new Date(timestamp * 1000).toLocaleString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "UTC",
+  }) + " UTC";
 }
 
 function openAdminFeedbackModal(title, message, type) {
@@ -680,4 +839,13 @@ function extractSignatureBytes(signedValue) {
   }
 
   return null;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll("\"", "&quot;")
+    .replaceAll("'", "&#39;");
 }

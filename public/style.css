@@ -1097,6 +1097,11 @@ p {
   font: inherit;
   font-weight: 700;
   cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    filter 0.18s ease,
+    opacity 0.18s ease;
 }
 
 .admin-button--primary {
@@ -1110,10 +1115,30 @@ p {
   border: 1px solid rgba(153, 69, 255, 0.28);
 }
 
+.admin-button:hover,
+.admin-button:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.26);
+  filter: brightness(1.04);
+}
+
+.admin-button--secondary:hover,
+.admin-button--secondary:focus-visible {
+  border-color: rgba(153, 69, 255, 0.48);
+  background: rgba(26, 18, 42, 0.78);
+}
+
 .admin-button:disabled,
 .vote-option-button:disabled {
   cursor: not-allowed;
   opacity: 0.65;
+}
+
+.admin-button:disabled:hover,
+.admin-button:disabled:focus-visible {
+  transform: none;
+  box-shadow: none;
+  filter: none;
 }
 
 .admin-proposal-notice {
@@ -1143,12 +1168,20 @@ p {
   color: var(--text);
 }
 
+.admin-proposal-notice__meta,
 .admin-proposal-notice__countdown,
 .admin-proposal-notice__copy {
   margin-top: 6px;
   color: var(--muted);
   font-size: 0.84rem;
   line-height: 1.5;
+}
+
+.admin-proposal-notice__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
 }
 
 .admin-feedback {
