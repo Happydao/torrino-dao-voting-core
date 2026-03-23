@@ -4,8 +4,8 @@ proposal_created_iso,2026-03-22T19:55:36.000Z
 proposal_created_signed_message,Torrino DAO admin action:start:wallet:5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc:payload_hash:c8a5a3d74bad2ab089fcad02d81571983ce7f957ab468150d1b6cf0e0a8514e5:timestamp:1774209328592
 proposal_created_signature,Qn3FFR6r53qy68fVQ9paD9wbJExUzTayJeeqGrH3gYHsr2NfK7Tm616XwnmC43vK9UJ7SxVBQc1UJTTbNyb6wB6
 proposal_lifecycle_status,Voting in progress
-proposal_lifecycle_updated_timestamp,1774272336
-proposal_lifecycle_updated_iso,2026-03-23T13:25:36.000Z
+proposal_lifecycle_updated_timestamp,1774272936
+proposal_lifecycle_updated_iso,2026-03-23T13:35:36.000Z
 voting_start_timestamp,1774209300
 voting_start_iso,2026-03-22T19:55:00.000Z
 voting_end_timestamp,1774295700
@@ -20,9 +20,9 @@ proposal_description,"Come valuti l’esperienza complessiva della piattaforma d
 
 Puoi selezionare una sola opzione."
 proposal_options,Molto semplice e chiara | Semplice | Nella media | Poco chiara | Da migliorare
-torrino_participation_rate,13.6%
-solnauta_participation_rate,7.4%
-total_voting_power_participation_rate,12.6%
+torrino_participation_rate,13.8%
+solnauta_participation_rate,8.1%
+total_voting_power_participation_rate,12.9%
 
 wallet,solnauta_nfts,torrino_nfts,Molto semplice e chiara,Semplice,Nella media,Poco chiara,Da migliorare,voting_power,timestamp,signed_message,signature
 4S9CvpCSKxpv6RtSHDXLXevJyaiYANtphDvrpsPYkaJ3,GswVRSiEjZQzoc7kzrXs9RmKU7qJGYdPoGRanmdt3qFN,,0.1,0.0,0.0,0.0,0.0,0.1,1774209793,Torrino DAO governance vote:proposal:1774209336:option:Molto semplice e chiara:wallet:4S9CvpCSKxpv6RtSHDXLXevJyaiYANtphDvrpsPYkaJ3:timestamp:1774209793050,aPVvzKfcsmkfMveagR6Pz1b4sAANwjd1CHXXReKfJ8sR25U6MRVBd3Mb6EA4tkaAdkHgHeBQ4BSZFvAVwUxnfuQ
@@ -138,3 +138,9 @@ H7Tw5sosgLf4UusPBHEHC5om3Nyr9Ne791sLbahE2TfX",0.0,3.0,0.0,0.0,0.0,3.0,1774262571
 3njkgxJ78YW6rQQGhZ3hVqmdxMFKydc44kdptXbumqi3
 tNL8StVzwpGsLKjfZ7Rn5L6oBkkdYL6iSivEaspKK4J",2.8,0.0,0.0,0.0,0.0,2.8,1774269760,Torrino DAO governance vote:proposal:1774209336:option:Molto semplice e chiara:wallet:9xRbx5Bc5KXADD2CDRaBAvuczw7F3cZhuTMhprXDp66V:timestamp:1774269758967,3xyaEE2P2asfGXYst4LgrnQzewqxp2LE5fPjxsPW8bnToWpeMLk78Qb3asjjvcQUfeT4n1e5WzboWk6i5nqV2sSg
 5JLUCo2WJtgrUXmGXoXVm6a2L6RJzVz5rnn91kcLQfjg,3K573Qgp6Nd1n5u2BNPM4Zef5RjL8U7dXAA6s4nW1X1V,6Fa9xE37ueHU3iB55a5dmKnQVgXaWGRXqGCh2XYaRn6v,1.0,0.0,0.0,0.0,0.0,1.0,1774271237,Torrino DAO governance vote:proposal:1774209336:option:Molto semplice e chiara:wallet:5JLUCo2WJtgrUXmGXoXVm6a2L6RJzVz5rnn91kcLQfjg:timestamp:1774271234625,3yQ4MuYp12NNCNaxW43PHrzz78yhfv3MZ4SPgmUVsMtdmgUiLEFo2YxVaGtAfeM6cCs3dXeFFNUCZGrurPbsCJaN
+521dAsj7fpgFHrZX6speo3NSBC1jppCohNc5KDJUpF9t,"HQEfJDeF6ztcCAT8eLhtSCwJwW45QKqG4weXkC6ebNVN
+BAeNiG591j414JPjCRFdAXqanxU9Ai315nXU4HVJqwhX
+79GvakAAmL8h7eWDDHaS4TDz1f27MkNcWYnrzTT39LMp",,0.0,0.3,0.0,0.0,0.0,0.3,1774272643,Torrino DAO governance vote:proposal:1774209336:option:Semplice:wallet:521dAsj7fpgFHrZX6speo3NSBC1jppCohNc5KDJUpF9t:timestamp:1774272642723,3YkbSqVon38gcuwNV16NWEgQFB7qGUFoLCzZG1fBykFWSqgZmzrZU5qjGg2spG28oAzRQA21WD63Lb5Q9tAzePn8
+ABeMAwR4qTPV2Deczu4QfmNxhCcpqAyjQbT9DK67hGyD,"FMXEtNWA68EjM7Hib8FeSRERxx1h5sciQahCTB3cjUso
+C7rcaXej8SdeWTaqjDFTaK4e9pkf6JiSam81WdmaYcFE
+12FnDj4TDrdcFstv9TmpvqL586RwHRQc82V7qjY15i1U",ATfM5oKCDUdyCigyzPozUZq6LthURBJJb7cbPzYEh7pj,0.0,1.2,0.0,0.0,0.0,1.2,1774272730,Torrino DAO governance vote:proposal:1774209336:option:Semplice:wallet:ABeMAwR4qTPV2Deczu4QfmNxhCcpqAyjQbT9DK67hGyD:timestamp:1774272725928,4FeVC4qJFPA2bPTRz7NNKRint5BUWFcyKTaSaetmrYHarJcBF1gEehVdbD72TXdPr2VS7wDcFqUcf4FEeCbbyewv

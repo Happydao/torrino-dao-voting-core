@@ -4,8 +4,8 @@ proposal_created_iso,2026-03-22T19:55:35.000Z
 proposal_created_signed_message,Torrino DAO admin action:start:wallet:5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc:payload_hash:c8a5a3d74bad2ab089fcad02d81571983ce7f957ab468150d1b6cf0e0a8514e5:timestamp:1774209328592
 proposal_created_signature,Qn3FFR6r53qy68fVQ9paD9wbJExUzTayJeeqGrH3gYHsr2NfK7Tm616XwnmC43vK9UJ7SxVBQc1UJTTbNyb6wB6
 proposal_lifecycle_status,Voting in progress
-proposal_lifecycle_updated_timestamp,1774272336
-proposal_lifecycle_updated_iso,2026-03-23T13:25:36.000Z
+proposal_lifecycle_updated_timestamp,1774272936
+proposal_lifecycle_updated_iso,2026-03-23T13:35:36.000Z
 voting_start_timestamp,1774209300
 voting_start_iso,2026-03-22T19:55:00.000Z
 voting_end_timestamp,1774295700
@@ -20,9 +20,9 @@ proposal_description,"Quale funzione miglioreresti o aggiungeresti alla piattafo
 
 Puoi selezionare una sola opzione."
 proposal_options,"Stabilità e connessione wallet | Classifica utenti più attivi nel voto | Notifiche per nuove proposal | Migliorare la grafica | Nessuno, va bene così"
-torrino_participation_rate,13.8%
-solnauta_participation_rate,7.5%
-total_voting_power_participation_rate,12.8%
+torrino_participation_rate,14.0%
+solnauta_participation_rate,8.2%
+total_voting_power_participation_rate,13.0%
 
 wallet,solnauta_nfts,torrino_nfts,Stabilità e connessione wallet,Classifica utenti più attivi nel voto,Notifiche per nuove proposal,Migliorare la grafica,"Nessuno, va bene così",voting_power,timestamp,signed_message,signature
 4S9CvpCSKxpv6RtSHDXLXevJyaiYANtphDvrpsPYkaJ3,GswVRSiEjZQzoc7kzrXs9RmKU7qJGYdPoGRanmdt3qFN,,0.0,0.0,0.1,0.0,0.0,0.1,1774209780,Torrino DAO governance vote:proposal:1774209335:option:Notifiche per nuove proposal:wallet:4S9CvpCSKxpv6RtSHDXLXevJyaiYANtphDvrpsPYkaJ3:timestamp:1774209778744,4fsQWFnVgTeWwrErfTpsaokBwNDgvjdjY765ZbYqkbkyJz97PgTZXZdaKtcKvRiEfxtWtyXCMX5uMShebGJUozbF
@@ -139,3 +139,9 @@ H7Tw5sosgLf4UusPBHEHC5om3Nyr9Ne791sLbahE2TfX",0.0,3.0,0.0,0.0,0.0,3.0,1774262549
 tNL8StVzwpGsLKjfZ7Rn5L6oBkkdYL6iSivEaspKK4J",0.0,2.8,0.0,0.0,0.0,2.8,1774269743,Torrino DAO governance vote:proposal:1774209335:option:Classifica utenti più attivi nel voto:wallet:9xRbx5Bc5KXADD2CDRaBAvuczw7F3cZhuTMhprXDp66V:timestamp:1774269741705,5esCS97EvbTuBhCTvNezN3eUtTCrDu4bCN2t1tG1CDiA7eXfqjGtMRSEz6auUtEFFGtwQiQsttpzJTheJ8M4cqSx
 8Y5t4LR2XWvkywVfpXxkymabK9qvZJeZPHJ1CB4zwcr6,DcybmDk8gJgXzytcat3uMUFk1bfyWUrs25KCyyrUmPeK,ByVx5fGdFQsxpqop6wKQbWkJsCk8AuW1qRjMN2koUhSb,0.0,0.0,1.0,0.0,0.0,1.0,1774270447,Torrino DAO governance vote:proposal:1774209335:option:Notifiche per nuove proposal:wallet:8Y5t4LR2XWvkywVfpXxkymabK9qvZJeZPHJ1CB4zwcr6:timestamp:1774270444956,62kf6HGg6WZ9o3vc5vDacfaxgoRVLp73B4BqAg1GnbfqLX8F6rN7EZ6WxKtbDHvVvEv8VCc6VGUzVGVrR8h4185r
 5JLUCo2WJtgrUXmGXoXVm6a2L6RJzVz5rnn91kcLQfjg,3K573Qgp6Nd1n5u2BNPM4Zef5RjL8U7dXAA6s4nW1X1V,6Fa9xE37ueHU3iB55a5dmKnQVgXaWGRXqGCh2XYaRn6v,1.0,0.0,0.0,0.0,0.0,1.0,1774271208,Torrino DAO governance vote:proposal:1774209335:option:Stabilità e connessione wallet:wallet:5JLUCo2WJtgrUXmGXoXVm6a2L6RJzVz5rnn91kcLQfjg:timestamp:1774271204390,2eoHkLTonwcPP1xhsgf7ziSZ7nhGw8xY7XnHrWWFPtY4XcDbeT2kStY6hSwF2XXHZBmoyzjfeBbAam7tfYbT4SZm
+521dAsj7fpgFHrZX6speo3NSBC1jppCohNc5KDJUpF9t,"HQEfJDeF6ztcCAT8eLhtSCwJwW45QKqG4weXkC6ebNVN
+BAeNiG591j414JPjCRFdAXqanxU9Ai315nXU4HVJqwhX
+79GvakAAmL8h7eWDDHaS4TDz1f27MkNcWYnrzTT39LMp",,0.3,0.0,0.0,0.0,0.0,0.3,1774272634,Torrino DAO governance vote:proposal:1774209335:option:Stabilità e connessione wallet:wallet:521dAsj7fpgFHrZX6speo3NSBC1jppCohNc5KDJUpF9t:timestamp:1774272631571,4zSAPvgqVHtmtDbQjYn8tVJVjsgKBF5FfiZTw5kdaS2bHEdzku5ubuDKYZNHHjeBk9YWfiCXemLZgfWxLu5qaG4P
+ABeMAwR4qTPV2Deczu4QfmNxhCcpqAyjQbT9DK67hGyD,"FMXEtNWA68EjM7Hib8FeSRERxx1h5sciQahCTB3cjUso
+C7rcaXej8SdeWTaqjDFTaK4e9pkf6JiSam81WdmaYcFE
+12FnDj4TDrdcFstv9TmpvqL586RwHRQc82V7qjY15i1U",ATfM5oKCDUdyCigyzPozUZq6LthURBJJb7cbPzYEh7pj,0.0,0.0,1.2,0.0,0.0,1.2,1774272723,Torrino DAO governance vote:proposal:1774209335:option:Notifiche per nuove proposal:wallet:ABeMAwR4qTPV2Deczu4QfmNxhCcpqAyjQbT9DK67hGyD:timestamp:1774272716265,4MDDAFVHf4wHfHsvM6J5f76XZLgmLNq44yKa4EFH8UWH16Q9R9rm3BfegE9HSzR62a4ozVcKYnXhJWeKKRTApsuK
