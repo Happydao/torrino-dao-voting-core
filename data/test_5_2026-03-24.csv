@@ -16,6 +16,7 @@ proposal_reset_iso,
 proposal_reset_signed_message,
 proposal_reset_signature,
 proposal_name,test_5
+proposal_payload_hash,e85b293234ebf06f1552c2b4bb8e0489dcc41893d3a89929b67cb66a5f4d9208
 proposal_title,TEST 5
 proposal_description,selezione test
 proposal_options,1 | 2 | 3
