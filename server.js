@@ -884,6 +884,7 @@ function buildProposalMetadataLines(proposal, adminWallet, metadataOptions = {})
   });
   const participation = getProposalParticipationMetadata(proposal);
   const resultsSummary = calculateProposalResults(proposal);
+  const proposalPayloadHash = hashProposalPayload(proposal);
   const metadataRows = [
     ["proposal_created_by", creatorWallet],
     ["proposal_created_timestamp", createdTimestamp],
@@ -903,6 +904,7 @@ function buildProposalMetadataLines(proposal, adminWallet, metadataOptions = {})
     ["proposal_reset_signed_message", resetSignedMessage],
     ["proposal_reset_signature", resetSignature],
     ["proposal_name", getProposalDisplayName(proposal)],
+    ["proposal_payload_hash", proposalPayloadHash],
     ["proposal_title", proposal.title],
     ["proposal_description", proposal.description],
     ["proposal_options", proposal.options.join(" | ")],
@@ -1092,10 +1094,20 @@ function verifyAdminActionRequest(walletAddress, signedMessage, signature, optio
 
 function verifyVoteRequest(walletAddress, proposalId, voteOption, signedMessage, signature) {
   const verification = verifyVoteRecordSignature(walletAddress, signedMessage, signature);
+  const session = readProposal();
+  const proposal = findProposalById(session, proposalId);
+  const acceptedProposalReferences = new Set([proposalId]);
+  const expectedProposalHash = proposal ? hashProposalPayload(proposal) : "";
+
+  if (proposal) {
+    acceptedProposalReferences.add(getProposalCsvFileName(proposal));
+    acceptedProposalReferences.add(getProposalDisplayName(proposal));
+  }
 
   if (
     !verification.valid ||
-    verification.proposal_id !== proposalId ||
+    !acceptedProposalReferences.has(verification.proposal_id) ||
+    (verification.proposal_hash && expectedProposalHash && verification.proposal_hash !== expectedProposalHash) ||
     verification.vote_option !== voteOption ||
     !Number.isFinite(verification.timestamp_ms) ||
     Math.abs(Date.now() - verification.timestamp_ms) > VOTE_SIGNATURE_MAX_AGE_MS
@@ -1118,11 +1130,11 @@ function verifyVoteRecordSignature(walletAddress, signedMessage, signature) {
   }
 
   const voteMatch = signedMessage.match(
-    /^Torrino DAO governance vote:proposal:([^:]+):option:(.+):wallet:([1-9A-HJ-NP-Za-km-z]+):timestamp:(\d+)$/
+    /^Torrino DAO governance vote:proposal:([^:]+):proposal_hash:([a-f0-9]{64}):option:(.+):wallet:([1-9A-HJ-NP-Za-km-z]+):timestamp:(\d+)$/
   );
 
   if (voteMatch) {
-    const [, signedProposalId, signedVoteOption, signedWalletAddress, signedTimestamp] = voteMatch;
+    const [, signedProposalId, signedProposalHash, signedVoteOption, signedWalletAddress, signedTimestamp] = voteMatch;
     const timestampMs = Number(signedTimestamp);
 
     if (signedWalletAddress !== walletAddress || !Number.isFinite(timestampMs)) {
@@ -1130,6 +1142,7 @@ function verifyVoteRecordSignature(walletAddress, signedMessage, signature) {
         valid: false,
         wallet: walletAddress,
         proposal_id: signedProposalId,
+        proposal_hash: signedProposalHash,
         vote_option: signedVoteOption,
         timestamp_ms: timestampMs,
         reason: "MESSAGE_MISMATCH",
@@ -1140,6 +1153,7 @@ function verifyVoteRecordSignature(walletAddress, signedMessage, signature) {
       valid: true,
       wallet: signedWalletAddress,
       proposal_id: signedProposalId,
+      proposal_hash: signedProposalHash,
       vote_option: signedVoteOption,
       timestamp_ms: timestampMs,
       reason: "",
@@ -1155,6 +1169,7 @@ function verifyVoteRecordSignature(walletAddress, signedMessage, signature) {
       valid: false,
       wallet: walletAddress,
       proposal_id: "",
+      proposal_hash: "",
       vote_option: "",
       timestamp_ms: NaN,
       reason: "INVALID_MESSAGE_FORMAT",
@@ -1169,6 +1184,7 @@ function verifyVoteRecordSignature(walletAddress, signedMessage, signature) {
       valid: false,
       wallet: walletAddress,
       proposal_id: "",
+      proposal_hash: "",
       vote_option: signedVoteOption,
       timestamp_ms: timestampMs,
       reason: "MESSAGE_MISMATCH",
@@ -1179,6 +1195,7 @@ function verifyVoteRecordSignature(walletAddress, signedMessage, signature) {
     valid: true,
     wallet: signedWalletAddress,
     proposal_id: "",
+    proposal_hash: "",
     vote_option: signedVoteOption,
     timestamp_ms: timestampMs,
     reason: "",
@@ -2008,6 +2025,23 @@ function normalizeProposalResultLabel(value) {
     .replace(/[^A-Za-z0-9_-]/g, "");
 
   return normalized || "option";
+}
+
+function buildProposalPayloadForHash(proposal) {
+  return {
+    title: getString(proposal && proposal.title),
+    description: getString(proposal && proposal.description),
+    options: Array.isArray(proposal && proposal.options)
+      ? proposal.options.map(getString).filter(Boolean)
+      : [],
+  };
+}
+
+function hashProposalPayload(proposal) {
+  return crypto
+    .createHash("sha256")
+    .update(JSON.stringify(buildProposalPayloadForHash(proposal)))
+    .digest("hex");
 }
 
 function normalizeProposalName(value) {

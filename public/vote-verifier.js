@@ -72,7 +72,7 @@ function renderVerificationResult(result) {
     ? "The signature is valid. The vote row was signed by the wallet shown in the CSV."
     : getVerificationFailureMessage(result.reason);
   ui.resultDetails.textContent = result.valid
-    ? `Wallet: ${result.wallet} | Vote option: ${result.vote_option}`
+    ? `Wallet: ${result.wallet} | Proposal: ${result.proposal_id || "--"} | Proposal hash: ${result.proposal_hash || "--"} | Vote option: ${result.vote_option}`
     : `Reason: ${result.reason || "UNKNOWN_ERROR"}`;
   ui.resultBadge.classList.add(result.valid ? "is-success" : "is-error");
 }

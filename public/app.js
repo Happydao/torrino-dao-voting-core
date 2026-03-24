@@ -390,7 +390,7 @@ async function submitVote(proposalId, voteOption) {
     state.votingProposalId = proposalId;
     setVoteButtonsBusy(true);
     setStatus(`Submitting vote "${voteOption}" for ${proposalFileName}...`);
-    const signedVote = await signVoteMessage(provider, proposalId, voteOption);
+    const signedVote = await signVoteMessage(provider, proposal, voteOption);
     const response = await fetch(VOTE_ENDPOINT, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -455,12 +455,14 @@ async function submitVote(proposalId, voteOption) {
   }
 }
 
-async function signVoteMessage(provider, proposalId, voteOption) {
+async function signVoteMessage(provider, proposal, voteOption) {
   if (typeof provider.signMessage !== "function") {
     throw new Error("SIGNATURE_UNAVAILABLE");
   }
 
-  const message = `Torrino DAO governance vote:proposal:${proposalId}:option:${voteOption}:wallet:${state.walletAddress}:timestamp:${Date.now()}`;
+  const proposalFileName = getProposalFileNameById(proposal.proposal_id);
+  const proposalPayloadHash = await hashProposalPayload(proposal);
+  const message = `Torrino DAO governance vote:proposal:${proposalFileName}:proposal_hash:${proposalPayloadHash}:option:${voteOption}:wallet:${state.walletAddress}:timestamp:${Date.now()}`;
   const signed = await provider.signMessage(textEncoder.encode(message), "utf8");
   const signatureBytes = extractSignatureBytes(signed);
 
@@ -991,6 +993,20 @@ function getProposalFileNameById(proposalId) {
   return proposal && proposal.csv_file_name
     ? proposal.csv_file_name
     : `proposal_${proposalId}.csv`;
+}
+
+async function hashProposalPayload(proposal) {
+  const payload = {
+    title: String(proposal && proposal.title ? proposal.title : "").trim(),
+    description: String(proposal && proposal.description ? proposal.description : "").trim(),
+    options: Array.isArray(proposal && proposal.options)
+      ? proposal.options.map((option) => String(option || "").trim()).filter(Boolean)
+      : [],
+  };
+  const digest = await crypto.subtle.digest("SHA-256", textEncoder.encode(JSON.stringify(payload)));
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 function getOptionColorName(index) {
