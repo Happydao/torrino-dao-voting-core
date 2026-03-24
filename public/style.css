@@ -760,9 +760,10 @@ p {
 
 .proposal-card--slot .proposal-tag {
   color: #ff6b6b;
-  font-size: 0.9rem;
+  font-size: 0.78rem;
   font-weight: 800;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.12em;
+  text-transform: none;
 }
 
 .results-overline {
@@ -775,6 +776,7 @@ p {
 
 .results-card h2 {
   color: #ff6b6b;
+  font-size: clamp(1rem, 1.7vw, 1.22rem);
 }
 
 .proposal-empty-card {
@@ -789,6 +791,13 @@ p {
   color: var(--muted);
   font-size: 0.88rem;
   line-height: 1.55;
+}
+
+.proposal-copy--title {
+  margin-top: 10px;
+  font-size: 1rem;
+  color: var(--text);
+  font-weight: 700;
 }
 
 .transparency-card h3 {

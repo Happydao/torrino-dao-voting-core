@@ -576,8 +576,7 @@ function renderAdminProposalNotice() {
     const item = document.createElement("div");
     item.className = "admin-proposal-notice__item";
     item.innerHTML = `
-      <strong>Proposal ${escapeHtml(proposal.proposal_id || "--")}</strong>
-      <span>${escapeHtml(proposal.display_name || proposal.proposal_name || proposal.title || "Untitled proposal")}</span>
+      <strong>${escapeHtml(proposal.csv_file_name || `${proposal.display_name || proposal.proposal_name || `proposal_${proposal.proposal_id || "--"}`}.csv`)}</strong>
     `;
     ui.proposalNoticeList.appendChild(item);
   }

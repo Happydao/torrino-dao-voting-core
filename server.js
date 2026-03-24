@@ -182,6 +182,7 @@ function handleProposal(res) {
     proposals: proposals.map((proposal) => ({
       ...proposal,
       display_name: getProposalDisplayName(proposal),
+      csv_file_name: getProposalCsvFileName(proposal),
       status: getProposalStatus(proposal),
       is_voting_open: getProposalStatus(proposal) === "active",
     })),
@@ -671,6 +672,7 @@ function calculateProposalResults(proposal) {
   const baseResults = {
     proposal_id: proposal ? proposal.proposal_id : null,
     display_name: proposal ? getProposalDisplayName(proposal) : "",
+    csv_file_name: proposal ? getProposalCsvFileName(proposal) : "",
     status: proposal ? getProposalStatus(proposal) : "inactive",
     solnauta_voted: 0,
     torrino_voted: 0,
@@ -718,6 +720,7 @@ function calculateProposalResults(proposal) {
   return {
     proposal_id: proposal.proposal_id,
     display_name: getProposalDisplayName(proposal),
+    csv_file_name: getProposalCsvFileName(proposal),
     status: getProposalStatus(proposal),
     solnauta_voted: solnautaVoted,
     torrino_voted: torrinoVoted,
@@ -876,6 +879,7 @@ function buildProposalMetadataLines(proposal, adminWallet, metadataOptions = {})
     lifecycleTimestamp: metadataOptions.lifecycleTimestamp,
   });
   const participation = getProposalParticipationMetadata(proposal);
+  const resultsSummary = calculateProposalResults(proposal);
   const metadataRows = [
     ["proposal_created_by", creatorWallet],
     ["proposal_created_timestamp", createdTimestamp],
@@ -901,6 +905,10 @@ function buildProposalMetadataLines(proposal, adminWallet, metadataOptions = {})
     ["torrino_participation_rate", participation.torrinoParticipationRate],
     ["solnauta_participation_rate", participation.solnautaParticipationRate],
     ["total_voting_power_participation_rate", participation.totalVotingPowerParticipationRate],
+    ...resultsSummary.option_results.map((item) => [
+      `result_${normalizeProposalResultLabel(item.option)}`,
+      `${Number(item.percent || 0).toFixed(2)}%`,
+    ]),
   ];
 
   return metadataRows.map(([label, value]) => `${escapeCsvValue(label)},${escapeCsvValue(value)}`);
@@ -1941,13 +1949,15 @@ function getProposalLifecycleMetadata(proposal, adminWallet, metadataOptions = {
 }
 
 function buildLifecycleCommitMessage(statusKey, session, adminWallet = "") {
-  const proposalIds = getSessionProposals(session).map((proposal) => proposal.proposal_id);
+  const proposalLabels = getSessionProposals(session)
+    .map((proposal) => getProposalCsvFileName(proposal))
+    .filter(Boolean);
 
-  if (proposalIds.length === 0) {
+  if (proposalLabels.length === 0) {
     return "voting status update";
   }
 
-  const proposalLabel = proposalIds.join(" ");
+  const proposalLabel = proposalLabels.join(" ");
 
   if (statusKey === "stopped") {
     return `voting stopped by admin ${adminWallet} ${proposalLabel}`;
@@ -1988,6 +1998,14 @@ function formatParticipationRate(value, total) {
   return `${((Number(value || 0) / total) * 100).toFixed(1)}%`;
 }
 
+function normalizeProposalResultLabel(value) {
+  const normalized = getString(value)
+    .replace(/\s+/g, "_")
+    .replace(/[^A-Za-z0-9_-]/g, "");
+
+  return normalized || "option";
+}
+
 function normalizeProposalName(value) {
   const normalized = getString(value)
     .replace(/\s+/g, "_")
@@ -2017,6 +2035,11 @@ function getProposalDisplayName(proposal) {
 function getProposalCsvBaseName(proposal) {
   const proposalName = getProposalDisplayName(proposal);
   return `${proposalName}_${getProposalCreatedDateKey(proposal)}`;
+}
+
+function getProposalCsvFileName(proposal) {
+  const baseName = getProposalCsvBaseName(proposal);
+  return baseName ? `${baseName}.csv` : "";
 }
 
 function getProposalCsvPath(proposal) {

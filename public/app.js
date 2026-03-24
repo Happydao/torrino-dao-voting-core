@@ -287,13 +287,15 @@ function renderProposalCards() {
 
   for (const proposal of state.proposals) {
     const proposalState = getWalletProposalState(proposal.proposal_id);
+    const proposalFileName = proposal.csv_file_name || `${proposal.display_name || proposal.proposal_name || `proposal_${proposal.proposal_id}`}.csv`;
+    const proposalTitle = String(proposal.title || "").trim();
+    const shouldShowTitle = proposalTitle && proposalTitle !== proposal.display_name && proposalTitle !== proposal.proposal_name;
     const card = document.createElement("section");
     card.className = "proposal-card proposal-card--featured proposal-card--slot";
     card.dataset.proposalId = proposal.proposal_id;
     card.innerHTML = `
-      <p class="proposal-tag">${escapeHtml(proposal.display_name || proposal.proposal_name || `PROPOSAL ${proposal.proposal_id || ""}`)}</p>
-      <h2>${escapeHtml(proposal.display_name || proposal.proposal_name || proposal.title || "Untitled proposal")}</h2>
-      <p class="proposal-copy">${escapeHtml(proposal.title || "")}</p>
+      <p class="proposal-tag">${escapeHtml(proposalFileName)}</p>
+      ${shouldShowTitle ? `<p class="proposal-copy proposal-copy--title">${escapeHtml(proposalTitle)}</p>` : ""}
       <p class="proposal-copy">${escapeHtml(proposal.description || "")}</p>
       <div class="proposal-details">
         <div class="proposal-detail">
@@ -516,12 +518,13 @@ function renderResultsCards() {
   for (const results of state.results) {
     const liveProposal = state.proposals.find((item) => item.proposal_id === results.proposal_id);
     const liveStatus = liveProposal ? liveProposal.status : (results.status || "inactive");
+    const proposalFileName = (liveProposal && liveProposal.csv_file_name) || results.csv_file_name || `${results.display_name || `proposal_${results.proposal_id || "--"}`}.csv`;
     const card = document.createElement("section");
     card.className = "results-card";
     card.innerHTML = `
       <div class="results-header">
         <p class="results-overline">Live Voting Results</p>
-        <h2>${escapeHtml((liveProposal && (liveProposal.display_name || liveProposal.proposal_name)) || results.display_name || `Proposal ${results.proposal_id || "--"}`)}</h2>
+        <h2>${escapeHtml(proposalFileName)}</h2>
         <p class="results-status">${getProposalStatusLabel(liveStatus)}</p>
       </div>
       <div class="results-grid">
