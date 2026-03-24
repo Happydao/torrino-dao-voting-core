@@ -358,6 +358,7 @@ function renderVoteOptions(container, proposal) {
 async function submitVote(proposalId, voteOption) {
   const provider = state.walletProvider || getWalletProvider();
   const proposal = state.proposals.find((item) => item.proposal_id === proposalId);
+  const proposalFileName = getProposalFileNameById(proposalId);
 
   if (!provider || !state.walletAddress || !state.walletData) {
     setStatus("Connect your wallet before voting.");
@@ -379,8 +380,8 @@ async function submitVote(proposalId, voteOption) {
   const proposalState = getWalletProposalState(proposalId);
 
   if (!proposalState || (proposalState.gen1_available_count + proposalState.gen2_available_count) === 0) {
-    setStatus(`All NFTs from this wallet are already used in proposal ${proposalId}.`);
-    showVoteFeedback(`All NFTs from this wallet are already used in proposal ${proposalId}.`, "error");
+    setStatus(`All NFTs from this wallet are already used in ${proposalFileName}.`);
+    showVoteFeedback(`All NFTs from this wallet are already used in ${proposalFileName}.`, "error");
     return;
   }
 
@@ -388,7 +389,7 @@ async function submitVote(proposalId, voteOption) {
     clearVoteFeedback();
     state.votingProposalId = proposalId;
     setVoteButtonsBusy(true);
-    setStatus(`Submitting vote "${voteOption}" for proposal ${proposalId}...`);
+    setStatus(`Submitting vote "${voteOption}" for ${proposalFileName}...`);
     const signedVote = await signVoteMessage(provider, proposalId, voteOption);
     const response = await fetch(VOTE_ENDPOINT, {
       method: "POST",
@@ -404,8 +405,8 @@ async function submitVote(proposalId, voteOption) {
     const payload = await response.json().catch(() => null);
 
     if (response.ok && payload && payload.success === true) {
-      setStatus(`Vote recorded for proposal ${proposalId}. Voting power used: ${formatVotingPower(payload.voting_power)}.`);
-      showVoteFeedback(`Vote for proposal ${proposalId} successfully recorded.`, "success");
+      setStatus(`Vote recorded for ${proposalFileName}. Voting power used: ${formatVotingPower(payload.voting_power)}.`);
+      showVoteFeedback(`Vote for ${proposalFileName} successfully recorded.`, "success");
       const walletData = await getWalletNfts(state.walletAddress);
       state.walletData = walletData;
       updateWalletDashboard(state.walletAddress, walletData);
@@ -415,9 +416,9 @@ async function submitVote(proposalId, voteOption) {
     }
 
     if (payload && payload.error === "ALL_NFTS_ALREADY_VOTED") {
-      setStatus(`All NFTs from this wallet have already been used in proposal ${proposalId}.`);
+      setStatus(`All NFTs from this wallet have already been used in ${proposalFileName}.`);
       showVoteFeedback(
-        payload.message || `All NFTs from this wallet have already been used in proposal ${proposalId}.`,
+        payload.message || `All NFTs from this wallet have already been used in ${proposalFileName}.`,
         "error"
       );
       const walletData = await getWalletNfts(state.walletAddress);
@@ -428,15 +429,15 @@ async function submitVote(proposalId, voteOption) {
     }
 
     if (payload && payload.error === "VOTING_ENDED") {
-      setStatus("Voting has ended for this proposal.");
-      showVoteFeedback("Voting has ended for this proposal.", "error");
+      setStatus(`Voting has ended for ${proposalFileName}.`);
+      showVoteFeedback(`Voting has ended for ${proposalFileName}.`, "error");
       await refreshProposal();
       return;
     }
 
     if (payload && payload.error === "VOTING_NOT_STARTED") {
-      setStatus("Voting has not started yet for this proposal.");
-      showVoteFeedback("Voting has not started yet for this proposal.", "error");
+      setStatus(`Voting has not started yet for ${proposalFileName}.`);
+      showVoteFeedback(`Voting has not started yet for ${proposalFileName}.`, "error");
       await refreshProposal();
       return;
     }
@@ -983,6 +984,13 @@ function getWalletProposalState(proposalId) {
   }
 
   return state.walletData.proposal_states.find((item) => item.proposal_id === proposalId) || null;
+}
+
+function getProposalFileNameById(proposalId) {
+  const proposal = state.proposals.find((item) => item.proposal_id === proposalId);
+  return proposal && proposal.csv_file_name
+    ? proposal.csv_file_name
+    : `proposal_${proposalId}.csv`;
 }
 
 function getOptionColorName(index) {

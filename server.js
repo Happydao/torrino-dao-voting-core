@@ -589,13 +589,17 @@ function summarizeWalletAssets(assets, usedState, proposals = []) {
   for (const asset of assets) {
     const assetName = getAssetName(asset);
     const assetMint = getAssetMint(asset);
-    const usedInProposalIds = proposals
+    const usedInProposals = proposals
       .filter((proposal) => {
         const usedMints = usedMintsByProposal.get(proposal.proposal_id) || new Set();
         return usedMints.has(assetMint);
       })
-      .map((proposal) => proposal.proposal_id);
-    const assetStatus = formatNftUsageStatus(usedInProposalIds);
+      .map((proposal) => ({
+        proposal_id: proposal.proposal_id,
+        label: getProposalCsvFileName(proposal),
+      }));
+    const usedInProposalIds = usedInProposals.map((proposal) => proposal.proposal_id);
+    const assetStatus = formatNftUsageStatus(usedInProposals.map((proposal) => proposal.label));
 
     if (assetBelongsToCollection(asset, COLLECTIONS.torrino.address)) {
       gen1Names.push(assetName);
@@ -738,16 +742,16 @@ function calculateProposalResults(proposal) {
   };
 }
 
-function formatNftUsageStatus(usedInProposalIds) {
-  if (!Array.isArray(usedInProposalIds) || usedInProposalIds.length === 0) {
+function formatNftUsageStatus(usedInProposalLabels) {
+  if (!Array.isArray(usedInProposalLabels) || usedInProposalLabels.length === 0) {
     return "AVAILABLE";
   }
 
-  if (usedInProposalIds.length === 1) {
-    return `USED IN PROPOSAL ${usedInProposalIds[0]}`;
+  if (usedInProposalLabels.length === 1) {
+    return `USED IN PROPOSAL ${usedInProposalLabels[0]}`;
   }
 
-  return `USED IN PROPOSALS ${usedInProposalIds.join(", ")}`;
+  return `USED IN PROPOSALS ${usedInProposalLabels.join(", ")}`;
 }
 
 function assetBelongsToCollection(asset, collectionId) {
