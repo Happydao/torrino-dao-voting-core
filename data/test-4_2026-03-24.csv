@@ -4,8 +4,8 @@ proposal_created_iso,2026-03-24T10:21:44.000Z
 proposal_created_signed_message,Torrino DAO admin action:start:wallet:5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc:payload_hash:9e313288a77fac296b308f53fc5e3d6e00b4b79bce9fe0430cd5d7470f895807:timestamp:1774347701977
 proposal_created_signature,5ppdtJLTWo4PRqEwN19GA5NrwdYQ6YszgdjoWTuJbPZUJtTB248za7Yvs8LLMYUZDnZRyzhVd2zdCQbFST2PZJ3n
 proposal_lifecycle_status,Voting in progress
-proposal_lifecycle_updated_timestamp,1774347713
-proposal_lifecycle_updated_iso,2026-03-24T10:21:53.000Z
+proposal_lifecycle_updated_timestamp,1774348290
+proposal_lifecycle_updated_iso,2026-03-24T10:31:30.000Z
 voting_start_timestamp,1774347660
 voting_start_iso,2026-03-24T10:21:00.000Z
 voting_end_timestamp,1774348800
@@ -19,11 +19,13 @@ proposal_name,test-4
 proposal_title,Proposta di test 4
 proposal_description,test opzioni
 proposal_options,A | B | C
-torrino_participation_rate,0.0%
-solnauta_participation_rate,0.0%
-total_voting_power_participation_rate,0.0%
-result_A,0.00%
+torrino_participation_rate,0.2%
+solnauta_participation_rate,0.2%
+total_voting_power_participation_rate,0.2%
+result_A,6.00%
 result_B,0.00%
-result_C,0.00%
+result_C,94.00%
 
 wallet,solnauta_nfts,torrino_nfts,A,B,C,voting_power,timestamp,signed_message,signature
+7QhxEMfvPeGdiKNzduaXWW8e81NKagFMQrfYJtejmMb6,9taRMkivY3URdyqPwBa2AfEsPt5vvhNqMdBundPSAA7m,,0.011261261,0.000000000,0.000000000,0.011261261,1774347861,Torrino DAO governance vote:proposal:1774347704:option:A:wallet:7QhxEMfvPeGdiKNzduaXWW8e81NKagFMQrfYJtejmMb6:timestamp:1774347859934,4aCk12m92sebifmnW2Q2RViiyYZi6B5daTRmjysaPtVFZ1HCG3jc4JF3kU1Xtvhx1PeGSp8y1PwxUVMQWemq9r3m
+85jTBVsk8sDA35LocJdTh41EN2Eep59RQ1jUw9EExsCw,22nYjuJhonLHSnLaZzoCFuJoEPr2Sh2TUEeLDXBgAZ39,DmBFZuqmb6TvSrbm8b3vbwwpddpBcU5PNefwfrNcBpjv,0.000000000,0.000000000,0.191261261,0.191261261,1774348079,Torrino DAO governance vote:proposal:1774347704:option:C:wallet:85jTBVsk8sDA35LocJdTh41EN2Eep59RQ1jUw9EExsCw:timestamp:1774348078449,4PiJf8h1iMAsy3VSEtJhrp5Cv9g3kFTH2ZMY4EsZkMDijBwRqVmbE1cxVyz1wKPDfviQbxF69gapX5Bg1BjJqc8r
