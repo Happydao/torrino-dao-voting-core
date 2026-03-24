@@ -1140,6 +1140,13 @@ p {
   letter-spacing: 0.12em;
 }
 
+.admin-field__hint {
+  margin: -2px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
 .admin-field input,
 .admin-field textarea {
   width: 100%;

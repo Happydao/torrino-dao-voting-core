@@ -6,7 +6,7 @@ const RESULTS_ENDPOINT = `${API_BASE_PATH}/results`;
 const PROPOSAL_ENDPOINT = `${API_BASE_PATH}/proposal`;
 const TORRINO_TOTAL_NFTS = 500;
 const SOLNAUTA_TOTAL_NFTS = 888;
-const TOTAL_VOTING_POWER = 538.8;
+const TOTAL_VOTING_POWER = 100;
 const GOVERNANCE_HISTORY_API = "https://api.github.com/repos/Happydao/torrino-dao-voting-core/contents/data";
 const GOVERNANCE_HISTORY_RAW_BASE = "https://raw.githubusercontent.com/Happydao/torrino-dao-voting-core/main/data/";
 const textEncoder = new TextEncoder();
@@ -291,8 +291,9 @@ function renderProposalCards() {
     card.className = "proposal-card proposal-card--featured proposal-card--slot";
     card.dataset.proposalId = proposal.proposal_id;
     card.innerHTML = `
-      <p class="proposal-tag">PROPOSAL ${escapeHtml(proposal.proposal_id || "")}</p>
-      <h2>${escapeHtml(proposal.title || "Untitled proposal")}</h2>
+      <p class="proposal-tag">${escapeHtml(proposal.display_name || proposal.proposal_name || `PROPOSAL ${proposal.proposal_id || ""}`)}</p>
+      <h2>${escapeHtml(proposal.display_name || proposal.proposal_name || proposal.title || "Untitled proposal")}</h2>
+      <p class="proposal-copy">${escapeHtml(proposal.title || "")}</p>
       <p class="proposal-copy">${escapeHtml(proposal.description || "")}</p>
       <div class="proposal-details">
         <div class="proposal-detail">
@@ -520,7 +521,7 @@ function renderResultsCards() {
     card.innerHTML = `
       <div class="results-header">
         <p class="results-overline">Live Voting Results</p>
-        <h2>Proposal ${escapeHtml(results.proposal_id || "--")}</h2>
+        <h2>${escapeHtml((liveProposal && (liveProposal.display_name || liveProposal.proposal_name)) || results.display_name || `Proposal ${results.proposal_id || "--"}`)}</h2>
         <p class="results-status">${getProposalStatusLabel(liveStatus)}</p>
       </div>
       <div class="results-grid">
@@ -890,18 +891,16 @@ async function loadGovernanceHistory() {
     }
 
     state.governanceHistory = payload
-      .filter((item) => item && item.type === "file" && /^proposal_(\d+)\.csv$/.test(item.name))
+      .filter((item) => item && item.type === "file" && item.name.endsWith(".csv"))
       .map((item) => {
-        const match = item.name.match(/^proposal_(\d+)\.csv$/);
-        const timestamp = match ? Number(match[1]) : NaN;
         return {
           name: item.name,
-          timestamp,
-          dateLabel: formatHistoryDate(timestamp),
+          sortKey: getGovernanceHistorySortKey(item.name),
+          dateLabel: formatGovernanceHistoryDate(item.name),
           downloadUrl: `${GOVERNANCE_HISTORY_RAW_BASE}${item.name}`,
         };
       })
-      .sort((first, second) => second.timestamp - first.timestamp);
+      .sort((first, second) => second.sortKey.localeCompare(first.sortKey));
 
     state.governanceHistoryLoaded = true;
     renderGovernanceHistoryRows(state.governanceHistory);
@@ -1000,8 +999,36 @@ function formatHistoryDate(timestamp) {
   });
 }
 
+function getGovernanceHistorySortKey(fileName) {
+  const isoMatch = String(fileName).match(/_(\d{4}-\d{2}-\d{2})\.csv$/);
+  if (isoMatch) {
+    return isoMatch[1];
+  }
+
+  const legacyMatch = String(fileName).match(/(?:^|_)(\d{10,})\.csv$/);
+  if (legacyMatch) {
+    return legacyMatch[1];
+  }
+
+  return fileName;
+}
+
+function formatGovernanceHistoryDate(fileName) {
+  const isoMatch = String(fileName).match(/_(\d{4}-\d{2}-\d{2})\.csv$/);
+  if (isoMatch) {
+    return isoMatch[1];
+  }
+
+  const legacyMatch = String(fileName).match(/(?:^|_)(\d{10,})\.csv$/);
+  if (legacyMatch) {
+    return formatHistoryDate(Number(legacyMatch[1]));
+  }
+
+  return "--";
+}
+
 function formatVotingPower(value) {
-  return Number(value || 0).toFixed(1);
+  return Number(value || 0).toFixed(6);
 }
 
 function formatParticipationRate(value, total) {

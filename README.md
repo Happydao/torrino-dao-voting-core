@@ -46,6 +46,7 @@ The goal is not to hide governance. The goal is to make governance readable, ins
 - NFT-based voting power calculation
 - wallet connection with Phantom or Solflare
 - support for multiple voting options
+- support for up to 2 parallel proposals in the same voting round
 - public live results dashboard
 - public governance history
 - public vote verifier page
@@ -59,21 +60,28 @@ The goal is not to hide governance. The goal is to make governance readable, ins
 
 The current Torrino DAO configuration uses two NFT collections:
 
-- Torrino DAO Gen1: `0.9` voting power per NFT
-- Solnauta Gen2: `0.1` voting power per NFT
+- Torrino DAO Gen1: the full collection represents `90%` of total voting power
+- Solnauta Gen2: the full collection represents `10%` of total voting power
+
+Per-NFT weights are therefore:
+
+- Torrino DAO Gen1: `90 / 500 = 0.18`
+- Solnauta Gen2: `10 / 888 = 0.011261261...`
 
 Current total reference voting power in the app:
 
-- `538.8`
+- `100`
+
+The backend keeps high decimal precision so the full Gen1 and Gen2 supply can reach the exact intended 90/10 split at quorum.
 
 The backend calculates wallet eligibility and voting power by reading wallet assets from the configured Solana RPC source and matching them against the allowed collection addresses.
 
 ## Public Transparency Model
 
-Each proposal creates a dedicated CSV file:
+Each proposal creates a dedicated CSV file with a readable admin-defined name:
 
 ```text
-data/proposal_<proposal_id>.csv
+data/<PROPOSAL_NAME>_<YYYY-MM-DD>.csv
 ```
 
 That file is intended to be the public audit artifact for the vote.
@@ -102,6 +110,13 @@ This means the community can inspect both:
 
 - the current state of a vote
 - the published history of its result file
+
+When 2 proposals are active in the same round, each proposal keeps:
+
+- its own CSV file
+- its own vote signatures
+- its own results dashboard
+- its own NFT usage state
 
 ## Vote Verification
 
@@ -194,18 +209,19 @@ For those cases, the frontend now returns a specific user-facing error instead o
 1. Connect wallet with Phantom or Solflare
 2. The backend reads eligible NFTs
 3. Voting power is calculated
-4. The user signs the vote message
-5. The backend validates the signature
-6. The vote is written into the proposal CSV
-7. Live results update publicly
+4. The user can vote on 1 or 2 active proposals
+5. Each proposal vote requires its own wallet signature
+6. The backend validates the signature
+7. The vote is written into that proposal CSV
+8. Live results update publicly
 
 ### Admin
 
 1. Connect authorized admin wallet
-2. Create proposal title, description, options, start time, end time
+2. Create 1 or 2 proposal slots with proposal file name, title, description, options, start time, end time
 3. Sign the admin action
 4. The backend verifies the admin signature
-5. A new proposal CSV is created
+5. New proposal CSV files are created
 6. CSV metadata is published and synced to GitHub
 
 If the admin stops a proposal:
@@ -223,8 +239,8 @@ If the admin stops a proposal:
 Public interface for:
 
 - wallet connection
-- current proposal
-- live results
+- up to 2 active proposals
+- up to 2 live results dashboards
 - voting power view
 - governance history
 - transparency section
@@ -237,7 +253,7 @@ Publicly accessible UI, but operationally restricted by backend wallet authoriza
 Provides:
 
 - admin wallet connection
-- proposal creation
+- 1 or 2 proposal creation slots
 - start voting action
 - stop voting action
 - countdown / in-progress reminder for active or scheduled proposals
@@ -286,7 +302,7 @@ Responsibilities:
 
 - active proposal state: `data/proposal.json`
 - used NFT registry: `data/used-mints.json`
-- public proposal archives: `data/proposal_<proposal_id>.csv`
+- public proposal archives: `data/<PROPOSAL_NAME>_<YYYY-MM-DD>.csv`
 
 ## API Endpoints
 

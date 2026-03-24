@@ -20,11 +20,14 @@ const USED_MINTS_PATH = path.join(DATA_DIR, "used-mints.json");
 const PROPOSAL_PATH = path.join(DATA_DIR, "proposal.json");
 const TORRINO_TOTAL_NFTS = 500;
 const SOLNAUTA_TOTAL_NFTS = 888;
-const TOTAL_VOTING_POWER = 538.8;
+const TORRINO_TREASURY_SHARE = 90;
+const SOLNAUTA_TREASURY_SHARE = 10;
+const TOTAL_VOTING_POWER = TORRINO_TREASURY_SHARE + SOLNAUTA_TREASURY_SHARE;
 const GIT_UPDATE_INTERVAL_MS = 10 * 60 * 1000;
 const NFT_CACHE_TTL_MS = 45 * 1000;
 const RATE_LIMIT_WINDOW_MS = 10 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 20;
+const PROPOSAL_NAME_MAX_LENGTH = 20;
 const JSON_BODY_MAX_BYTES = 16 * 1024;
 const VOTE_SIGNATURE_MAX_AGE_MS = 5 * 60 * 1000;
 const ADMIN_SIGNATURE_MAX_AGE_MS = 5 * 60 * 1000;
@@ -32,12 +35,12 @@ const COLLECTIONS = {
   torrino: {
     name: "Torrino DAO",
     address: "DKaSqu5ftJTkxr9yGyxCakooFZAi2X5aa6SGhs5yR81t",
-    weight: 0.9,
+    weight: TORRINO_TREASURY_SHARE / TORRINO_TOTAL_NFTS,
   },
   solnauta: {
     name: "Solnauta",
     address: "FSKamMRcYWVWxuCzKLofdVSDgwkZ1ufEy99Q9ig3SfG4",
-    weight: 0.1,
+    weight: SOLNAUTA_TREASURY_SHARE / SOLNAUTA_TOTAL_NFTS,
   },
 };
 const MIME_TYPES = {
@@ -178,6 +181,7 @@ function handleProposal(res) {
   sendJson(res, 200, {
     proposals: proposals.map((proposal) => ({
       ...proposal,
+      display_name: getProposalDisplayName(proposal),
       status: getProposalStatus(proposal),
       is_voting_open: getProposalStatus(proposal) === "active",
     })),
@@ -260,10 +264,10 @@ async function handleVote(req, res) {
       }
 
       const votingPower = Number(
-        (
+        formatVotingPowerValue(
           usableGen1Nfts.length * COLLECTIONS.torrino.weight +
           usableGen2Nfts.length * COLLECTIONS.solnauta.weight
-        ).toFixed(1)
+        )
       );
 
       appendVoteRow(proposal, {
@@ -340,6 +344,7 @@ async function handleAdminProposal(req, res) {
   const session = {
     proposals: proposalInputs.map((item, index) => ({
       proposal_id: String(baseProposalId + index),
+      proposal_name: item.proposal_name,
       created_by: adminWallet,
       created_signed_message: adminSignedMessage,
       created_signature: adminSignature,
@@ -366,6 +371,7 @@ async function handleAdminProposal(req, res) {
       }
 
       ensureDataDir();
+      assertProposalFileNamesAvailable(session);
       for (const proposal of session.proposals) {
         initializeVoteStorageForProposal(proposal, adminWallet);
       }
@@ -378,6 +384,10 @@ async function handleAdminProposal(req, res) {
     console.error(error);
     if (error && (error.code === "PROPOSAL_ALREADY_ACTIVE" || error.message === "PROPOSAL_ALREADY_ACTIVE")) {
       sendJson(res, 409, { error: "PROPOSAL_ALREADY_ACTIVE" });
+      return;
+    }
+    if (error && (error.code === "PROPOSAL_FILE_CONFLICT" || error.message === "PROPOSAL_FILE_CONFLICT")) {
+      sendJson(res, 409, { error: "PROPOSAL_FILE_CONFLICT" });
       return;
     }
     sendJson(res, 500, { error: "SERVER_ERROR" });
@@ -602,7 +612,7 @@ function summarizeWalletAssets(assets, usedState, proposals = []) {
   const availableGen1Count = gen1Count;
   const availableGen2Count = gen2Count;
   const votingPower = Number(
-    (gen1Count * COLLECTIONS.torrino.weight + gen2Count * COLLECTIONS.solnauta.weight).toFixed(1)
+    formatVotingPowerValue(gen1Count * COLLECTIONS.torrino.weight + gen2Count * COLLECTIONS.solnauta.weight)
   );
   const proposalStates = proposals.map((proposal) => {
     const proposalGen1Nfts = gen1Nfts.map((nft) => ({
@@ -623,10 +633,10 @@ function summarizeWalletAssets(assets, usedState, proposals = []) {
       gen1_nfts: proposalGen1Nfts,
       gen2_nfts: proposalGen2Nfts,
       voting_power: Number(
-        (
+        formatVotingPowerValue(
           proposalAvailableGen1Count * COLLECTIONS.torrino.weight +
           proposalAvailableGen2Count * COLLECTIONS.solnauta.weight
-        ).toFixed(1)
+        )
       ),
     };
   });
@@ -660,6 +670,7 @@ function calculateResults() {
 function calculateProposalResults(proposal) {
   const baseResults = {
     proposal_id: proposal ? proposal.proposal_id : null,
+    display_name: proposal ? getProposalDisplayName(proposal) : "",
     status: proposal ? getProposalStatus(proposal) : "inactive",
     solnauta_voted: 0,
     torrino_voted: 0,
@@ -706,6 +717,7 @@ function calculateProposalResults(proposal) {
 
   return {
     proposal_id: proposal.proposal_id,
+    display_name: getProposalDisplayName(proposal),
     status: getProposalStatus(proposal),
     solnauta_voted: solnautaVoted,
     torrino_voted: torrinoVoted,
@@ -882,6 +894,7 @@ function buildProposalMetadataLines(proposal, adminWallet, metadataOptions = {})
     ["proposal_reset_iso", formatTimestampIso(resetTimestamp)],
     ["proposal_reset_signed_message", resetSignedMessage],
     ["proposal_reset_signature", resetSignature],
+    ["proposal_name", getProposalDisplayName(proposal)],
     ["proposal_title", proposal.title],
     ["proposal_description", proposal.description],
     ["proposal_options", proposal.options.join(" | ")],
@@ -1242,12 +1255,13 @@ function buildAdminProposalPayload(proposals, startTime, endTime) {
   return {
     proposals: Array.isArray(proposals)
       ? proposals.map((proposal) => ({
+        proposal_name: normalizeProposalName(proposal && proposal.proposal_name),
         title: getString(proposal && proposal.title),
         description: getString(proposal && proposal.description),
         options: Array.isArray(proposal && proposal.options)
           ? proposal.options.map(getString).filter(Boolean).slice(0, 5)
           : [],
-      })).filter((proposal) => proposal.title && proposal.description && proposal.options.length > 0).slice(0, 2)
+      })).filter((proposal) => proposal.proposal_name && proposal.title && proposal.description && proposal.options.length > 0).slice(0, 2)
       : [],
     start_time: Number(startTime),
     end_time: Number(endTime),
@@ -1256,16 +1270,28 @@ function buildAdminProposalPayload(proposals, startTime, endTime) {
 
 function getAdminProposalInputs(body) {
   if (Array.isArray(body && body.proposals)) {
-    return body.proposals
+    const normalized = body.proposals
       .map((proposal) => ({
+        proposal_name: normalizeProposalName(proposal && proposal.proposal_name),
         title: getString(proposal && proposal.title),
         description: getString(proposal && proposal.description),
         options: Array.isArray(proposal && proposal.options)
           ? proposal.options.map(getString).filter(Boolean).slice(0, 5)
           : [],
       }))
-      .filter((proposal) => proposal.title && proposal.description && proposal.options.length > 0)
+      .filter((proposal) => proposal.proposal_name || proposal.title || proposal.description || proposal.options.length > 0)
       .slice(0, 2);
+
+    if (normalized.some((proposal) => !proposal.proposal_name || !proposal.title || !proposal.description || proposal.options.length === 0)) {
+      return [];
+    }
+
+    const uniqueNames = new Set(normalized.map((proposal) => proposal.proposal_name));
+    if (uniqueNames.size !== normalized.length) {
+      return [];
+    }
+
+    return normalized;
   }
 
   const legacyTitle = getString(body && body.title);
@@ -1329,6 +1355,7 @@ function normalizeSessionProposal(proposal, parent = {}) {
   }
 
   const proposalId = getString(proposal.proposal_id);
+  const proposalName = normalizeProposalName(proposal.proposal_name) || normalizeProposalName(proposal.display_name);
   const title = getString(proposal.title);
   const description = getString(proposal.description);
   const options = Array.isArray(proposal.options)
@@ -1344,6 +1371,7 @@ function normalizeSessionProposal(proposal, parent = {}) {
   return {
     ...proposal,
     proposal_id: proposalId,
+    proposal_name: proposalName,
     title,
     description,
     options,
@@ -1513,8 +1541,12 @@ function splitStoredNftValues(value) {
     : [];
 }
 
+function formatVotingPowerValue(value) {
+  return Number(Number(value || 0).toFixed(9));
+}
+
 function formatDecimal(value) {
-  return Number(value || 0).toFixed(1);
+  return Number(value || 0).toFixed(9);
 }
 
 function getOptionColumns(proposal) {
@@ -1956,12 +1988,48 @@ function formatParticipationRate(value, total) {
   return `${((Number(value || 0) / total) * 100).toFixed(1)}%`;
 }
 
+function normalizeProposalName(value) {
+  const normalized = getString(value)
+    .replace(/\s+/g, "_")
+    .replace(/[^A-Za-z0-9_-]/g, "")
+    .slice(0, PROPOSAL_NAME_MAX_LENGTH);
+
+  return normalized;
+}
+
+function getProposalCreatedDateKey(proposal) {
+  const createdTimestamp = Number(proposal && proposal.proposal_id);
+  const createdDate = Number.isFinite(createdTimestamp) && createdTimestamp > 0
+    ? new Date(createdTimestamp * 1000)
+    : new Date();
+  const year = createdDate.getUTCFullYear();
+  const month = String(createdDate.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(createdDate.getUTCDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function getProposalDisplayName(proposal) {
+  const proposalName = normalizeProposalName(proposal && proposal.proposal_name);
+  return proposalName || getString(proposal && proposal.proposal_id) || "proposal";
+}
+
+function getProposalCsvBaseName(proposal) {
+  const proposalName = getProposalDisplayName(proposal);
+  return `${proposalName}_${getProposalCreatedDateKey(proposal)}`;
+}
+
 function getProposalCsvPath(proposal) {
   if (!proposal || !proposal.proposal_id) {
     return null;
   }
 
-  return path.join(DATA_DIR, `proposal_${proposal.proposal_id}.csv`);
+  if (!normalizeProposalName(proposal.proposal_name)) {
+    return path.join(DATA_DIR, `proposal_${proposal.proposal_id}.csv`);
+  }
+
+  const baseName = getProposalCsvBaseName(proposal);
+  return path.join(DATA_DIR, `${baseName}.csv`);
 }
 
 function getProposalCsvRelativePath(proposal) {
@@ -1969,7 +2037,35 @@ function getProposalCsvRelativePath(proposal) {
     return null;
   }
 
-  return `data/proposal_${proposal.proposal_id}.csv`;
+  if (!normalizeProposalName(proposal.proposal_name)) {
+    return `data/proposal_${proposal.proposal_id}.csv`;
+  }
+
+  const baseName = getProposalCsvBaseName(proposal);
+  return `data/${baseName}.csv`;
+}
+
+function assertProposalFileNamesAvailable(session) {
+  const seenNames = new Set();
+
+  for (const proposal of getSessionProposals(session)) {
+    const relativePath = getProposalCsvRelativePath(proposal);
+
+    if (!relativePath || seenNames.has(relativePath)) {
+      const error = new Error("PROPOSAL_FILE_CONFLICT");
+      error.code = "PROPOSAL_FILE_CONFLICT";
+      throw error;
+    }
+
+    seenNames.add(relativePath);
+
+    const absolutePath = getProposalCsvPath(proposal);
+    if (absolutePath && fs.existsSync(absolutePath)) {
+      const error = new Error("PROPOSAL_FILE_CONFLICT");
+      error.code = "PROPOSAL_FILE_CONFLICT";
+      throw error;
+    }
+  }
 }
 
 function deleteFileIfExists(filePath) {

@@ -6,6 +6,7 @@ const APP_BASE_PATH = "/torrino.dao.voting";
 const API_BASE_PATH = `${APP_BASE_PATH}/api`;
 const GOVERNANCE_HISTORY_API = "https://api.github.com/repos/Happydao/torrino-dao-voting-core/contents/data";
 const GOVERNANCE_HISTORY_RAW_BASE = "https://raw.githubusercontent.com/Happydao/torrino-dao-voting-core/main/data/";
+const PROPOSAL_NAME_MAX_LENGTH = 20;
 const textEncoder = new TextEncoder();
 
 const state = {
@@ -48,6 +49,7 @@ const ui = {
   openEndTimePickerButton: document.getElementById("openEndTimePickerButton"),
   slots: [
     {
+      name: document.getElementById("proposalOneNameInput"),
       title: document.getElementById("proposalOneTitleInput"),
       description: document.getElementById("proposalOneDescriptionInput"),
       options: [
@@ -59,6 +61,7 @@ const ui = {
       ],
     },
     {
+      name: document.getElementById("proposalTwoNameInput"),
       title: document.getElementById("proposalTwoTitleInput"),
       description: document.getElementById("proposalTwoDescriptionInput"),
       options: [
@@ -267,28 +270,36 @@ function collectProposalInputs() {
 
   for (let index = 0; index < ui.slots.length; index += 1) {
     const slot = ui.slots[index];
+    const proposalName = normalizeProposalName(slot.name.value);
     const title = slot.title.value.trim();
     const description = slot.description.value.trim();
     const options = slot.options.map((input) => input.value.trim()).filter(Boolean);
-    const hasAnyValue = Boolean(title || description || options.length > 0);
+    const hasAnyValue = Boolean(proposalName || title || description || options.length > 0);
 
     if (!hasAnyValue) {
       continue;
     }
 
-    if (!title || !description || options.length === 0) {
+    if (!proposalName || !title || !description || options.length === 0) {
       return {
-        error: `Complete or clear Proposal Slot ${index + 1}. Each active slot needs title, description and at least one option.`,
+        error: `Complete or clear Proposal Slot ${index + 1}. Each active slot needs file name, title, description and at least one option.`,
         items: [],
       };
     }
 
-    items.push({ title, description, options });
+    items.push({ proposal_name: proposalName, title, description, options });
+  }
+
+  if (new Set(items.map((item) => item.proposal_name)).size !== items.length) {
+    return {
+      error: "Each proposal file name must be unique within the same round.",
+      items: [],
+    };
   }
 
   if (items.length === 0) {
     return {
-      error: "Fill in at least one proposal slot before starting voting.",
+      error: "Fill in at least one complete proposal slot before starting voting.",
       items: [],
     };
   }
@@ -466,12 +477,13 @@ async function hashAdminActionPayload(value) {
   const normalized = JSON.stringify({
     proposals: Array.isArray(value && value.proposals)
       ? value.proposals.map((proposal) => ({
+        proposal_name: normalizeProposalName(proposal.proposal_name),
         title: String(proposal.title || "").trim(),
         description: String(proposal.description || "").trim(),
         options: Array.isArray(proposal.options)
           ? proposal.options.map((option) => String(option || "").trim()).filter(Boolean).slice(0, 5)
           : [],
-      })).filter((proposal) => proposal.title && proposal.description && proposal.options.length > 0).slice(0, 2)
+      })).filter((proposal) => proposal.proposal_name && proposal.title && proposal.description && proposal.options.length > 0).slice(0, 2)
       : [],
     start_time: Number(value && value.start_time),
     end_time: Number(value && value.end_time),
@@ -489,6 +501,7 @@ function isSignatureRejected(error) {
 
 function clearForm() {
   for (const slot of ui.slots) {
+    slot.name.value = "";
     slot.title.value = "";
     slot.description.value = "";
     slot.options.forEach((input) => {
@@ -564,7 +577,7 @@ function renderAdminProposalNotice() {
     item.className = "admin-proposal-notice__item";
     item.innerHTML = `
       <strong>Proposal ${escapeHtml(proposal.proposal_id || "--")}</strong>
-      <span>${escapeHtml(proposal.title || "Untitled proposal")}</span>
+      <span>${escapeHtml(proposal.display_name || proposal.proposal_name || proposal.title || "Untitled proposal")}</span>
     `;
     ui.proposalNoticeList.appendChild(item);
   }
@@ -658,18 +671,16 @@ async function loadGovernanceHistory() {
     }
 
     state.governanceHistory = payload
-      .filter((item) => item && item.type === "file" && /^proposal_(\d+)\.csv$/.test(item.name))
+      .filter((item) => item && item.type === "file" && item.name.endsWith(".csv"))
       .map((item) => {
-        const match = item.name.match(/^proposal_(\d+)\.csv$/);
-        const timestamp = match ? Number(match[1]) : NaN;
         return {
           name: item.name,
-          timestamp,
-          dateLabel: formatHistoryDate(timestamp),
+          sortKey: getGovernanceHistorySortKey(item.name),
+          dateLabel: formatGovernanceHistoryDate(item.name),
           downloadUrl: `${GOVERNANCE_HISTORY_RAW_BASE}${item.name}`,
         };
       })
-      .sort((first, second) => second.timestamp - first.timestamp);
+      .sort((first, second) => second.sortKey.localeCompare(first.sortKey));
 
     state.governanceHistoryLoaded = true;
     renderGovernanceHistoryRows(state.governanceHistory);
@@ -760,6 +771,42 @@ function formatHistoryDate(timestamp) {
   }) + " UTC";
 }
 
+function normalizeProposalName(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\s+/g, "_")
+    .replace(/[^A-Za-z0-9_-]/g, "")
+    .slice(0, PROPOSAL_NAME_MAX_LENGTH);
+}
+
+function getGovernanceHistorySortKey(fileName) {
+  const isoMatch = String(fileName).match(/_(\d{4}-\d{2}-\d{2})\.csv$/);
+  if (isoMatch) {
+    return isoMatch[1];
+  }
+
+  const legacyMatch = String(fileName).match(/(?:^|_)(\d{10,})\.csv$/);
+  if (legacyMatch) {
+    return legacyMatch[1];
+  }
+
+  return fileName;
+}
+
+function formatGovernanceHistoryDate(fileName) {
+  const isoMatch = String(fileName).match(/_(\d{4}-\d{2}-\d{2})\.csv$/);
+  if (isoMatch) {
+    return isoMatch[1];
+  }
+
+  const legacyMatch = String(fileName).match(/(?:^|_)(\d{10,})\.csv$/);
+  if (legacyMatch) {
+    return formatHistoryDate(Number(legacyMatch[1]));
+  }
+
+  return "Unknown date";
+}
+
 function openAdminFeedbackModal(title, message, type) {
   if (!ui.feedbackModal) {
     return;
@@ -811,11 +858,15 @@ function getAdminErrorMessage(error, action) {
   }
 
   if (error.message === "INVALID_PROPOSAL") {
-    return "Fill in at least one complete proposal slot.";
+    return "Fill in at least one complete proposal slot with a valid file name.";
   }
 
   if (error.message === "PROPOSAL_ALREADY_ACTIVE") {
     return "A proposal round is already active or scheduled. Stop the current round before starting a new one.";
+  }
+
+  if (error.message === "PROPOSAL_FILE_CONFLICT") {
+    return "A CSV file with the same proposal name and creation date already exists. Choose a different proposal file name.";
   }
 
   if (error.message === "INVALID_TIME_RANGE") {
