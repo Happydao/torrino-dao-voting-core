@@ -15,6 +15,7 @@ proposal_reset_timestamp,
 proposal_reset_iso,
 proposal_reset_signed_message,
 proposal_reset_signature,
+proposal_name,1774209336
 proposal_title,ESPERIENZA DELLA PIATTAFORMA
 proposal_description,"Come valuti l’esperienza complessiva della piattaforma di voto?
 
@@ -22,7 +23,7 @@ Puoi selezionare una sola opzione."
 proposal_options,Molto semplice e chiara | Semplice | Nella media | Poco chiara | Da migliorare
 torrino_participation_rate,14.4%
 solnauta_participation_rate,8.3%
-total_voting_power_participation_rate,13.4%
+total_voting_power_participation_rate,72.2%
 
 wallet,solnauta_nfts,torrino_nfts,Molto semplice e chiara,Semplice,Nella media,Poco chiara,Da migliorare,voting_power,timestamp,signed_message,signature
 4S9CvpCSKxpv6RtSHDXLXevJyaiYANtphDvrpsPYkaJ3,GswVRSiEjZQzoc7kzrXs9RmKU7qJGYdPoGRanmdt3qFN,,0.1,0.0,0.0,0.0,0.0,0.1,1774209793,Torrino DAO governance vote:proposal:1774209336:option:Molto semplice e chiara:wallet:4S9CvpCSKxpv6RtSHDXLXevJyaiYANtphDvrpsPYkaJ3:timestamp:1774209793050,aPVvzKfcsmkfMveagR6Pz1b4sAANwjd1CHXXReKfJ8sR25U6MRVBd3Mb6EA4tkaAdkHgHeBQ4BSZFvAVwUxnfuQ

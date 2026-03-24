@@ -15,6 +15,7 @@ proposal_reset_timestamp,
 proposal_reset_iso,
 proposal_reset_signed_message,
 proposal_reset_signature,
+proposal_name,1774209335
 proposal_title,MIGLIORAMENTI E NUOVE FUNZIONALITA'
 proposal_description,"Quale funzione miglioreresti o aggiungeresti alla piattaforma di voto?
 
@@ -22,7 +23,7 @@ Puoi selezionare una sola opzione."
 proposal_options,"Stabilità e connessione wallet | Classifica utenti più attivi nel voto | Notifiche per nuove proposal | Migliorare la grafica | Nessuno, va bene così"
 torrino_participation_rate,14.6%
 solnauta_participation_rate,8.7%
-total_voting_power_participation_rate,13.6%
+total_voting_power_participation_rate,73.4%
 
 wallet,solnauta_nfts,torrino_nfts,Stabilità e connessione wallet,Classifica utenti più attivi nel voto,Notifiche per nuove proposal,Migliorare la grafica,"Nessuno, va bene così",voting_power,timestamp,signed_message,signature
 4S9CvpCSKxpv6RtSHDXLXevJyaiYANtphDvrpsPYkaJ3,GswVRSiEjZQzoc7kzrXs9RmKU7qJGYdPoGRanmdt3qFN,,0.0,0.0,0.1,0.0,0.0,0.1,1774209780,Torrino DAO governance vote:proposal:1774209335:option:Notifiche per nuove proposal:wallet:4S9CvpCSKxpv6RtSHDXLXevJyaiYANtphDvrpsPYkaJ3:timestamp:1774209778744,4fsQWFnVgTeWwrErfTpsaokBwNDgvjdjY765ZbYqkbkyJz97PgTZXZdaKtcKvRiEfxtWtyXCMX5uMShebGJUozbF
