@@ -39,10 +39,7 @@ async function handleProposalHashVerification(event) {
   const proposalPayloadHash = ui.proposalHashInput.value.trim().toLowerCase();
   const proposalTitle = ui.proposalTitleInput.value.trim();
   const proposalDescription = ui.proposalDescriptionInput.value.trim();
-  const proposalOptions = ui.proposalOptionsInput.value
-    .split("\n")
-    .map((option) => option.trim())
-    .filter(Boolean);
+  const proposalOptions = parseProposalOptions(ui.proposalOptionsInput.value);
 
   if (!proposalPayloadHash || !proposalTitle || !proposalDescription || proposalOptions.length === 0) {
     setProposalHashStatus("Fill in proposal_payload_hash, title, description and at least one option.", "error");
@@ -237,4 +234,12 @@ async function hashProposalPayload(proposalPayload) {
   return Array.from(new Uint8Array(digest))
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
+}
+
+function parseProposalOptions(rawValue) {
+  return String(rawValue || "")
+    .split("\n")
+    .flatMap((line) => line.split("|"))
+    .map((option) => option.trim())
+    .filter(Boolean);
 }
