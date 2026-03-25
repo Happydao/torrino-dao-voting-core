@@ -975,6 +975,10 @@ p {
   margin-top: 18px;
 }
 
+.verifier-steps--four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .verifier-body .verifier-steps .results-stat {
   background: linear-gradient(180deg, rgba(14, 25, 49, 0.92), rgba(11, 20, 41, 0.88));
   border: 1px solid rgba(169, 191, 255, 0.12);

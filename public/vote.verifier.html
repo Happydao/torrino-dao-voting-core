@@ -8,7 +8,7 @@
     <link rel="apple-touch-icon" href="torrino-dao.png" />
     <meta
       name="description"
-      content="Public verifier for Torrino DAO vote signatures stored in the governance CSV files."
+      content="Manual public verifier for Torrino DAO proposal hashes and vote signatures."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -31,7 +31,7 @@
             <h1 class="title">VOTE VERIFIER</h1>
           </div>
           <p class="tagline">
-            Verify for yourself that a proposal hash matches the published proposal data, and that a vote recorded in the public CSV was really signed by the wallet that cast it.
+            Manually rebuild the proposal hash from the CSV, then verify that the signed vote uses the same hash and was really signed by the wallet shown in the vote row.
           </p>
         </div>
 
@@ -42,8 +42,8 @@
 
       <section class="results-card verifier-guide">
         <p class="proposal-tag">How To Verify</p>
-        <h2>Public verification in 4 steps</h2>
-        <div class="verifier-steps">
+        <h2>Manual verification in one flow</h2>
+        <div class="verifier-steps verifier-steps--four">
           <article class="results-stat">
             <span class="label">Step 1</span>
             <strong>Open the public CSV</strong>
@@ -61,36 +61,36 @@
           </article>
           <article class="results-stat">
             <span class="label">Step 2</span>
-            <strong>Rebuild the proposal hash manually</strong>
+            <strong>Copy the proposal data</strong>
             <span class="results-stat__detail">
-              In the CSV metadata and proposal block, copy <span class="mono-inline">proposal_payload_hash</span>, <span class="mono-inline">proposal_title</span>, <span class="mono-inline">proposal_description</span> and the proposal options exactly as written.
+              From the CSV metadata, copy <span class="mono-inline">proposal_payload_hash</span>, <span class="mono-inline">proposal_title</span>, <span class="mono-inline">proposal_description</span> and <span class="mono-inline">proposal_options</span>.
             </span>
           </article>
           <article class="results-stat">
             <span class="label">Step 3</span>
             <strong>Copy one vote row</strong>
             <span class="results-stat__detail">
-              In the same vote row, copy <span class="mono-inline">wallet</span>, <span class="mono-inline">signed_message</span> and <span class="mono-inline">signature</span> exactly as they appear.
+              From the vote row you want to inspect, copy <span class="mono-inline">wallet</span>, <span class="mono-inline">signed_message</span> and <span class="mono-inline">signature</span>.
             </span>
           </article>
           <article class="results-stat">
             <span class="label">Step 4</span>
-            <strong>Verify the vote row</strong>
+            <strong>Run one check</strong>
             <span class="results-stat__detail">
-              Paste the vote data and the same <span class="mono-inline">proposal_payload_hash</span>. The verifier checks the wallet signature and confirms that the hash inside the signed message is the same hash you rebuilt manually.
+              The verifier rebuilds the proposal hash, shows the JSON payload, checks whether the same hash appears inside the signed message, and verifies whether the wallet signature is valid.
             </span>
           </article>
         </div>
       </section>
 
       <section class="proposal-card verifier-card">
-        <p class="proposal-tag">Proposal Hash Verification</p>
-        <h2>Rebuild the proposal hash manually</h2>
+        <p class="proposal-tag">Unified Verification</p>
+        <h2>Proposal hash and vote signature</h2>
         <p class="proposal-copy">
-          Use this first. Copy the proposal title, description and options from the CSV, paste them here exactly as published, then compare the generated hash with the <span class="mono-inline">proposal_payload_hash</span> written in the CSV metadata. If they match, the proposal text was not changed.
+          Fill in the proposal data once, then you can keep title, description, options and proposal hash as they are and change only wallet, signed message and signature for the next vote row you want to verify.
         </p>
 
-        <form id="proposalHashVerifierForm" class="verifier-form">
+        <form id="unifiedVerifierForm" class="verifier-form">
           <label class="admin-field admin-field--full">
             <span>Proposal payload hash</span>
             <input id="verifyProposalHashInput" type="text" autocomplete="off" spellcheck="false" placeholder="Paste proposal_payload_hash from the CSV metadata" />
@@ -105,37 +105,7 @@
           </label>
           <label class="admin-field admin-field--full">
             <span>Proposal options</span>
-            <textarea id="verifyProposalOptionsInput" rows="5" spellcheck="false" placeholder="Paste proposal_options exactly as in the CSV (example: 1 | 2 | 3) or one option per line"></textarea>
-          </label>
-          <div class="verifier-actions">
-            <button id="verifyProposalHashButton" class="admin-button admin-button--primary verifier-submit-button" type="submit">
-              Rebuild Proposal Hash
-            </button>
-          </div>
-        </form>
-
-        <div id="proposalHashResultCard" class="verifier-result" hidden>
-          <p id="proposalHashResultBadge" class="feedback-modal__badge">Proposal hash result</p>
-          <h3 id="proposalHashResultHeadline" class="feedback-modal__headline">TRUE</h3>
-          <p id="proposalHashResultMessage" class="modal__lead feedback-modal__message"></p>
-          <p id="proposalHashResultDetails" class="verifier-result__details"></p>
-          <pre id="proposalHashResultPayload" class="verifier-result__details verifier-result__payload"></pre>
-        </div>
-
-        <p id="proposalHashStatus" class="admin-feedback" aria-live="polite"></p>
-      </section>
-
-      <section class="proposal-card verifier-card">
-        <p class="proposal-tag">Vote Verification</p>
-        <h2>Check one CSV row</h2>
-        <p class="proposal-copy">
-          Use this after rebuilding the proposal hash above. Paste the vote row values and the same <span class="mono-inline">proposal_payload_hash</span> from the CSV metadata. The tool checks that the signature matches the wallet and that the same hash is written inside the signed message.
-        </p>
-
-        <form id="voteVerifierForm" class="verifier-form">
-          <label class="admin-field admin-field--full">
-            <span>Proposal payload hash from CSV</span>
-            <input id="verifyVoteProposalHashInput" type="text" autocomplete="off" spellcheck="false" placeholder="Paste the same proposal_payload_hash used above" />
+            <textarea id="verifyProposalOptionsInput" rows="4" spellcheck="false" placeholder="Paste proposal_options exactly as in the CSV (example: 1 | 2 | 3) or one option per line"></textarea>
           </label>
           <label class="admin-field admin-field--full">
             <span>Wallet</span>
@@ -150,8 +120,8 @@
             <textarea id="verifySignatureInput" rows="3" spellcheck="false" placeholder="Paste the full signature exactly as shown in the CSV"></textarea>
           </label>
           <div class="verifier-actions">
-            <button id="verifyVoteButton" class="admin-button admin-button--primary verifier-submit-button" type="submit">
-              Verify Vote
+            <button id="verifyUnifiedButton" class="admin-button admin-button--primary verifier-submit-button" type="submit">
+              Run Verification
             </button>
           </div>
         </form>
@@ -161,6 +131,10 @@
           <h3 id="verifyResultHeadline" class="feedback-modal__headline">TRUE</h3>
           <p id="verifyResultMessage" class="modal__lead feedback-modal__message"></p>
           <p id="verifyResultDetails" class="verifier-result__details"></p>
+          <p id="verifyHashResult" class="verifier-result__details"></p>
+          <p id="verifySignedHashResult" class="verifier-result__details"></p>
+          <p id="verifySignatureResult" class="verifier-result__details"></p>
+          <pre id="verifyResultPayload" class="verifier-result__details verifier-result__payload"></pre>
         </div>
 
         <p id="verifyStatus" class="admin-feedback" aria-live="polite"></p>

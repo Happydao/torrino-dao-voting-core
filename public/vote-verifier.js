@@ -3,54 +3,50 @@ const VERIFY_VOTE_ENDPOINT = `${APP_BASE_PATH}/api/verify-vote-record`;
 const textEncoder = new TextEncoder();
 
 const ui = {
-  proposalHashForm: document.getElementById("proposalHashVerifierForm"),
+  form: document.getElementById("unifiedVerifierForm"),
   proposalHashInput: document.getElementById("verifyProposalHashInput"),
   proposalTitleInput: document.getElementById("verifyProposalTitleInput"),
   proposalDescriptionInput: document.getElementById("verifyProposalDescriptionInput"),
   proposalOptionsInput: document.getElementById("verifyProposalOptionsInput"),
-  proposalHashButton: document.getElementById("verifyProposalHashButton"),
-  proposalHashStatus: document.getElementById("proposalHashStatus"),
-  proposalHashResultCard: document.getElementById("proposalHashResultCard"),
-  proposalHashResultBadge: document.getElementById("proposalHashResultBadge"),
-  proposalHashResultHeadline: document.getElementById("proposalHashResultHeadline"),
-  proposalHashResultMessage: document.getElementById("proposalHashResultMessage"),
-  proposalHashResultDetails: document.getElementById("proposalHashResultDetails"),
-  proposalHashResultPayload: document.getElementById("proposalHashResultPayload"),
-  voteForm: document.getElementById("voteVerifierForm"),
-  proposalHashForVote: document.getElementById("verifyVoteProposalHashInput"),
-  wallet: document.getElementById("verifyWalletInput"),
-  signedMessage: document.getElementById("verifySignedMessageInput"),
-  signature: document.getElementById("verifySignatureInput"),
-  verifyVoteButton: document.getElementById("verifyVoteButton"),
-  voteStatus: document.getElementById("verifyStatus"),
-  voteResultCard: document.getElementById("verifyResultCard"),
-  voteResultBadge: document.getElementById("verifyResultBadge"),
-  voteResultHeadline: document.getElementById("verifyResultHeadline"),
-  voteResultMessage: document.getElementById("verifyResultMessage"),
-  voteResultDetails: document.getElementById("verifyResultDetails"),
+  walletInput: document.getElementById("verifyWalletInput"),
+  signedMessageInput: document.getElementById("verifySignedMessageInput"),
+  signatureInput: document.getElementById("verifySignatureInput"),
+  submitButton: document.getElementById("verifyUnifiedButton"),
+  status: document.getElementById("verifyStatus"),
+  resultCard: document.getElementById("verifyResultCard"),
+  resultBadge: document.getElementById("verifyResultBadge"),
+  resultHeadline: document.getElementById("verifyResultHeadline"),
+  resultMessage: document.getElementById("verifyResultMessage"),
+  resultDetails: document.getElementById("verifyResultDetails"),
+  hashResult: document.getElementById("verifyHashResult"),
+  signedHashResult: document.getElementById("verifySignedHashResult"),
+  signatureResult: document.getElementById("verifySignatureResult"),
+  resultPayload: document.getElementById("verifyResultPayload"),
 };
 
-ui.proposalHashForm.addEventListener("submit", handleProposalHashVerification);
-ui.voteForm.addEventListener("submit", handleVoteVerification);
+ui.form.addEventListener("submit", handleVerification);
 
-async function handleProposalHashVerification(event) {
+async function handleVerification(event) {
   event.preventDefault();
 
   const proposalPayloadHash = ui.proposalHashInput.value.trim().toLowerCase();
   const proposalTitle = ui.proposalTitleInput.value.trim();
   const proposalDescription = ui.proposalDescriptionInput.value.trim();
   const proposalOptions = parseProposalOptions(ui.proposalOptionsInput.value);
+  const wallet = ui.walletInput.value.trim();
+  const signedMessage = ui.signedMessageInput.value.trim();
+  const signature = ui.signatureInput.value.trim();
 
-  if (!proposalPayloadHash || !proposalTitle || !proposalDescription || proposalOptions.length === 0) {
-    setProposalHashStatus("Fill in proposal_payload_hash, title, description and at least one option.", "error");
-    hideProposalHashResult();
+  if (!proposalPayloadHash || !proposalTitle || !proposalDescription || proposalOptions.length === 0 || !wallet || !signedMessage || !signature) {
+    setStatus("Fill in proposal hash, title, description, options, wallet, signed message and signature.", "error");
+    hideResult();
     return;
   }
 
   try {
-    setProposalHashBusy(true);
-    setProposalHashStatus("Rebuilding proposal hash...", "");
-    hideProposalHashResult();
+    setBusy(true);
+    setStatus("Rebuilding proposal hash and verifying signature...", "");
+    hideResult();
 
     const proposalPayload = {
       title: proposalTitle,
@@ -58,49 +54,7 @@ async function handleProposalHashVerification(event) {
       options: proposalOptions,
     };
     const calculatedHash = await hashProposalPayload(proposalPayload);
-    const matches = calculatedHash === proposalPayloadHash;
-
-    renderProposalHashResult({
-      valid: matches,
-      expected_hash: proposalPayloadHash,
-      calculated_hash: calculatedHash,
-      proposal_payload: proposalPayload,
-    });
-    setProposalHashStatus(
-      matches
-        ? "Proposal hash rebuilt successfully. It matches the CSV hash you entered."
-        : "The rebuilt proposal hash does not match the proposal_payload_hash you entered.",
-      matches ? "success" : "error"
-    );
-
-    ui.proposalHashForVote.value = proposalPayloadHash;
-  } catch (error) {
-    console.error(error);
-    hideProposalHashResult();
-    setProposalHashStatus("An error occurred while verifying the proposal hash.", "error");
-  } finally {
-    setProposalHashBusy(false);
-  }
-}
-
-async function handleVoteVerification(event) {
-  event.preventDefault();
-
-  const proposalPayloadHash = ui.proposalHashForVote.value.trim().toLowerCase();
-  const wallet = ui.wallet.value.trim();
-  const signedMessage = ui.signedMessage.value.trim();
-  const signature = ui.signature.value.trim();
-
-  if (!proposalPayloadHash || !wallet || !signedMessage || !signature) {
-    setVoteStatus("Fill in proposal hash, wallet, signed message and signature.", "error");
-    hideVoteResult();
-    return;
-  }
-
-  try {
-    setVoteBusy(true);
-    setVoteStatus("Verifying vote signature and proposal hash...", "");
-    hideVoteResult();
+    const proposalHashMatches = calculatedHash === proposalPayloadHash;
 
     const response = await fetch(VERIFY_VOTE_ENDPOINT, {
       method: "POST",
@@ -112,61 +66,80 @@ async function handleVoteVerification(event) {
         signature,
       }),
     });
-    const payload = await response.json().catch(() => null);
+    const verification = await response.json().catch(() => null);
 
-    if (!response.ok || !payload) {
+    if (!response.ok || !verification) {
       throw new Error("SERVER_ERROR");
     }
 
-    renderVoteVerificationResult(payload);
-    setVoteStatus(
-      payload.valid
-        ? "Vote verification completed successfully."
-        : "Vote verification failed. The row does not match a valid vote signature tied to the same proposal hash.",
-      payload.valid ? "success" : "error"
-    );
+    renderResult({
+      proposalPayload,
+      expectedHash: proposalPayloadHash,
+      calculatedHash,
+      proposalHashMatches,
+      signatureVerification: verification,
+    });
   } catch (error) {
     console.error(error);
-    hideVoteResult();
-    setVoteStatus("An error occurred while verifying the vote.", "error");
+    hideResult();
+    setStatus("An error occurred while running the verification.", "error");
   } finally {
-    setVoteBusy(false);
+    setBusy(false);
   }
 }
 
-function renderProposalHashResult(result) {
-  ui.proposalHashResultCard.hidden = false;
-  ui.proposalHashResultBadge.textContent = "Proposal hash result";
-  ui.proposalHashResultBadge.classList.remove("is-success", "is-error");
-  ui.proposalHashResultHeadline.textContent = result.valid ? "TRUE" : "FALSE";
-  ui.proposalHashResultMessage.textContent = result.valid
-    ? "The title, description and options you entered generate the same proposal hash written in the CSV."
-    : "The title, description and options you entered do not generate the same proposal hash written in the CSV.";
-  ui.proposalHashResultDetails.textContent = `Entered hash: ${result.expected_hash || "--"} | Calculated hash: ${result.calculated_hash || "--"}`;
-  ui.proposalHashResultPayload.textContent = JSON.stringify(result.proposal_payload, null, 2);
-  ui.proposalHashResultBadge.classList.add(result.valid ? "is-success" : "is-error");
+function renderResult(result) {
+  const { proposalPayload, expectedHash, calculatedHash, proposalHashMatches, signatureVerification } = result;
+  const signatureValid = Boolean(signatureVerification && signatureVerification.valid);
+  const signedMessageHashMatches = signatureValid && signatureVerification.proposal_hash === expectedHash;
+  const allChecksValid = proposalHashMatches && signatureValid && signedMessageHashMatches;
+
+  ui.resultCard.hidden = false;
+  ui.resultBadge.textContent = "Verification result";
+  ui.resultBadge.classList.remove("is-success", "is-error");
+  ui.resultHeadline.textContent = allChecksValid ? "TRUE" : "FALSE";
+  ui.resultMessage.textContent = allChecksValid
+    ? "The proposal data rebuilds the same hash, the signed message contains that same hash, and the wallet signature is valid."
+    : "One or more checks failed. Review the hash, signed message and signature details below.";
+  ui.resultDetails.textContent = `Proposal hash entered: ${expectedHash || "--"} | Proposal hash rebuilt: ${calculatedHash || "--"}`;
+  ui.hashResult.textContent = proposalHashMatches
+    ? "Proposal payload check: TRUE. Title, description and options generate the same proposal hash."
+    : "Proposal payload check: FALSE. Title, description and options do not generate the same proposal hash.";
+  ui.signedHashResult.textContent = signatureValid
+    ? signedMessageHashMatches
+      ? `Signed message hash check: TRUE. The signed message contains the same proposal hash: ${signatureVerification.proposal_hash}.`
+      : `Signed message hash check: FALSE. The signed message contains ${signatureVerification.proposal_hash || "--"} instead of ${expectedHash}.`
+    : `Signed message hash check: FALSE. ${getVoteVerificationFailureMessage(signatureVerification.reason)}`;
+  ui.signatureResult.textContent = signatureValid
+    ? `Signature check: TRUE. Wallet ${signatureVerification.wallet} really signed this message. Vote option: ${signatureVerification.vote_option}.`
+    : `Signature check: FALSE. ${getVoteVerificationFailureMessage(signatureVerification.reason)}`;
+  ui.resultPayload.textContent = JSON.stringify(proposalPayload, null, 2);
+  ui.resultBadge.classList.add(allChecksValid ? "is-success" : "is-error");
+
+  setStatus(
+    allChecksValid
+      ? "Verification completed successfully."
+      : "Verification completed. At least one check failed.",
+    allChecksValid ? "success" : "error"
+  );
 }
 
-function renderVoteVerificationResult(result) {
-  ui.voteResultCard.hidden = false;
-  ui.voteResultBadge.textContent = "Vote verification result";
-  ui.voteResultBadge.classList.remove("is-success", "is-error");
-  ui.voteResultHeadline.textContent = result.valid ? "TRUE" : "FALSE";
-  ui.voteResultMessage.textContent = result.valid
-    ? "The signature is valid, and the signed message contains the same proposal hash you entered."
-    : getVoteVerificationFailureMessage(result.reason);
-  ui.voteResultDetails.textContent = result.valid
-    ? `Wallet: ${result.wallet} | Proposal hash in signed message: ${result.proposal_hash || "--"} | Vote option: ${result.vote_option}`
-    : `Reason: ${result.reason || "UNKNOWN_ERROR"}`;
-  ui.voteResultBadge.classList.add(result.valid ? "is-success" : "is-error");
+function hideResult() {
+  ui.resultCard.hidden = true;
 }
 
-function hideProposalHashResult() {
-  ui.proposalHashResultCard.hidden = true;
+function setStatus(message, type) {
+  ui.status.textContent = message;
+  ui.status.classList.remove("is-success", "is-error");
+
+  if (type === "success" || type === "error") {
+    ui.status.classList.add(type === "success" ? "is-success" : "is-error");
+  }
 }
 
-function hideVoteResult() {
-  ui.voteResultCard.hidden = true;
+function setBusy(isBusy) {
+  ui.submitButton.disabled = isBusy;
+  ui.submitButton.textContent = isBusy ? "Checking..." : "Run Verification";
 }
 
 function getVoteVerificationFailureMessage(reason) {
@@ -183,7 +156,7 @@ function getVoteVerificationFailureMessage(reason) {
   }
 
   if (reason === "PROPOSAL_HASH_MISSING") {
-    return "This signed message does not contain a proposal hash, so it cannot be matched to the CSV proposal hash.";
+    return "This signed message does not contain a proposal hash.";
   }
 
   if (reason === "PROPOSAL_HASH_MISMATCH") {
@@ -191,34 +164,6 @@ function getVoteVerificationFailureMessage(reason) {
   }
 
   return "The vote could not be verified.";
-}
-
-function setProposalHashStatus(message, type) {
-  ui.proposalHashStatus.textContent = message;
-  ui.proposalHashStatus.classList.remove("is-success", "is-error");
-
-  if (type === "success" || type === "error") {
-    ui.proposalHashStatus.classList.add(type === "success" ? "is-success" : "is-error");
-  }
-}
-
-function setVoteStatus(message, type) {
-  ui.voteStatus.textContent = message;
-  ui.voteStatus.classList.remove("is-success", "is-error");
-
-  if (type === "success" || type === "error") {
-    ui.voteStatus.classList.add(type === "success" ? "is-success" : "is-error");
-  }
-}
-
-function setProposalHashBusy(isBusy) {
-  ui.proposalHashButton.disabled = isBusy;
-  ui.proposalHashButton.textContent = isBusy ? "Rebuilding..." : "Rebuild Proposal Hash";
-}
-
-function setVoteBusy(isBusy) {
-  ui.verifyVoteButton.disabled = isBusy;
-  ui.verifyVoteButton.textContent = isBusy ? "Verifying..." : "Verify Vote";
 }
 
 async function hashProposalPayload(proposalPayload) {
