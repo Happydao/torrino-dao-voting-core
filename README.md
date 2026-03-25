@@ -1,417 +1,281 @@
 # Torrino DAO Voting
 
-Transparent Solana governance voting with public CSV records, cryptographic vote verification, admin wallet authorization, and live GitHub publishing.
+Transparent Solana governance with:
 
-Live platform:
+- no vote fees
+- public CSV records
+- cryptographic vote signatures
+- public manual verification
+- up to 2 proposals live at the same time
+- support for custom voting models, including NFT-based and token snapshot-based governance
+
+Live links:
 
 - Voting app: `https://happydev.fi/torrino.dao.voting/`
 - Admin dashboard: `https://happydev.fi/torrino.dao.voting/admin`
 - Vote verifier: `https://happydev.fi/torrino.dao.voting/vote.verifier`
 
-## Overview
+## What Makes This Platform Different
 
-Torrino DAO Voting is a lightweight governance platform designed for communities that want:
+This platform is built around a simple idea:
 
-- wallet-based voting eligibility
-- transparent public results
-- verifiable off-chain vote signatures
-- simple admin operations
-- public auditability through CSV archives and open source code
+**governance should be readable, verifiable, and public.**
 
-The project is built for Solana communities and NFT-based governance models, but its operating model can also be useful for other DAOs that want a public, inspectable voting process without hiding the logic behind a closed backend.
+Instead of hiding votes inside a closed database, Torrino DAO Voting publishes each proposal as a public CSV file, stores a cryptographic signature for every vote, and gives anyone a public verifier tool to check vote integrity by hand.
 
-## Why This Project Exists
+The result is a governance system that is:
 
-Most community voting tools ask users to trust:
+- easy for users to understand
+- lightweight to use
+- free to vote with
+- transparent by design
+- externally auditable
 
-- a private database
-- an opaque admin panel
-- a hidden result calculation flow
+## Core Principles
 
-This project takes a different approach.
+### No Fees
 
-The trust model is based on:
+Users do not pay blockchain transaction fees to cast a vote.
 
-- public frontend code
-- public backend code
-- public proposal CSV files
-- public vote verification
-- cryptographic signatures tied to each vote
-- explicit admin wallet authorization on the server
+Each vote is signed with the wallet and then verified by the backend before it is recorded.
 
-The goal is not to hide governance. The goal is to make governance readable, inspectable, and externally verifiable.
+### Full Transparency
 
-## Core Features
+Every proposal generates a public CSV file.
 
-- NFT-based voting power calculation
-- wallet connection with Phantom or Solflare
-- support for multiple voting options
-- support for up to 2 parallel proposals in the same voting round
-- public live results dashboard
-- public governance history
-- public vote verifier page
-- admin-only proposal creation
-- admin-only proposal stop/reset
-- cryptographic admin confirmation for start and stop actions
-- automatic CSV generation per proposal
-- automatic GitHub sync during the vote lifecycle
+That file contains:
 
-## How Voting Power Works
+- proposal metadata
+- admin start proof
+- admin stop proof, if applicable
+- proposal payload hash
+- proposal title, description, and options
+- participation rates
+- live result percentages per option
+- every recorded vote row
+- signed message and signature for every vote
 
-The current Torrino DAO configuration uses two NFT collections:
+During voting, the CSV is automatically updated and pushed to GitHub every 10 minutes.
 
-- Torrino DAO Gen1: the full collection represents `90%` of total voting power
-- Solnauta Gen2: the full collection represents `10%` of total voting power
+### Cryptographic Verification
 
-Per-NFT weights are therefore:
+Every vote includes:
 
-- Torrino DAO Gen1: `90 / 500 = 0.18`
-- Solnauta Gen2: `10 / 888 = 0.011261261...`
+- wallet
+- signed message
+- signature
 
-Current total reference voting power in the app:
+The signed message is tied to:
 
-- `100`
+- the proposal file name
+- the `proposal_payload_hash`
+- the selected option
+- the wallet
+- the timestamp
 
-The backend keeps high decimal precision so the full Gen1 and Gen2 supply can reach the exact intended 90/10 split at quorum.
+This means a vote is not just recorded. It is also cryptographically linked to the exact proposal content being voted on.
 
-The backend calculates wallet eligibility and voting power by reading wallet assets from the configured Solana RPC source and matching them against the allowed collection addresses.
+## Proposal Payload Hash
 
-## Public Transparency Model
+Each proposal is hashed from this exact JSON structure:
 
-Each proposal creates a dedicated CSV file with a readable admin-defined name:
-
-```text
-data/<PROPOSAL_NAME>_<YYYY-MM-DD>.csv
+```json
+{
+  "title": "Treasury allocation Q2",
+  "description": "Should the DAO allocate 10% of the treasury to growth initiatives?",
+  "options": ["CONFIRMED", "REJECTED"]
+}
 ```
 
-That file is intended to be the public audit artifact for the vote.
+This `proposal_payload_hash` is saved in the CSV metadata and also included in the signed vote message.
 
-It includes:
+Why this matters:
 
-- proposal creator wallet
-- proposal creation timestamp
-- proposal signed message and signature
-- proposal status metadata
-- reset metadata, if voting is stopped by admin
-- proposal title and description
-- proposal options
-- participation metrics
-- every recorded vote row
-- signed message and signature for each vote
+- if the proposal text changes, the hash changes
+- if the hash in the signed message does not match the proposal, the vote fails verification
+- anyone can manually rebuild the hash and check it
 
-During the voting lifecycle, CSV files are pushed to GitHub automatically:
+## Manual Vote Verifier
 
-- initial proposal creation
-- periodic updates during the active vote
-- final state when voting completes
-- final state when an admin stops the vote
-
-This means the community can inspect both:
-
-- the current state of a vote
-- the published history of its result file
-
-When 2 proposals are active in the same round, each proposal keeps:
-
-- its own CSV file
-- its own vote signatures
-- its own results dashboard
-- its own NFT usage state
-
-## Vote Verification
-
-The project includes a public verifier page:
+The verifier page is public:
 
 ```text
 /vote.verifier
 ```
 
-The verifier allows any user to copy three values from a public CSV row:
+It is intentionally manual and transparent.
 
-- `wallet`
-- `signed_message`
-- `signature`
+A user can:
 
-and check whether the record is cryptographically valid.
+1. open the public CSV
+2. copy:
+   - `proposal_payload_hash`
+   - `proposal_title`
+   - `proposal_description`
+   - `proposal_options`
+   - `wallet`
+   - `signed_message`
+   - `signature`
+3. run one check
 
-The result is:
+The verifier then tells the user:
 
-- `TRUE` if the wallet really signed that vote message
-- `FALSE` if the row was altered, mismatched, or malformed
+- the rebuilt proposal hash
+- whether that hash matches the hash entered from the CSV
+- whether the same hash appears inside the signed message
+- whether the wallet signature is valid
 
-This gives the community an independent way to validate vote integrity without trusting the frontend or the admin.
+This means users do not need to trust the frontend, the admin, or even GitHub alone. They can verify vote integrity themselves.
 
-## Admin Security Model
+## Two Proposals In Parallel
 
-The admin page is public, but admin authority is not.
+The platform supports up to **2 active proposals at the same time**.
 
-Opening `admin.html` does not grant governance access.
+Each proposal keeps its own:
 
-Real protection happens on the backend:
+- CSV file
+- vote rows
+- signatures
+- live dashboard
+- NFT usage state
 
-- only whitelisted admin wallets are accepted
-- each admin action must include a valid wallet signature
-- proposal creation requires a signed action message bound to the proposal payload
-- proposal stop/reset requires a signed action message bound to the proposal id
-- the backend verifies wallet signatures before changing proposal state
+If both proposals are active:
 
-This means an external user cannot damage governance simply by discovering the admin URL.
+- users see both proposals clearly in the voting page
+- each proposal requires its own wallet confirmation
+- results are tracked separately
 
-### Admin actions currently protected
+## Voting Power Model
 
-- `Start Voting`
-- `Stop Voting`
+Torrino DAO currently uses two NFT collections:
 
-### Admin proof stored publicly
+- **Gen1** = fixed `90%` of total treasury voting power
+- **Gen2** = fixed `10%` of total treasury voting power
 
-For every proposal start and stop event, the system stores:
+Per-NFT weight:
 
-- admin wallet
-- signed message
-- signature
+- Gen1: `90 / 500 = 0.180000`
+- Gen2: `10 / 888 = 0.011261261...`
 
-inside the proposal CSV metadata, so the community can verify that the admin really executed the action.
+Maximum total voting power:
 
-## Vote Security Model
+- `100`
 
-Every submitted vote includes:
+The backend keeps enough precision to preserve the intended 90/10 split correctly at quorum.
 
-- wallet address
-- selected option
-- signed message
-- wallet signature
+## Not Limited To NFTs
 
-The backend verifies:
+The current live setup uses NFTs, but the platform concept is broader than that.
 
-- that the message format is valid
-- that the wallet inside the message matches the sender wallet
-- that the vote option matches the signed content
-- that the signature is valid for that wallet
-- that the message is recent enough for live vote submission
+It can also be adapted for:
 
-The backend then records the vote into the CSV and marks the eligible NFTs as used, preventing the same NFT from being counted twice.
+- governance based on fungible tokens
+- token-holder snapshots taken before a vote starts
+- allowlisted wallet voting
+- custom weight rules defined by the DAO
 
-## Hardware Wallet Note
+In other words, the same transparency and verification model can be reused for communities that do not vote with NFTs at all.
 
-The current vote flow depends on `signMessage`.
+For another DAO, the voting power source can be changed from NFT ownership to a snapshot of wallets holding a governance token, while keeping the same core benefits:
 
-Because of that:
+- no vote fees
+- public CSV records
+- signed votes
+- public verification
+- readable governance history
 
-- standard Phantom or Solflare software wallets work with the expected flow
-- some hardware wallet setups connected through Phantom or Solflare may not support message signing correctly
+## How A Vote Works
 
-For those cases, the frontend now returns a specific user-facing error instead of a generic failure.
+### Voter flow
 
-## User Flow
-
-### Regular voter
-
-1. Connect wallet with Phantom or Solflare
-2. The backend reads eligible NFTs
+1. Connect Phantom or Solflare
+2. The platform reads eligible NFTs
 3. Voting power is calculated
-4. The user can vote on 1 or 2 active proposals
-5. Each proposal vote requires its own wallet signature
-6. The backend validates the signature
-7. The vote is written into that proposal CSV
-8. Live results update publicly
+4. The user selects an option
+5. The wallet signs the vote message
+6. The backend verifies the signature
+7. The vote is written to the CSV
+8. Results update publicly
 
-### Admin
+If 2 proposals are active, the user signs once for each proposal they vote on.
 
-1. Connect authorized admin wallet
-2. Create 1 or 2 proposal slots with proposal file name, title, description, options, start time, end time
-3. Sign the admin action
-4. The backend verifies the admin signature
-5. New proposal CSV files are created
-6. CSV metadata is published and synced to GitHub
+### Admin flow
 
-If the admin stops a proposal:
+1. Connect an authorized admin wallet
+2. Create 1 or 2 proposals
+3. Set readable proposal file names
+4. Sign the admin start action
+5. The backend verifies the admin signature
+6. CSV files are created and published
 
-1. The current proposal is loaded
-2. The admin signs a stop action linked to that proposal
-3. The backend validates the signature
-4. The CSV is updated with reset metadata
-5. The final stopped state is published to GitHub
+If voting is stopped:
 
-## Main Pages
+1. The admin signs a stop action
+2. The backend verifies the signature
+3. The CSV is updated with reset metadata
+4. GitHub is updated with the final stopped state
 
-### Voting page
+## Admin Security
 
-Public interface for:
+The admin page is public, but admin power is not.
 
-- wallet connection
-- up to 2 active proposals
-- up to 2 live results dashboards
-- voting power view
-- governance history
-- transparency section
-- vote verifier entry point
+Backend protection is based on:
 
-### Admin page
+- whitelisted admin wallets
+- signed admin actions
+- signature verification before any state change
 
-Publicly accessible UI, but operationally restricted by backend wallet authorization.
+So knowing the admin URL is not enough to create or stop proposals.
 
-Provides:
+## Public CSV Format
 
-- admin wallet connection
-- 1 or 2 proposal creation slots
-- start voting action
-- stop voting action
-- countdown / in-progress reminder for active or scheduled proposals
-
-### Vote verifier page
-
-Public self-service tool for:
-
-- verifying a vote row from CSV
-- checking signature authenticity
-- confirming that a vote was not manipulated
-
-## Architecture
-
-This project is intentionally simple.
-
-### Frontend
-
-Static files in `public/`:
-
-- `index.html`
-- `admin.html`
-- `vote.verifier.html`
-- `app.js`
-- `admin.js`
-- `vote-verifier.js`
-- `style.css`
-
-### Backend
-
-Single Node.js server:
-
-- `server.js`
-
-Responsibilities:
-
-- serve static files
-- handle wallet NFT lookup
-- validate vote signatures
-- validate admin signatures
-- persist proposal CSV data
-- publish updates to GitHub
-- expose verification endpoints
-
-### Data storage
-
-- active proposal state: `data/proposal.json`
-- used NFT registry: `data/used-mints.json`
-- public proposal archives: `data/<PROPOSAL_NAME>_<YYYY-MM-DD>.csv`
-
-## API Endpoints
-
-### Public
-
-- `GET /api/wallet-nfts?address=<WALLET>`
-- `GET /api/proposal`
-- `GET /api/results`
-- `POST /api/vote`
-- `POST /api/verify-vote-record`
-
-### Admin
-
-- `POST /api/admin/proposal`
-- `POST /api/admin/reset-voting`
-
-## Environment
-
-Required environment variables:
-
-- `HELIUS_RPC`
-
-Optional:
-
-- `PORT`
-- `ADMIN_WALLET`
-
-The code also includes a secondary admin wallet constant in the server configuration.
-
-## Local Development
-
-### Requirements
-
-- Node.js
-- a Solana RPC endpoint
-- git configured on the host if GitHub sync is enabled
-
-### Install and run
-
-```bash
-npm install
-npm start
-```
-
-Then open:
+Each proposal is published as:
 
 ```text
-http://localhost:3000
+data/<PROPOSAL_NAME>_<YYYY-MM-DD>.csv
 ```
 
-## Production Notes
+This keeps governance history readable both on the server and on GitHub.
 
-The live deployment typically uses:
+The same readable CSV name is also used across the user interface, verifier, and vote signed messages.
 
-- Nginx for public routing
-- PM2 for the Node.js process
+## Why This Matters
 
-Important routing note:
+Many voting systems ask the community to trust the platform.
 
-- frontend pages can be served directly by Nginx
-- API paths must proxy to the Node backend
-- custom pages such as `/vote.verifier` may require an explicit Nginx route or redirect depending on your static file setup
+Torrino DAO Voting tries to reduce that trust as much as possible by making the process public:
 
-## Recommended Public Repository Contents
+- open source code
+- public CSV files
+- public results
+- manual verifier
+- cryptographic signatures
+- no fees for voters
 
-Recommended to keep public:
+The goal is simple:
 
-- `public/`
-- `server.js`
-- `README.md`
-- proposal CSV files under `data/`
+**make governance easy to use, but hard to fake.**
 
-Recommended to keep private:
+## Project Structure
 
-- `.env`
-- `node_modules/`
-- `data/used-mints.json`
-- any local operational secrets
+```text
+public/
+  index.html              Public voting page
+  admin.html              Admin dashboard
+  vote.verifier.html      Manual verification page
+  app.js                  Voting frontend logic
+  admin.js                Admin frontend logic
+  vote-verifier.js        Verifier frontend logic
+  style.css               Shared styles
 
-`used-mints.json` is internal runtime state. The public transparency artifact is the proposal CSV.
+data/                     Proposal CSV files
+server.js                 Node backend
+README.md
+LICENSE
+```
 
-## What Makes This Useful For Other DAOs
+## License
 
-This project may be useful for other Solana communities that want:
+This project is open-source under the Apache License 2.0.
 
-- a visible and understandable voting process
-- lightweight operations without a heavy governance stack
-- cryptographic proof of both votes and admin actions
-- public CSV archives instead of hidden result tables
-- a verifier page the community can use without asking the admin
-
-It is especially relevant for DAO teams that want a custom governance surface while preserving strong transparency.
-
-## Limitations
-
-- voting is off-chain, even if signatures are cryptographically verifiable
-- final trust still depends on operating the backend honestly and publishing updates as designed
-- hardware wallet support for `signMessage` is not universal
-- current logic is tailored to the Torrino DAO collections and weights
-
-## Summary
-
-Torrino DAO Voting is not trying to hide governance complexity behind a closed admin panel.
-
-It turns governance into something the community can:
-
-- read
-- inspect
-- verify
-- archive
-
-That is the core design principle of the project.
+See [LICENSE](./LICENSE).
