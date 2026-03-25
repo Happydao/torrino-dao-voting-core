@@ -996,6 +996,63 @@ p {
   margin-top: 20px;
 }
 
+.verifier-field-group {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(169, 191, 255, 0.12);
+}
+
+.verifier-field-group--proposal {
+  background: linear-gradient(180deg, rgba(24, 45, 89, 0.72), rgba(18, 34, 68, 0.68));
+  border-color: rgba(123, 210, 255, 0.22);
+}
+
+.verifier-field-group--vote {
+  background: linear-gradient(180deg, rgba(14, 25, 49, 0.92), rgba(11, 20, 41, 0.88));
+}
+
+.verifier-field-group__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.verifier-field-group__icon {
+  min-width: 52px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(107, 211, 255, 0.16);
+  border: 1px solid rgba(123, 210, 255, 0.28);
+  color: #b8ecff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-align: center;
+}
+
+.verifier-field-group--vote .verifier-field-group__icon {
+  background: rgba(169, 191, 255, 0.1);
+  border-color: rgba(169, 191, 255, 0.16);
+  color: #dbe5ff;
+}
+
+.verifier-field-group__title {
+  margin: 0;
+  color: #f5f7ff;
+  font-size: 0.98rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.verifier-field-group__copy {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
 .verifier-form .admin-field span {
   color: var(--muted);
   font-size: 0.82rem;

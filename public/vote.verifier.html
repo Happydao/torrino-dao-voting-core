@@ -91,34 +91,56 @@
         </p>
 
         <form id="unifiedVerifierForm" class="verifier-form">
-          <label class="admin-field admin-field--full">
-            <span>Proposal payload hash</span>
-            <input id="verifyProposalHashInput" type="text" autocomplete="off" spellcheck="false" placeholder="Paste proposal_payload_hash from the CSV metadata" />
-          </label>
-          <label class="admin-field admin-field--full">
-            <span>Proposal title</span>
-            <input id="verifyProposalTitleInput" type="text" autocomplete="off" spellcheck="false" placeholder="Paste proposal_title exactly as written in the CSV" />
-          </label>
-          <label class="admin-field admin-field--full">
-            <span>Proposal description</span>
-            <textarea id="verifyProposalDescriptionInput" rows="4" spellcheck="false" placeholder="Paste proposal_description exactly as written in the CSV"></textarea>
-          </label>
-          <label class="admin-field admin-field--full">
-            <span>Proposal options</span>
-            <textarea id="verifyProposalOptionsInput" rows="4" spellcheck="false" placeholder="Paste proposal_options exactly as in the CSV (example: 1 | 2 | 3) or one option per line"></textarea>
-          </label>
-          <label class="admin-field admin-field--full">
-            <span>Wallet</span>
-            <input id="verifyWalletInput" type="text" autocomplete="off" spellcheck="false" placeholder="Paste the wallet from the CSV row" />
-          </label>
-          <label class="admin-field admin-field--full">
-            <span>Signed message</span>
-            <textarea id="verifySignedMessageInput" rows="5" spellcheck="false" placeholder="Paste the full signed_message exactly as shown in the CSV"></textarea>
-          </label>
-          <label class="admin-field admin-field--full">
-            <span>Signature</span>
-            <textarea id="verifySignatureInput" rows="3" spellcheck="false" placeholder="Paste the full signature exactly as shown in the CSV"></textarea>
-          </label>
+          <div class="verifier-field-group verifier-field-group--proposal">
+            <div class="verifier-field-group__header">
+              <span class="verifier-field-group__icon" aria-hidden="true">LOCK</span>
+              <div>
+                <p class="verifier-field-group__title">Set Once For This Proposal</p>
+                <p class="verifier-field-group__copy">These fields usually stay the same while you verify multiple vote rows from the same CSV.</p>
+              </div>
+            </div>
+
+            <label class="admin-field admin-field--full">
+              <span>Proposal payload hash</span>
+              <input id="verifyProposalHashInput" type="text" autocomplete="off" spellcheck="false" placeholder="Paste proposal_payload_hash from the CSV metadata" />
+            </label>
+            <label class="admin-field admin-field--full">
+              <span>Proposal title</span>
+              <input id="verifyProposalTitleInput" type="text" autocomplete="off" spellcheck="false" placeholder="Paste proposal_title exactly as written in the CSV" />
+            </label>
+            <label class="admin-field admin-field--full">
+              <span>Proposal description</span>
+              <textarea id="verifyProposalDescriptionInput" rows="4" spellcheck="false" placeholder="Paste proposal_description exactly as written in the CSV"></textarea>
+            </label>
+            <label class="admin-field admin-field--full">
+              <span>Proposal options</span>
+              <textarea id="verifyProposalOptionsInput" rows="4" spellcheck="false" placeholder="Paste proposal_options exactly as in the CSV (example: 1 | 2 | 3) or one option per line"></textarea>
+            </label>
+          </div>
+
+          <div class="verifier-field-group verifier-field-group--vote">
+            <div class="verifier-field-group__header">
+              <span class="verifier-field-group__icon" aria-hidden="true">ROW</span>
+              <div>
+                <p class="verifier-field-group__title">Change For Each Vote Row</p>
+                <p class="verifier-field-group__copy">When you verify the next vote, you usually only replace wallet, signed message and signature.</p>
+              </div>
+            </div>
+
+            <label class="admin-field admin-field--full">
+              <span>Wallet</span>
+              <input id="verifyWalletInput" type="text" autocomplete="off" spellcheck="false" placeholder="Paste the wallet from the CSV row" />
+            </label>
+            <label class="admin-field admin-field--full">
+              <span>Signed message</span>
+              <textarea id="verifySignedMessageInput" rows="5" spellcheck="false" placeholder="Paste the full signed_message exactly as shown in the CSV"></textarea>
+            </label>
+            <label class="admin-field admin-field--full">
+              <span>Signature</span>
+              <textarea id="verifySignatureInput" rows="3" spellcheck="false" placeholder="Paste the full signature exactly as shown in the CSV"></textarea>
+            </label>
+          </div>
+
           <div class="verifier-actions">
             <button id="verifyUnifiedButton" class="admin-button admin-button--primary verifier-submit-button" type="submit">
               Run Verification
