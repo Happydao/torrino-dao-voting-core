@@ -1,10 +1,13 @@
 const APP_BASE_PATH = "/torrino.dao.voting";
 const VERIFY_VOTE_ENDPOINT = `${APP_BASE_PATH}/api/verify-vote-record`;
-const VERIFY_PROPOSAL_HASH_ENDPOINT = `${APP_BASE_PATH}/api/verify-proposal-hash`;
+const textEncoder = new TextEncoder();
 
 const ui = {
   proposalHashForm: document.getElementById("proposalHashVerifierForm"),
   proposalHashInput: document.getElementById("verifyProposalHashInput"),
+  proposalTitleInput: document.getElementById("verifyProposalTitleInput"),
+  proposalDescriptionInput: document.getElementById("verifyProposalDescriptionInput"),
+  proposalOptionsInput: document.getElementById("verifyProposalOptionsInput"),
   proposalHashButton: document.getElementById("verifyProposalHashButton"),
   proposalHashStatus: document.getElementById("proposalHashStatus"),
   proposalHashResultCard: document.getElementById("proposalHashResultCard"),
@@ -34,42 +37,46 @@ async function handleProposalHashVerification(event) {
   event.preventDefault();
 
   const proposalPayloadHash = ui.proposalHashInput.value.trim().toLowerCase();
+  const proposalTitle = ui.proposalTitleInput.value.trim();
+  const proposalDescription = ui.proposalDescriptionInput.value.trim();
+  const proposalOptions = ui.proposalOptionsInput.value
+    .split("\n")
+    .map((option) => option.trim())
+    .filter(Boolean);
 
-  if (!proposalPayloadHash) {
-    setProposalHashStatus("Paste proposal_payload_hash from the CSV metadata.", "error");
+  if (!proposalPayloadHash || !proposalTitle || !proposalDescription || proposalOptions.length === 0) {
+    setProposalHashStatus("Fill in proposal_payload_hash, title, description and at least one option.", "error");
     hideProposalHashResult();
     return;
   }
 
   try {
     setProposalHashBusy(true);
-    setProposalHashStatus("Verifying proposal hash...", "");
+    setProposalHashStatus("Rebuilding proposal hash...", "");
     hideProposalHashResult();
 
-    const response = await fetch(VERIFY_PROPOSAL_HASH_ENDPOINT, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        proposal_payload_hash: proposalPayloadHash,
-      }),
+    const proposalPayload = {
+      title: proposalTitle,
+      description: proposalDescription,
+      options: proposalOptions,
+    };
+    const calculatedHash = await hashProposalPayload(proposalPayload);
+    const matches = calculatedHash === proposalPayloadHash;
+
+    renderProposalHashResult({
+      valid: matches,
+      expected_hash: proposalPayloadHash,
+      calculated_hash: calculatedHash,
+      proposal_payload: proposalPayload,
     });
-    const payload = await response.json().catch(() => null);
-
-    if (!response.ok || !payload) {
-      throw new Error(payload && payload.error ? payload.error : "SERVER_ERROR");
-    }
-
-    renderProposalHashResult(payload);
     setProposalHashStatus(
-      payload.valid
-        ? "Proposal hash verified successfully."
-        : "Proposal hash not found or does not match the published CSV metadata.",
-      payload.valid ? "success" : "error"
+      matches
+        ? "Proposal hash rebuilt successfully. It matches the CSV hash you entered."
+        : "The rebuilt proposal hash does not match the proposal_payload_hash you entered.",
+      matches ? "success" : "error"
     );
 
-    if (payload.valid) {
-      ui.proposalHashForVote.value = proposalPayloadHash;
-    }
+    ui.proposalHashForVote.value = proposalPayloadHash;
   } catch (error) {
     console.error(error);
     hideProposalHashResult();
@@ -136,28 +143,23 @@ function renderProposalHashResult(result) {
   ui.proposalHashResultBadge.classList.remove("is-success", "is-error");
   ui.proposalHashResultHeadline.textContent = result.valid ? "TRUE" : "FALSE";
   ui.proposalHashResultMessage.textContent = result.valid
-    ? "The proposal hash matches the published proposal content stored in the CSV."
-    : getProposalHashFailureMessage(result.reason);
-  ui.proposalHashResultDetails.textContent = result.valid
-    ? `CSV file: ${result.csv_file_name || "--"}`
-    : `Reason: ${result.reason || "UNKNOWN_ERROR"}`;
-  ui.proposalHashResultPayload.textContent = result.valid
-    ? JSON.stringify(result.proposal_payload, null, 2)
-    : "";
+    ? "The title, description and options you entered generate the same proposal hash written in the CSV."
+    : "The title, description and options you entered do not generate the same proposal hash written in the CSV.";
+  ui.proposalHashResultDetails.textContent = `Entered hash: ${result.expected_hash || "--"} | Calculated hash: ${result.calculated_hash || "--"}`;
+  ui.proposalHashResultPayload.textContent = JSON.stringify(result.proposal_payload, null, 2);
   ui.proposalHashResultBadge.classList.add(result.valid ? "is-success" : "is-error");
 }
 
 function renderVoteVerificationResult(result) {
-  const csvFileName = result.csv_file_name || result.proposal_id || "--";
   ui.voteResultCard.hidden = false;
   ui.voteResultBadge.textContent = "Vote verification result";
   ui.voteResultBadge.classList.remove("is-success", "is-error");
   ui.voteResultHeadline.textContent = result.valid ? "TRUE" : "FALSE";
   ui.voteResultMessage.textContent = result.valid
-    ? "The signature is valid, and the vote row points to the same proposal hash published in the CSV."
+    ? "The signature is valid, and the signed message contains the same proposal hash you entered."
     : getVoteVerificationFailureMessage(result.reason);
   ui.voteResultDetails.textContent = result.valid
-    ? `CSV file: ${csvFileName} | Wallet: ${result.wallet} | Proposal hash: ${result.proposal_hash || "--"} | Vote option: ${result.vote_option}`
+    ? `Wallet: ${result.wallet} | Proposal hash in signed message: ${result.proposal_hash || "--"} | Vote option: ${result.vote_option}`
     : `Reason: ${result.reason || "UNKNOWN_ERROR"}`;
   ui.voteResultBadge.classList.add(result.valid ? "is-success" : "is-error");
 }
@@ -168,14 +170,6 @@ function hideProposalHashResult() {
 
 function hideVoteResult() {
   ui.voteResultCard.hidden = true;
-}
-
-function getProposalHashFailureMessage(reason) {
-  if (reason === "PROPOSAL_HASH_NOT_FOUND") {
-    return "The proposal hash was not found in the published CSV files, or the proposal content does not match that hash.";
-  }
-
-  return "The proposal hash could not be verified.";
 }
 
 function getVoteVerificationFailureMessage(reason) {
@@ -195,12 +189,8 @@ function getVoteVerificationFailureMessage(reason) {
     return "This signed message does not contain a proposal hash, so it cannot be matched to the CSV proposal hash.";
   }
 
-  if (reason === "PROPOSAL_HASH_NOT_FOUND") {
-    return "The proposal hash you entered was not found in the published CSV files.";
-  }
-
   if (reason === "PROPOSAL_HASH_MISMATCH") {
-    return "The proposal hash inside the signed message does not match the proposal hash copied from the CSV metadata.";
+    return "The proposal hash inside the signed message does not match the proposal hash you entered.";
   }
 
   return "The vote could not be verified.";
@@ -226,10 +216,25 @@ function setVoteStatus(message, type) {
 
 function setProposalHashBusy(isBusy) {
   ui.proposalHashButton.disabled = isBusy;
-  ui.proposalHashButton.textContent = isBusy ? "Verifying..." : "Verify Proposal Hash";
+  ui.proposalHashButton.textContent = isBusy ? "Rebuilding..." : "Rebuild Proposal Hash";
 }
 
 function setVoteBusy(isBusy) {
   ui.verifyVoteButton.disabled = isBusy;
   ui.verifyVoteButton.textContent = isBusy ? "Verifying..." : "Verify Vote";
+}
+
+async function hashProposalPayload(proposalPayload) {
+  const normalizedPayload = {
+    title: String(proposalPayload && proposalPayload.title ? proposalPayload.title : ""),
+    description: String(proposalPayload && proposalPayload.description ? proposalPayload.description : ""),
+    options: Array.isArray(proposalPayload && proposalPayload.options)
+      ? proposalPayload.options.map((option) => String(option || ""))
+      : [],
+  };
+  const payloadText = JSON.stringify(normalizedPayload);
+  const digest = await crypto.subtle.digest("SHA-256", textEncoder.encode(payloadText));
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
 }

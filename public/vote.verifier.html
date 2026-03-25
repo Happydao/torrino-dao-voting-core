@@ -61,9 +61,9 @@
           </article>
           <article class="results-stat">
             <span class="label">Step 2</span>
-            <strong>Verify the proposal hash first</strong>
+            <strong>Rebuild the proposal hash manually</strong>
             <span class="results-stat__detail">
-              In the CSV metadata, copy <span class="mono-inline">proposal_payload_hash</span>. Paste it below to reveal the proposal title, description and options bound to that hash.
+              In the CSV metadata and proposal block, copy <span class="mono-inline">proposal_payload_hash</span>, <span class="mono-inline">proposal_title</span>, <span class="mono-inline">proposal_description</span> and the proposal options exactly as written.
             </span>
           </article>
           <article class="results-stat">
@@ -77,7 +77,7 @@
             <span class="label">Step 4</span>
             <strong>Verify the vote row</strong>
             <span class="results-stat__detail">
-              Paste the vote data and the same <span class="mono-inline">proposal_payload_hash</span>. The verifier checks both the wallet signature and that the hash inside the signed message matches the hash published in the CSV.
+              Paste the vote data and the same <span class="mono-inline">proposal_payload_hash</span>. The verifier checks the wallet signature and confirms that the hash inside the signed message is the same hash you rebuilt manually.
             </span>
           </article>
         </div>
@@ -85,9 +85,9 @@
 
       <section class="proposal-card verifier-card">
         <p class="proposal-tag">Proposal Hash Verification</p>
-        <h2>Check the published proposal content</h2>
+        <h2>Rebuild the proposal hash manually</h2>
         <p class="proposal-copy">
-          Use this first. Paste the <span class="mono-inline">proposal_payload_hash</span> from the CSV metadata. If it is valid, the tool will show the exact proposal title, description and options bound to that hash.
+          Use this first. Copy the proposal title, description and options from the CSV, paste them here exactly as published, then compare the generated hash with the <span class="mono-inline">proposal_payload_hash</span> written in the CSV metadata. If they match, the proposal text was not changed.
         </p>
 
         <form id="proposalHashVerifierForm" class="verifier-form">
@@ -95,9 +95,21 @@
             <span>Proposal payload hash</span>
             <input id="verifyProposalHashInput" type="text" autocomplete="off" spellcheck="false" placeholder="Paste proposal_payload_hash from the CSV metadata" />
           </label>
+          <label class="admin-field admin-field--full">
+            <span>Proposal title</span>
+            <input id="verifyProposalTitleInput" type="text" autocomplete="off" spellcheck="false" placeholder="Paste proposal_title exactly as written in the CSV" />
+          </label>
+          <label class="admin-field admin-field--full">
+            <span>Proposal description</span>
+            <textarea id="verifyProposalDescriptionInput" rows="4" spellcheck="false" placeholder="Paste proposal_description exactly as written in the CSV"></textarea>
+          </label>
+          <label class="admin-field admin-field--full">
+            <span>Proposal options</span>
+            <textarea id="verifyProposalOptionsInput" rows="5" spellcheck="false" placeholder="Paste one option per line, in the exact same order as the proposal"></textarea>
+          </label>
           <div class="verifier-actions">
             <button id="verifyProposalHashButton" class="admin-button admin-button--primary verifier-submit-button" type="submit">
-              Verify Proposal Hash
+              Rebuild Proposal Hash
             </button>
           </div>
         </form>
@@ -117,7 +129,7 @@
         <p class="proposal-tag">Vote Verification</p>
         <h2>Check one CSV row</h2>
         <p class="proposal-copy">
-          Use this after the proposal hash check. Paste the vote row values and the same <span class="mono-inline">proposal_payload_hash</span> from the CSV metadata. The tool checks that the signature matches the wallet and that the hash inside the signed message points to the same published proposal content.
+          Use this after rebuilding the proposal hash above. Paste the vote row values and the same <span class="mono-inline">proposal_payload_hash</span> from the CSV metadata. The tool checks that the signature matches the wallet and that the same hash is written inside the signed message.
         </p>
 
         <form id="voteVerifierForm" class="verifier-form">

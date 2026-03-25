@@ -476,18 +476,8 @@ async function handleVerifyVoteRecord(req, res) {
   const signature = getString(body.signature);
   const proposalPayloadHash = getString(body.proposal_payload_hash).toLowerCase();
   const verification = verifyVoteRecordSignature(wallet, signedMessage, signature);
-  const proposalHashMatch = proposalPayloadHash ? findProposalByPayloadHash(proposalPayloadHash) : null;
 
   if (verification.valid && proposalPayloadHash) {
-    if (!proposalHashMatch) {
-      sendJson(res, 200, {
-        ...verification,
-        valid: false,
-        reason: "PROPOSAL_HASH_NOT_FOUND",
-      });
-      return;
-    }
-
     if (!verification.proposal_hash) {
       sendJson(res, 200, {
         ...verification,
@@ -505,14 +495,6 @@ async function handleVerifyVoteRecord(req, res) {
       });
       return;
     }
-
-    sendJson(res, 200, {
-      ...verification,
-      csv_file_name: proposalHashMatch.csv_file_name,
-      proposal_payload_hash: proposalPayloadHash,
-      proposal_payload: buildProposalPayloadForHash(proposalHashMatch.proposal),
-    });
-    return;
   }
 
   sendJson(res, 200, verification);
