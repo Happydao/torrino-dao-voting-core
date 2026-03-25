@@ -124,6 +124,11 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (requestUrl.pathname === "/api/verify-proposal-hash") {
+      await handleVerifyProposalHash(req, res);
+      return;
+    }
+
     if (req.method !== "GET" && req.method !== "HEAD") {
       sendJson(res, 405, { error: "METHOD_NOT_ALLOWED" });
       return;
@@ -469,9 +474,82 @@ async function handleVerifyVoteRecord(req, res) {
   const wallet = getString(body.wallet);
   const signedMessage = getString(body.signed_message);
   const signature = getString(body.signature);
+  const proposalPayloadHash = getString(body.proposal_payload_hash).toLowerCase();
   const verification = verifyVoteRecordSignature(wallet, signedMessage, signature);
+  const proposalHashMatch = proposalPayloadHash ? findProposalByPayloadHash(proposalPayloadHash) : null;
+
+  if (verification.valid && proposalPayloadHash) {
+    if (!proposalHashMatch) {
+      sendJson(res, 200, {
+        ...verification,
+        valid: false,
+        reason: "PROPOSAL_HASH_NOT_FOUND",
+      });
+      return;
+    }
+
+    if (!verification.proposal_hash) {
+      sendJson(res, 200, {
+        ...verification,
+        valid: false,
+        reason: "PROPOSAL_HASH_MISSING",
+      });
+      return;
+    }
+
+    if (verification.proposal_hash !== proposalPayloadHash) {
+      sendJson(res, 200, {
+        ...verification,
+        valid: false,
+        reason: "PROPOSAL_HASH_MISMATCH",
+      });
+      return;
+    }
+
+    sendJson(res, 200, {
+      ...verification,
+      csv_file_name: proposalHashMatch.csv_file_name,
+      proposal_payload_hash: proposalPayloadHash,
+      proposal_payload: buildProposalPayloadForHash(proposalHashMatch.proposal),
+    });
+    return;
+  }
 
   sendJson(res, 200, verification);
+}
+
+async function handleVerifyProposalHash(req, res) {
+  if (req.method !== "POST") {
+    sendJson(res, 405, { error: "METHOD_NOT_ALLOWED" });
+    return;
+  }
+
+  const body = await readJsonBody(req);
+  const proposalPayloadHash = getString(body.proposal_payload_hash).toLowerCase();
+
+  if (!/^[a-f0-9]{64}$/.test(proposalPayloadHash)) {
+    sendJson(res, 400, { error: "INVALID_PROPOSAL_HASH" });
+    return;
+  }
+
+  try {
+    const match = findProposalByPayloadHash(proposalPayloadHash);
+
+    if (!match) {
+      sendJson(res, 200, { valid: false, reason: "PROPOSAL_HASH_NOT_FOUND" });
+      return;
+    }
+
+    sendJson(res, 200, {
+      valid: true,
+      proposal_payload_hash: proposalPayloadHash,
+      csv_file_name: match.csv_file_name,
+      proposal_payload: buildProposalPayloadForHash(match.proposal),
+    });
+  } catch (error) {
+    console.error(error);
+    sendJson(res, 500, { error: "SERVER_ERROR" });
+  }
 }
 
 async function getAllAssetsByOwner(ownerAddress) {
@@ -1918,6 +1996,71 @@ function readUsedMintsFromCsv(proposal) {
   return usedMints;
 }
 
+function findProposalByPayloadHash(proposalPayloadHash) {
+  ensureDataDir();
+  const fileNames = fs.readdirSync(DATA_DIR).filter((fileName) => fileName.endsWith(".csv"));
+
+  for (const fileName of fileNames) {
+    const filePath = path.join(DATA_DIR, fileName);
+    const metadata = readProposalMetadataFromCsvFile(filePath);
+
+    if (!metadata.proposal_payload_hash) {
+      continue;
+    }
+
+    const proposal = {
+      title: metadata.proposal_title || "",
+      description: metadata.proposal_description || "",
+      options: metadata.proposal_options
+        ? metadata.proposal_options.split(" | ").map((item) => item.trim()).filter(Boolean)
+        : [],
+    };
+    const recalculatedHash = hashProposalPayload(proposal);
+
+    if (
+      metadata.proposal_payload_hash.toLowerCase() === proposalPayloadHash &&
+      recalculatedHash === proposalPayloadHash
+    ) {
+      return {
+        csv_file_name: fileName,
+        proposal,
+      };
+    }
+  }
+
+  return null;
+}
+
+function readProposalMetadataFromCsvFile(filePath) {
+  const metadata = {};
+
+  if (!filePath || !fs.existsSync(filePath)) {
+    return metadata;
+  }
+
+  const records = splitCsvRecords(fs.readFileSync(filePath, "utf8"));
+
+  for (const record of records) {
+    if (!record || record.startsWith("wallet,")) {
+      break;
+    }
+
+    const columns = parseCsvColumns(record);
+    if (columns.length < 2) {
+      continue;
+    }
+
+    const key = getString(columns[0]);
+    const value = columns.slice(1).join(",");
+
+    if (key) {
+      metadata[key] = value;
+    }
+  }
+
+  return metadata;
+}
+
 function extractMintFromStoredValue(value) {
   const normalizedValue = getString(value);
 
@@ -2251,7 +2394,7 @@ function serveStaticFile(requestPath, res, headOnly) {
 }
 
 function isRateLimited(req, pathname) {
-  if (!["/api/wallet-nfts", "/api/vote", "/api/admin/challenge", "/api/admin/proposal", "/api/admin/reset-voting", "/api/verify-vote-record"].includes(pathname)) {
+  if (!["/api/wallet-nfts", "/api/vote", "/api/admin/challenge", "/api/admin/proposal", "/api/admin/reset-voting", "/api/verify-vote-record", "/api/verify-proposal-hash"].includes(pathname)) {
     return false;
   }
 

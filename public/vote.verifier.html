@@ -31,7 +31,7 @@
             <h1 class="title">VOTE VERIFIER</h1>
           </div>
           <p class="tagline">
-            Verify for yourself that a vote recorded in the public CSV was really signed by the wallet that cast it.
+            Verify for yourself that a proposal hash matches the published proposal data, and that a vote recorded in the public CSV was really signed by the wallet that cast it.
           </p>
         </div>
 
@@ -42,13 +42,13 @@
 
       <section class="results-card verifier-guide">
         <p class="proposal-tag">How To Verify</p>
-        <h2>Public verification in 3 steps</h2>
+        <h2>Public verification in 4 steps</h2>
         <div class="verifier-steps">
           <article class="results-stat">
             <span class="label">Step 1</span>
             <strong>Open the public CSV</strong>
             <span class="results-stat__detail">
-              Go to the GitHub data folder and open the CSV file for the proposal you want to inspect.
+              Open the GitHub CSV archive and choose the proposal file you want to inspect.
             </span>
             <a
               class="chip chip--ghost verifier-step-link"
@@ -61,30 +61,70 @@
           </article>
           <article class="results-stat">
             <span class="label">Step 2</span>
-            <strong>Copy one vote row</strong>
+            <strong>Verify the proposal hash first</strong>
             <span class="results-stat__detail">
-              In the same row, copy the wallet, the signed message and the signature exactly as they appear.
+              In the CSV metadata, copy <span class="mono-inline">proposal_payload_hash</span>. Paste it below to reveal the proposal title, description and options bound to that hash.
             </span>
           </article>
           <article class="results-stat">
             <span class="label">Step 3</span>
-            <strong>Run the verifier</strong>
+            <strong>Copy one vote row</strong>
             <span class="results-stat__detail">
-              Paste the three values below and click verify. You will get <span class="mono-inline">TRUE</span>
-              if the row is authentic, or <span class="mono-inline">FALSE</span> if something was altered.
+              In the same vote row, copy <span class="mono-inline">wallet</span>, <span class="mono-inline">signed_message</span> and <span class="mono-inline">signature</span> exactly as they appear.
+            </span>
+          </article>
+          <article class="results-stat">
+            <span class="label">Step 4</span>
+            <strong>Verify the vote row</strong>
+            <span class="results-stat__detail">
+              Paste the vote data and the same <span class="mono-inline">proposal_payload_hash</span>. The verifier checks both the wallet signature and that the hash inside the signed message matches the hash published in the CSV.
             </span>
           </article>
         </div>
       </section>
 
       <section class="proposal-card verifier-card">
+        <p class="proposal-tag">Proposal Hash Verification</p>
+        <h2>Check the published proposal content</h2>
+        <p class="proposal-copy">
+          Use this first. Paste the <span class="mono-inline">proposal_payload_hash</span> from the CSV metadata. If it is valid, the tool will show the exact proposal title, description and options bound to that hash.
+        </p>
+
+        <form id="proposalHashVerifierForm" class="verifier-form">
+          <label class="admin-field admin-field--full">
+            <span>Proposal payload hash</span>
+            <input id="verifyProposalHashInput" type="text" autocomplete="off" spellcheck="false" placeholder="Paste proposal_payload_hash from the CSV metadata" />
+          </label>
+          <div class="verifier-actions">
+            <button id="verifyProposalHashButton" class="admin-button admin-button--primary verifier-submit-button" type="submit">
+              Verify Proposal Hash
+            </button>
+          </div>
+        </form>
+
+        <div id="proposalHashResultCard" class="verifier-result" hidden>
+          <p id="proposalHashResultBadge" class="feedback-modal__badge">Proposal hash result</p>
+          <h3 id="proposalHashResultHeadline" class="feedback-modal__headline">TRUE</h3>
+          <p id="proposalHashResultMessage" class="modal__lead feedback-modal__message"></p>
+          <p id="proposalHashResultDetails" class="verifier-result__details"></p>
+          <pre id="proposalHashResultPayload" class="verifier-result__details verifier-result__payload"></pre>
+        </div>
+
+        <p id="proposalHashStatus" class="admin-feedback" aria-live="polite"></p>
+      </section>
+
+      <section class="proposal-card verifier-card">
         <p class="proposal-tag">Vote Verification</p>
         <h2>Check one CSV row</h2>
         <p class="proposal-copy">
-          This tool verifies the cryptographic integrity of a vote record. It checks that the signature matches the wallet and the signed message stored in the CSV.
+          Use this after the proposal hash check. Paste the vote row values and the same <span class="mono-inline">proposal_payload_hash</span> from the CSV metadata. The tool checks that the signature matches the wallet and that the hash inside the signed message points to the same published proposal content.
         </p>
 
         <form id="voteVerifierForm" class="verifier-form">
+          <label class="admin-field admin-field--full">
+            <span>Proposal payload hash from CSV</span>
+            <input id="verifyVoteProposalHashInput" type="text" autocomplete="off" spellcheck="false" placeholder="Paste the same proposal_payload_hash used above" />
+          </label>
           <label class="admin-field admin-field--full">
             <span>Wallet</span>
             <input id="verifyWalletInput" type="text" autocomplete="off" spellcheck="false" placeholder="Paste the wallet from the CSV row" />
