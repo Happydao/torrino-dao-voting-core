@@ -8,15 +8,19 @@
     <link rel="apple-touch-icon" href="torrino-dao.png" />
     <meta
       name="description"
-      content="Public Torrino DAO governance interface with verifiable off-chain voting."
+      content="No Fees • No Manipulation • Full Transparency. Public Torrino DAO governance with verifiable off-chain voting."
     />
+    <meta property="og:type" content="website" />
     <meta property="og:title" content="Torrino DAO Voting" />
-    <meta property="og:description" content="Public Torrino DAO governance interface with verifiable off-chain voting." />
-    <meta property="og:image" content="torrino-dao.png" />
+    <meta property="og:description" content="No Fees • No Manipulation • Full Transparency. Public Torrino DAO governance with verifiable off-chain voting." />
+    <meta property="og:image" content="https://happydev.fi/torrino.dao.voting/OGimage.jpg" />
+    <meta property="og:url" content="https://happydev.fi/torrino.dao.voting/" />
+    <meta property="og:site_name" content="Torrino DAO Voting" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Torrino DAO Voting" />
-    <meta name="twitter:description" content="Public Torrino DAO governance interface with verifiable off-chain voting." />
-    <meta name="twitter:image" content="torrino-dao.png" />
+    <meta name="twitter:description" content="No Fees • No Manipulation • Full Transparency. Public Torrino DAO governance with verifiable off-chain voting." />
+    <meta name="twitter:image" content="https://happydev.fi/torrino.dao.voting/OGimage.jpg" />
+    <meta name="twitter:url" content="https://happydev.fi/torrino.dao.voting/" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -240,9 +244,14 @@
           <p id="feedbackModalBadge" class="feedback-modal__badge">Status</p>
           <h3 id="feedbackModalTitle" class="modal__title">Vote update</h3>
           <p id="feedbackModalMessage" class="modal__lead feedback-modal__message"></p>
-          <button id="closeFeedbackModal" class="admin-button admin-button--primary feedback-modal__button" type="button">
-            OK
-          </button>
+          <div class="feedback-modal__actions">
+            <button id="shareOnXButton" class="chip chip--ghost feedback-modal__share" type="button" hidden>
+              Share on X
+            </button>
+            <button id="closeFeedbackModal" class="admin-button admin-button--primary feedback-modal__button" type="button">
+              OK
+            </button>
+          </div>
         </div>
       </div>
     </div>

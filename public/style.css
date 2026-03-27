@@ -1536,8 +1536,20 @@ p {
 }
 
 .feedback-modal__button {
-  margin-top: 18px;
   min-width: 120px;
+}
+
+.feedback-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.feedback-modal__share {
+  min-height: 44px;
+  padding: 10px 16px;
 }
 
 .history-table-wrap {

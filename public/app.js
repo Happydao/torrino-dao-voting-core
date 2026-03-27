@@ -41,6 +41,7 @@ const ui = {
   feedbackModalBadge: document.getElementById("feedbackModalBadge"),
   feedbackModalTitle: document.getElementById("feedbackModalTitle"),
   feedbackModalMessage: document.getElementById("feedbackModalMessage"),
+  shareOnXButton: document.getElementById("shareOnXButton"),
   closeFeedbackModal: document.getElementById("closeFeedbackModal"),
   historyModal: document.getElementById("historyModal"),
   openHistoryModal: document.getElementById("openHistoryModal"),
@@ -846,6 +847,10 @@ function initializeFeedbackModal() {
     return;
   }
 
+  if (ui.shareOnXButton) {
+    ui.shareOnXButton.addEventListener("click", openShareOnX);
+  }
+
   ui.closeFeedbackModal.addEventListener("click", closeFeedbackModal);
   ui.feedbackModal.addEventListener("click", (event) => {
     if (event.target === ui.feedbackModal) {
@@ -865,11 +870,17 @@ function openFeedbackModal(title, message, type) {
     return;
   }
 
+  const shouldShowShare = type === "success";
   ui.feedbackModalTitle.textContent = title;
   ui.feedbackModalMessage.textContent = message;
   ui.feedbackModalBadge.textContent = type === "success" ? "Confirmed" : "Error";
   ui.feedbackModalBadge.classList.remove("is-success", "is-error");
   ui.feedbackModalBadge.classList.add(type === "success" ? "is-success" : "is-error");
+
+  if (ui.shareOnXButton) {
+    ui.shareOnXButton.hidden = !shouldShowShare;
+  }
+
   ui.feedbackModal.classList.add("open");
   ui.feedbackModal.setAttribute("aria-hidden", "false");
 }
@@ -881,6 +892,19 @@ function closeFeedbackModal() {
 
   ui.feedbackModal.classList.remove("open");
   ui.feedbackModal.setAttribute("aria-hidden", "true");
+}
+
+function openShareOnX() {
+  const shareText = [
+    "Ho appena votato su @Torrino_dao ✅🔥",
+    "Votare è semplice, trasparente e senza fee 🚀",
+    "Se fai parte della community, vai a votare anche tu:",
+    "https://happydev.fi/torrino.dao.voting/",
+    "",
+    "#TorrinoDAO #Solana #DAO #Governance #Web3",
+  ].join("\n");
+  const shareUrl = `https://x.com/intent/post?text=${encodeURIComponent(shareText)}`;
+  window.open(shareUrl, "_blank", "noopener,noreferrer");
 }
 
 async function loadGovernanceHistory() {
