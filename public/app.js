@@ -894,6 +894,10 @@ function closeFeedbackModal() {
   ui.feedbackModal.setAttribute("aria-hidden", "true");
 }
 
+function isLikelyMobileDevice() {
+  return /android|iphone|ipad|ipod/i.test(window.navigator.userAgent || "");
+}
+
 function openShareOnX() {
   const shareText = [
     "Ho appena votato su @Torrino_dao ✅🔥",
@@ -903,8 +907,40 @@ function openShareOnX() {
     "",
     "#TorrinoDAO #Solana #DAO #Governance #Web3",
   ].join("\n");
-  const shareUrl = `https://x.com/intent/post?text=${encodeURIComponent(shareText)}`;
-  window.open(shareUrl, "_blank", "noopener,noreferrer");
+  const encodedShareText = encodeURIComponent(shareText);
+  const shareUrl = `https://x.com/intent/post?text=${encodedShareText}`;
+
+  if (!isLikelyMobileDevice()) {
+    window.open(shareUrl, "_blank", "noopener,noreferrer");
+    return;
+  }
+
+  const nativeShareUrl = `twitter://post?message=${encodedShareText}`;
+  let fallbackHandled = false;
+
+  const cleanup = () => {
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
+  };
+
+  const handleVisibilityChange = () => {
+    if (document.hidden) {
+      fallbackHandled = true;
+      cleanup();
+    }
+  };
+
+  document.addEventListener("visibilitychange", handleVisibilityChange);
+  window.location.href = nativeShareUrl;
+
+  window.setTimeout(() => {
+    if (fallbackHandled || document.hidden) {
+      cleanup();
+      return;
+    }
+
+    cleanup();
+    window.location.href = shareUrl;
+  }, 900);
 }
 
 async function loadGovernanceHistory() {
