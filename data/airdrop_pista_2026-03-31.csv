@@ -1,0 +1,29 @@
+proposal_created_by,4hcKvjU4EMzz5TSjgk7CMwhTwy4gXTuhdEYHyd5Shaz8
+proposal_created_timestamp,1774953551
+proposal_created_iso,2026-03-31T10:39:11.000Z
+proposal_created_signed_message,Torrino DAO admin action:start:wallet:4hcKvjU4EMzz5TSjgk7CMwhTwy4gXTuhdEYHyd5Shaz8:payload_hash:9d057d268d235aad884aa4025cf5b35e9c3f26ef4584150e736de5904b635756:timestamp:1774953525569
+proposal_created_signature,3p27VcJZbN8mQHoTiQyUXN7H68QY8VhL8NLeQ6P5TbJQ75ioZwKJJTSoyBHvXjnV8aQv3uquYRsMua9s5GmDUdpY
+proposal_lifecycle_status,Voting in progress
+proposal_lifecycle_updated_timestamp,1774953561
+proposal_lifecycle_updated_iso,2026-03-31T10:39:21.000Z
+voting_start_timestamp,1774953000
+voting_start_iso,2026-03-31T10:30:00.000Z
+voting_end_timestamp,1775152800
+voting_end_iso,2026-04-02T18:00:00.000Z
+proposal_reset_by,
+proposal_reset_timestamp,
+proposal_reset_iso,
+proposal_reset_signed_message,
+proposal_reset_signature,
+proposal_name,airdrop_pista
+proposal_payload_hash,c1d423b959d74d6bb423ad4e03329d9a9a6f9016803c3fb9baf0ec59825f683e
+proposal_title,AIRDROP $PISTA FOR ELIGIBLE ADRESSES
+proposal_description,Vesting con rilascio graduale di $PISTA su Streamflow a tranche del 5% ogni 15 giorni
+proposal_options,FAVOREVOLE | CONTRARIO
+torrino_participation_rate,0.0%
+solnauta_participation_rate,0.0%
+total_voting_power_participation_rate,0.0%
+result_FAVOREVOLE,0.00%
+result_CONTRARIO,0.00%
+
+wallet,solnauta_nfts,torrino_nfts,FAVOREVOLE,CONTRARIO,voting_power,timestamp,signed_message,signature
