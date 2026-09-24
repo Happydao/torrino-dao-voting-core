@@ -4,8 +4,8 @@ proposal_created_iso,2026-09-24T12:49:54.000Z
 proposal_created_signed_message,Torrino DAO admin action:start:wallet:5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc:payload_hash:75fb68eade7f57fe196dd23b20e6cd57f68055e699e5bf77ad553e443794cc13:timestamp:1790254188187
 proposal_created_signature,2p29341Gs2r62XNtC2zXzEtDqdDgvDb8DFvRbxT7JStqs6QfHLYJRF4BvtofgLqpHMBy6fb4nweUtfWwAhrhvUrt
 proposal_lifecycle_status,Voting in progress
-proposal_lifecycle_updated_timestamp,1790287194
-proposal_lifecycle_updated_iso,2026-09-24T21:59:54.000Z
+proposal_lifecycle_updated_timestamp,1790287794
+proposal_lifecycle_updated_iso,2026-09-24T22:09:54.000Z
 voting_start_timestamp,1790254140
 voting_start_iso,2026-09-24T12:49:00.000Z
 voting_end_timestamp,1790340540
@@ -22,9 +22,9 @@ proposal_description,"Considerato il lavoro svolto quotidianamente dai membri de
 
 Siete favorevoli al rimborso, da parte della DAO, del costo dei biglietti per il Solana Breakpoint 2026 ai membri del GC che parteciperanno all’evento?"
 proposal_options,Favorevole | Contrario
-torrino_participation_rate,20.0%
-solnauta_participation_rate,15.0%
-total_voting_power_participation_rate,19.5%
+torrino_participation_rate,20.6%
+solnauta_participation_rate,15.3%
+total_voting_power_participation_rate,20.1%
 result_Favorevole,99.00%
 result_Contrario,1.00%
 
@@ -222,3 +222,8 @@ DwyezUThCjRPQ9PRanA1yoG2Wk3TvLp8xncMm4eQRYdF
 7GVUgDgozqpdb3Nc1pu68QRsFqbZbkgmCCjxaJSiJQPa
 6Y4SSJH774XQQFMiYYMR6Mw9A1nsgAoC1QD1AdxSuiqM
 58MZi6afod4NpP6x1amYG7uf4eFxKLujZNNjHU76KEQW",DZ2hCMdrjWF5ayMEWLMUBzXzyBGmKBve7BXJWaun4R57,0.236306306,0.000000000,0.236306306,1790284157,Torrino DAO governance vote:proposal:rimb-biglietti-GC_2026-09-24.csv:proposal_hash:abcebd5445d6829486aa2cc839894b58c0b81a6ff178f08891e597c3aa1b75e7:option:Favorevole:wallet:EmgnBM8CvXiBJ4PEqqddm5Ps8wXJ373NsEWGMHxhvdw7:timestamp:1790284154454,3rqsGX5iczevzQWuRDPUZ1ChirpzadoJfXGWcAFx5d58B9qM468vxjfZAB1gyjpJattadGwW8ntbvZ9doz1WmPcM
+6Wp7e9UzEkeQXvFjdjCJScme2pHm4d5c8N1T7sio4L66,"Bjgjko3H8y6v6nB2QiLqYkVSBFvuxbQLiu6n8Q1B3f8r
+A7nMViGfG74rCD7XdmWmVmiKH1UbN6A6AHx3ASEc8VCt
+UQts6PUZKnLbAk2xHkCYig2yx1kEZU7PswXSuXQ7M5D","C3ZKSskjC4763Bs2xoBPN8p7pR9i6zbsd5ctMRx8EXM1
+4SoVNA2wvKMvogaPjWf5aMB6CrGEmBn8oDMwgohrFgtn
+2bXZ9GfLF8dsaPEynPL47johvm2eQdtaUyryAxkkioz5",0.573783784,0.000000000,0.573783784,1790287457,Torrino DAO governance vote:proposal:rimb-biglietti-GC_2026-09-24.csv:proposal_hash:abcebd5445d6829486aa2cc839894b58c0b81a6ff178f08891e597c3aa1b75e7:option:Favorevole:wallet:6Wp7e9UzEkeQXvFjdjCJScme2pHm4d5c8N1T7sio4L66:timestamp:1790287453414,GLafVk9vut7xGHeKz1iW19WwkBKMKMPE1ed6A89CnyqKcWmQtnLtTD52ghsVgyZ8smQ74VZ7gSEXDzVFkgQxeoy
