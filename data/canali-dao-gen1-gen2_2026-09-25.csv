@@ -4,8 +4,8 @@ proposal_created_iso,2026-09-25T15:47:41.000Z
 proposal_created_signed_message,Torrino DAO admin action:start:wallet:5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc:payload_hash:a7ca933292b80233378c00a0b04eed110f15a6e42bc5fff490d873ed5f71b1b1:timestamp:1790351258677
 proposal_created_signature,ebWWSSfux71Qs5F8TD8Uf9MoTArkbyDMxpbkBKEFkS9r5y6srMtwbNz9WrhbzPt2EgVABqUWb1xzMNeCmAR7Nx9
 proposal_lifecycle_status,Voting in progress
-proposal_lifecycle_updated_timestamp,1790359061
-proposal_lifecycle_updated_iso,2026-09-25T17:57:41.000Z
+proposal_lifecycle_updated_timestamp,1790359661
+proposal_lifecycle_updated_iso,2026-09-25T18:07:41.000Z
 voting_start_timestamp,1790351220
 voting_start_iso,2026-09-25T15:47:00.000Z
 voting_end_timestamp,1790524020
@@ -26,9 +26,9 @@ In particolare:
 
 Siete favorevoli alla ristrutturazione dei canali di comunicazione della DAO secondo le modalità sopra descritte?"
 proposal_options,Favorevole | Contrario
-torrino_participation_rate,11.6%
-solnauta_participation_rate,6.8%
-total_voting_power_participation_rate,11.1%
+torrino_participation_rate,11.8%
+solnauta_participation_rate,6.9%
+total_voting_power_participation_rate,11.3%
 result_Favorevole,98.00%
 result_Contrario,2.00%
 
@@ -133,3 +133,4 @@ BB4qyn1kpD9rP32nJjCMsQuJj3AqAaS26czHFYL4dZ4V
 6wtkA4LMQ5dYoGbZt1vgFdTXSqWoRPccdMQasD8sJxz7
 6pByNt3B7cwePhH57j63DWpwwMEXKqY8wZdkbc9zhGn2
 3oNR2YSJZLbhfLKfWcAkkkV1h6FaXUKmjbZPv8JB9fxB",1.001351351,0.000000000,1.001351351,1790357409,Torrino DAO governance vote:proposal:canali-dao-gen1-gen2_2026-09-25.csv:proposal_hash:fee728c44c47368d0b106ac1f46876d0fe9e9a33827d1e2e61a8ceeb2e3c6758:option:Favorevole:wallet:CiVp6EP6Wk595nPmBFphbzZdi3x4cHE3Vc16SCWkDQZN:timestamp:1790357401030,3N1BtL7fgWjFEoDXsm83SdubfRZQsX3LzHBrzBcw5u3QH6BPa7hjivhLxWqiYYF8w4cQrmW6JNQKBifYDdwtYiGV
+DjAxCguntopsUUg8vxSbvFrzuyShhgv3wg4y4xNQZQsU,Eyzg2dcug1VEaSQjVbognAFq4RXs3Hmqs9KuERVBNXTV,5z4qxSuLafpWUviUaTXS8EScwi5MKrKJZf1W4WbKVnxs,0.191261261,0.000000000,0.191261261,1790359154,Torrino DAO governance vote:proposal:canali-dao-gen1-gen2_2026-09-25.csv:proposal_hash:fee728c44c47368d0b106ac1f46876d0fe9e9a33827d1e2e61a8ceeb2e3c6758:option:Favorevole:wallet:DjAxCguntopsUUg8vxSbvFrzuyShhgv3wg4y4xNQZQsU:timestamp:1790359152439,5VidxzCqxpU8XDsKpTnGoaHufzfPp6S7T8mBoye7WveumKQFPpSxkzcMxyzoAAJmqGyM4Xz5iAswmvMoj6DmDUX9
