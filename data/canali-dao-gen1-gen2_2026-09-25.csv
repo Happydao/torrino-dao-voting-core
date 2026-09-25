@@ -4,8 +4,8 @@ proposal_created_iso,2026-09-25T15:47:41.000Z
 proposal_created_signed_message,Torrino DAO admin action:start:wallet:5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc:payload_hash:a7ca933292b80233378c00a0b04eed110f15a6e42bc5fff490d873ed5f71b1b1:timestamp:1790351258677
 proposal_created_signature,ebWWSSfux71Qs5F8TD8Uf9MoTArkbyDMxpbkBKEFkS9r5y6srMtwbNz9WrhbzPt2EgVABqUWb1xzMNeCmAR7Nx9
 proposal_lifecycle_status,Voting in progress
-proposal_lifecycle_updated_timestamp,1790363861
-proposal_lifecycle_updated_iso,2026-09-25T19:17:41.000Z
+proposal_lifecycle_updated_timestamp,1790364461
+proposal_lifecycle_updated_iso,2026-09-25T19:27:41.000Z
 voting_start_timestamp,1790351220
 voting_start_iso,2026-09-25T15:47:00.000Z
 voting_end_timestamp,1790524020
@@ -26,9 +26,9 @@ In particolare:
 
 Siete favorevoli alla ristrutturazione dei canali di comunicazione della DAO secondo le modalità sopra descritte?"
 proposal_options,Favorevole | Contrario
-torrino_participation_rate,15.6%
+torrino_participation_rate,15.8%
 solnauta_participation_rate,10.2%
-total_voting_power_participation_rate,15.1%
+total_voting_power_participation_rate,15.2%
 result_Favorevole,98.00%
 result_Contrario,2.00%
 
@@ -174,3 +174,4 @@ A7nMViGfG74rCD7XdmWmVmiKH1UbN6A6AHx3ASEc8VCt
 UQts6PUZKnLbAk2xHkCYig2yx1kEZU7PswXSuXQ7M5D","C3ZKSskjC4763Bs2xoBPN8p7pR9i6zbsd5ctMRx8EXM1
 4SoVNA2wvKMvogaPjWf5aMB6CrGEmBn8oDMwgohrFgtn
 2bXZ9GfLF8dsaPEynPL47johvm2eQdtaUyryAxkkioz5",0.573783784,0.000000000,0.573783784,1790363322,Torrino DAO governance vote:proposal:canali-dao-gen1-gen2_2026-09-25.csv:proposal_hash:fee728c44c47368d0b106ac1f46876d0fe9e9a33827d1e2e61a8ceeb2e3c6758:option:Favorevole:wallet:6Wp7e9UzEkeQXvFjdjCJScme2pHm4d5c8N1T7sio4L66:timestamp:1790363320093,4dH9LtVoayJW7WHdDYw9qe789YGUvmvXvFX19udHDLpk5MD4ZyDU2nKLnezU4JEhhfwkwyhDXrJc8Q9b6AgsLfsj
+EbzL1yYtubHygbjkR5axQkr97vT4YfCvwjv5wQrf3K5u,,2jiE6HjLkGd1n5XzbR34Ubm9E3CqMXSfv12vS4nXMd5n,0.180000000,0.000000000,0.180000000,1790364051,Torrino DAO governance vote:proposal:canali-dao-gen1-gen2_2026-09-25.csv:proposal_hash:fee728c44c47368d0b106ac1f46876d0fe9e9a33827d1e2e61a8ceeb2e3c6758:option:Favorevole:wallet:EbzL1yYtubHygbjkR5axQkr97vT4YfCvwjv5wQrf3K5u:timestamp:1790364049159,3AMGJvBaA783TXPT9UHeUEJ8MLYYyDsvYUpiYvWYW27HMw9Q5p8BQLGdSzzHbPGXC4ToBEcXWYiyJuBnu2x3ywz1
