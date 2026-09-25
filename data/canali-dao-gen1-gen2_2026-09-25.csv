@@ -1,0 +1,35 @@
+proposal_created_by,5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc
+proposal_created_timestamp,1790351261
+proposal_created_iso,2026-09-25T15:47:41.000Z
+proposal_created_signed_message,Torrino DAO admin action:start:wallet:5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc:payload_hash:a7ca933292b80233378c00a0b04eed110f15a6e42bc5fff490d873ed5f71b1b1:timestamp:1790351258677
+proposal_created_signature,ebWWSSfux71Qs5F8TD8Uf9MoTArkbyDMxpbkBKEFkS9r5y6srMtwbNz9WrhbzPt2EgVABqUWb1xzMNeCmAR7Nx9
+proposal_lifecycle_status,Voting in progress
+proposal_lifecycle_updated_timestamp,1790351271
+proposal_lifecycle_updated_iso,2026-09-25T15:47:51.000Z
+voting_start_timestamp,1790351220
+voting_start_iso,2026-09-25T15:47:00.000Z
+voting_end_timestamp,1790524020
+voting_end_iso,2026-09-27T15:47:00.000Z
+proposal_reset_by,
+proposal_reset_timestamp,
+proposal_reset_iso,
+proposal_reset_signed_message,
+proposal_reset_signature,
+proposal_name,canali-dao-gen1-gen2
+proposal_payload_hash,fee728c44c47368d0b106ac1f46876d0fe9e9a33827d1e2e61a8ceeb2e3c6758
+proposal_title,Ristrutturazione dei canali di comunicazione della Torrino DAO
+proposal_description,"Si propone una riorganizzazione dei principali canali di comunicazione della Torrino DAO, differenziando gli spazi dedicati ai membri GEN1 e GEN2.
+
+In particolare:
+• l’attuale Crypto Chat diventerà GEN1 Chat, dedicata ai temi e alle discussioni più importanti e strategiche della DAO. L'accesso sarà riservato esclusivamente ai possessori di NFT GEN1;
+• l’attuale Generic Chat diventerà GEN2 Chat, dedicata alle discussioni generali e secondarie della community. La GEN2 Chat sarà accessibile sia ai possessori di NFT GEN1 sia ai possessori di NFT GEN2.
+
+Siete favorevoli alla ristrutturazione dei canali di comunicazione della DAO secondo le modalità sopra descritte?"
+proposal_options,Favorevole | Contrario
+torrino_participation_rate,0.0%
+solnauta_participation_rate,0.0%
+total_voting_power_participation_rate,0.0%
+result_Favorevole,0.00%
+result_Contrario,0.00%
+
+wallet,solnauta_nfts,torrino_nfts,Favorevole,Contrario,voting_power,timestamp,signed_message,signature
