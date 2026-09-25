@@ -4,8 +4,8 @@ proposal_created_iso,2026-09-25T15:47:41.000Z
 proposal_created_signed_message,Torrino DAO admin action:start:wallet:5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc:payload_hash:a7ca933292b80233378c00a0b04eed110f15a6e42bc5fff490d873ed5f71b1b1:timestamp:1790351258677
 proposal_created_signature,ebWWSSfux71Qs5F8TD8Uf9MoTArkbyDMxpbkBKEFkS9r5y6srMtwbNz9WrhbzPt2EgVABqUWb1xzMNeCmAR7Nx9
 proposal_lifecycle_status,Voting in progress
-proposal_lifecycle_updated_timestamp,1790368661
-proposal_lifecycle_updated_iso,2026-09-25T20:37:41.000Z
+proposal_lifecycle_updated_timestamp,1790369261
+proposal_lifecycle_updated_iso,2026-09-25T20:47:41.000Z
 voting_start_timestamp,1790351220
 voting_start_iso,2026-09-25T15:47:00.000Z
 voting_end_timestamp,1790524020
@@ -26,9 +26,9 @@ In particolare:
 
 Siete favorevoli alla ristrutturazione dei canali di comunicazione della DAO secondo le modalità sopra descritte?"
 proposal_options,Favorevole | Contrario
-torrino_participation_rate,19.8%
-solnauta_participation_rate,12.4%
-total_voting_power_participation_rate,19.1%
+torrino_participation_rate,20.0%
+solnauta_participation_rate,12.7%
+total_voting_power_participation_rate,19.3%
 result_Favorevole,99.00%
 result_Contrario,1.00%
 
@@ -208,3 +208,6 @@ Eo3MRoqkSvYEwJKSsqBEuPozQ4UoWrZxDqvbxJUDnxLt
 EFW4JQYcffJAfWmn4A6csaiNw9CZpCjZrujrRDPTehHc
 eGwAEdJufBzfbLbctJNjz4D7LjNWiQm87cFXBpELU5C
 8uLDcPpyXhc2HMVXe7cQtuiqqJUd2ZHL2HzUJRReoxJ",0.911261261,0.000000000,0.911261261,1790367918,Torrino DAO governance vote:proposal:canali-dao-gen1-gen2_2026-09-25.csv:proposal_hash:fee728c44c47368d0b106ac1f46876d0fe9e9a33827d1e2e61a8ceeb2e3c6758:option:Favorevole:wallet:A1ZaTZCRUWK2xHM6FzNnBeFtX3jAG9SaWByLwVaXgE59:timestamp:1790367917207,3V9NuPQoFwGAbYdFvQL11pithnKaKLakgoGHNkMuWWPDQ9ZC4jpqYcVwiqb5RTyGR8EhFjzaxFn4Xu6xA3sbMPwy
+FEBcvQsHUXB4v342pY1Nd3Fg3h9C16qw7Y7ipXaQmn5r,"DebgLHyYXxkfhfYkMnJNAokv9DknPx6LJTJvGRnoSH9r
+Ay2Lzy136Y1zGHE8mCyS4AitJiBD6bxj8QN8oVeKGySx
+67Ynys9PHpebBe8VzQQyeazH5tnYE7xBU1oTzyCp3YUE",GsMfBtGV9AxWadXWuLQsH9BVbfF8irS2k357jfS3Gs8q,0.213783784,0.000000000,0.213783784,1790368666,Torrino DAO governance vote:proposal:canali-dao-gen1-gen2_2026-09-25.csv:proposal_hash:fee728c44c47368d0b106ac1f46876d0fe9e9a33827d1e2e61a8ceeb2e3c6758:option:Favorevole:wallet:FEBcvQsHUXB4v342pY1Nd3Fg3h9C16qw7Y7ipXaQmn5r:timestamp:1790368662633,3WzXKqvNdYpPqFksSxPjDP3MSPxF2PrLpY2KWRt7q5e7kf3vUBEj4tzfoTaY7Z2isB5e8vpkdS3HbKJyeZE6if6p
