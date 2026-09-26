@@ -4,8 +4,8 @@ proposal_created_iso,2026-09-25T15:47:41.000Z
 proposal_created_signed_message,Torrino DAO admin action:start:wallet:5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc:payload_hash:a7ca933292b80233378c00a0b04eed110f15a6e42bc5fff490d873ed5f71b1b1:timestamp:1790351258677
 proposal_created_signature,ebWWSSfux71Qs5F8TD8Uf9MoTArkbyDMxpbkBKEFkS9r5y6srMtwbNz9WrhbzPt2EgVABqUWb1xzMNeCmAR7Nx9
 proposal_lifecycle_status,Voting in progress
-proposal_lifecycle_updated_timestamp,1790414261
-proposal_lifecycle_updated_iso,2026-09-26T09:17:41.000Z
+proposal_lifecycle_updated_timestamp,1790414861
+proposal_lifecycle_updated_iso,2026-09-26T09:27:41.000Z
 voting_start_timestamp,1790351220
 voting_start_iso,2026-09-25T15:47:00.000Z
 voting_end_timestamp,1790524020
@@ -27,7 +27,7 @@ In particolare:
 Siete favorevoli alla ristrutturazione dei canali di comunicazione della DAO secondo le modalità sopra descritte?"
 proposal_options,Favorevole | Contrario
 torrino_participation_rate,22.2%
-solnauta_participation_rate,13.7%
+solnauta_participation_rate,13.9%
 total_voting_power_participation_rate,21.4%
 result_Favorevole,99.00%
 result_Contrario,1.00%
@@ -224,3 +224,4 @@ HJZrafJJDdMV6qVAkgj7FmLAi74PSe5gh9fL9kect3es
 CnUkEYfkURizbQa993EoK3Y9K5rk8xSbJyRvHdj14RCf
 BMtAKXPxa2Zcp3G8tG45R3nrVo6uW7GemKRJLwiSw4xX
 5jqqRAuP6KcrZPji2Tyazk4CiUFktBewfMcHntrsVENQ",0.911261261,0.000000000,0.911261261,1790413231,Torrino DAO governance vote:proposal:canali-dao-gen1-gen2_2026-09-25.csv:proposal_hash:fee728c44c47368d0b106ac1f46876d0fe9e9a33827d1e2e61a8ceeb2e3c6758:option:Favorevole:wallet:3Djwa3yvVHwMzEXonCzobUqvRx7k9RwKss48ATYTwbVS:timestamp:1790413200072,4V6iuVmKmtLBm3cpf21oKtqdLN8PkQeUwov1hV1ajQJbAtsdFQWsfPzPq1SmVZMyavq28yE1RcxHqCFWhZX9kwBv
+Da27wk56okQLQiPdvP4uMaAVHcJQ1xZdCyzivzRJxRDn,CeqBujk48myZEUSarv9uPNhqe1sjdfQ2Y6EPr6P3Sauw,,0.000000000,0.011261261,0.011261261,1790414744,Torrino DAO governance vote:proposal:canali-dao-gen1-gen2_2026-09-25.csv:proposal_hash:fee728c44c47368d0b106ac1f46876d0fe9e9a33827d1e2e61a8ceeb2e3c6758:option:Contrario:wallet:Da27wk56okQLQiPdvP4uMaAVHcJQ1xZdCyzivzRJxRDn:timestamp:1790414723215,4yWekLht3rXQrZXCi4dABQ3Na29q2cAkmq8QfHZVAG4DoXmqroDCHDP4eiVgG3borycKGy7UVFxEC3DSGPi7KvDB
