@@ -1,0 +1,32 @@
+proposal_created_by,5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc
+proposal_created_timestamp,1792176882
+proposal_created_iso,2026-10-16T18:54:42.000Z
+proposal_created_signed_message,Torrino DAO admin action:start:wallet:5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc:payload_hash:16ffb5d902abe953bab50a26ecd804d40544c3ae4a38249f6bde24ccbe61f2ed:timestamp:1792176880730
+proposal_created_signature,3X29GrC5dCwFFN2aM6gA3c19FiNYvV3PPALdfsgLfdj3orSwyV7bCtvcuPiZ9FRvjzFmf8AwXgjP2NewPCTNgVWW
+proposal_lifecycle_status,Voting in progress
+proposal_lifecycle_updated_timestamp,1792176893
+proposal_lifecycle_updated_iso,2026-10-16T18:54:53.000Z
+voting_start_timestamp,1792176840
+voting_start_iso,2026-10-16T18:54:00.000Z
+voting_end_timestamp,1792263240
+voting_end_iso,2026-10-17T18:54:00.000Z
+proposal_reset_by,
+proposal_reset_timestamp,
+proposal_reset_iso,
+proposal_reset_signed_message,
+proposal_reset_signature,
+proposal_name,PISTA_Airdrop_Vote
+proposal_payload_hash,ae0432e66664ea1b7bc485cd2f69fe57d5325c2705acbf1cb193f5018d94fece
+proposal_title,Airdrop PISTA – Gestione delle penalizzazioni
+proposal_description,"A seguito della rimozione del precedente sistema di vesting, alcuni wallet risultano aver venduto parte dei token PISTA già riscattati, contribuendo a danneggiare il progetto.
+
+La DAO è chiamata a decidere come gestire questi wallet nel nuovo airdrop, valutando l'applicazione di eventuali penalità."
+proposal_options,"Airdrop completo, senza penalità | Airdrop con riduzione del 20% | Rilascio completo in vesting di 6 mesi"
+torrino_participation_rate,0.0%
+solnauta_participation_rate,0.0%
+total_voting_power_participation_rate,0.0%
+result_Airdrop_completo_senza_penalit,0.00%
+result_Airdrop_con_riduzione_del_20,0.00%
+result_Rilascio_completo_in_vesting_di_6_mesi,0.00%
+
+wallet,solnauta_nfts,torrino_nfts,"Airdrop completo, senza penalità",Airdrop con riduzione del 20%,Rilascio completo in vesting di 6 mesi,voting_power,timestamp,signed_message,signature
