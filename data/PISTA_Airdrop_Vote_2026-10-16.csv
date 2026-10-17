@@ -4,8 +4,8 @@ proposal_created_iso,2026-10-16T18:54:42.000Z
 proposal_created_signed_message,Torrino DAO admin action:start:wallet:5feimx18jM2hK2rvZnQHRsjhSeCkHAiLeQZDuJkU2fPc:payload_hash:16ffb5d902abe953bab50a26ecd804d40544c3ae4a38249f6bde24ccbe61f2ed:timestamp:1792176880730
 proposal_created_signature,3X29GrC5dCwFFN2aM6gA3c19FiNYvV3PPALdfsgLfdj3orSwyV7bCtvcuPiZ9FRvjzFmf8AwXgjP2NewPCTNgVWW
 proposal_lifecycle_status,Voting in progress
-proposal_lifecycle_updated_timestamp,1792216483
-proposal_lifecycle_updated_iso,2026-10-17T05:54:43.000Z
+proposal_lifecycle_updated_timestamp,1792217083
+proposal_lifecycle_updated_iso,2026-10-17T06:04:43.000Z
 voting_start_timestamp,1792176840
 voting_start_iso,2026-10-16T18:54:00.000Z
 voting_end_timestamp,1792263240
@@ -22,12 +22,12 @@ proposal_description,"A seguito della rimozione del precedente sistema di vestin
 
 La DAO è chiamata a decidere come gestire questi wallet nel nuovo airdrop, valutando l'applicazione di eventuali penalità."
 proposal_options,"Airdrop completo, senza penalità | Airdrop con riduzione del 20% | Rilascio completo in vesting di 6 mesi"
-torrino_participation_rate,7.2%
-solnauta_participation_rate,3.6%
-total_voting_power_participation_rate,6.8%
-result_Airdrop_completo_senza_penalit,28.00%
-result_Airdrop_con_riduzione_del_20,43.00%
-result_Rilascio_completo_in_vesting_di_6_mesi,29.00%
+torrino_participation_rate,7.4%
+solnauta_participation_rate,3.8%
+total_voting_power_participation_rate,7.0%
+result_Airdrop_completo_senza_penalit,27.00%
+result_Airdrop_con_riduzione_del_20,42.00%
+result_Rilascio_completo_in_vesting_di_6_mesi,31.00%
 
 wallet,solnauta_nfts,torrino_nfts,"Airdrop completo, senza penalità",Airdrop con riduzione del 20%,Rilascio completo in vesting di 6 mesi,voting_power,timestamp,signed_message,signature
 59C4gdQT5VFqZj8LTw5bt4CTzJkJpncujiG3xfngCzs8,8gjqkdHgmHvHUKZ3uHfbW3F1tYW4AKqjguG2rtvjhQ7Q,,0.000000000,0.000000000,0.011261261,0.011261261,1792179517,Torrino DAO governance vote:proposal:PISTA_Airdrop_Vote_2026-10-16.csv:proposal_hash:ae0432e66664ea1b7bc485cd2f69fe57d5325c2705acbf1cb193f5018d94fece:option:Rilascio completo in vesting di 6 mesi:wallet:59C4gdQT5VFqZj8LTw5bt4CTzJkJpncujiG3xfngCzs8:timestamp:1792179514872,2QeA5Y9xzJvd65B8aUJtrMSAUCwzzfAnQj2D2m9ipkVB3LpLQopWWegZSbAzVViwVXeSpPSgBm3f7j4KXrtNBwG4
@@ -87,3 +87,5 @@ BB4qyn1kpD9rP32nJjCMsQuJj3AqAaS26czHFYL4dZ4V
 6pByNt3B7cwePhH57j63DWpwwMEXKqY8wZdkbc9zhGn2
 3oNR2YSJZLbhfLKfWcAkkkV1h6FaXUKmjbZPv8JB9fxB",0.000000000,0.000000000,1.001351351,1.001351351,1792214645,Torrino DAO governance vote:proposal:PISTA_Airdrop_Vote_2026-10-16.csv:proposal_hash:ae0432e66664ea1b7bc485cd2f69fe57d5325c2705acbf1cb193f5018d94fece:option:Rilascio completo in vesting di 6 mesi:wallet:CiVp6EP6Wk595nPmBFphbzZdi3x4cHE3Vc16SCWkDQZN:timestamp:1792214636731,66biaw5svw1y8VT5FCrtbeom8NCgZNaQ5rfBgwv9QWHfxBCGt15tmGg5VhbVj8kEmS4yAoyRxZm3DYXXFR4n6mdu
 GHKFb6wzA4tnLyDHPEHyZhqneRAd7ACWvyG5S3JoK8uy,BDUtaYAXg9xhNiLvbFPR2ow87s6DwMjPBbG48kzDMKSk,,0.011261261,0.000000000,0.000000000,0.011261261,1792215029,"Torrino DAO governance vote:proposal:PISTA_Airdrop_Vote_2026-10-16.csv:proposal_hash:ae0432e66664ea1b7bc485cd2f69fe57d5325c2705acbf1cb193f5018d94fece:option:Airdrop completo, senza penalità:wallet:GHKFb6wzA4tnLyDHPEHyZhqneRAd7ACWvyG5S3JoK8uy:timestamp:1792215027934",24zpoxEuKx4kL31pnfxUUszkEwzyaG8LbD8kC2yXAwCpZVgaYWbUEsjXNpy3bDr2JYrT3miiQMQuyuSeDz7vhfr5
+G96N2wBxQvV9bUeexftoTFaHbSs3xtmperXGmANyx4k6,"GpsgoRgPYiX1dJFKRZqu32wBcxV7wNESU5qWYWdcxqc9
+GS3jan5YhbeJTKKKP65wpk6zCkE9uS1XRDuVZj7wFP6N",3VA9v4CEkrhgmhv188Td5asUQhEiHaUPuLERo9Am3FCf,0.000000000,0.000000000,0.202522523,0.202522523,1792216980,Torrino DAO governance vote:proposal:PISTA_Airdrop_Vote_2026-10-16.csv:proposal_hash:ae0432e66664ea1b7bc485cd2f69fe57d5325c2705acbf1cb193f5018d94fece:option:Rilascio completo in vesting di 6 mesi:wallet:G96N2wBxQvV9bUeexftoTFaHbSs3xtmperXGmANyx4k6:timestamp:1792216971394,66btqYWFvce5qQ3bpZEyRBPRfquSe4MqLtrMJVRaRxNtrUn1aLRgnHFAE4nwJSvmwaKhby8fuK2iqmqMYTfxYeN9
