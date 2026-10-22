@@ -274,6 +274,62 @@ README.md
 LICENSE
 ```
 
+## Wallet connection
+
+The public voting page offers an explicit Phantom / Solflare selector. Installed
+extensions and wallet in-app browsers use the selected injected provider. On mobile
+without that provider, the page uses encrypted universal links for `connect` and
+`signMessage`, returning to the HTTPS voting page after approval.
+
+Use the phone's default external browser and allow site storage: the wallet's
+HTTPS return may open a new tab, and must return to the same browser/storage
+profile. Returning to a different browser or private profile cannot restore the
+request; the page explains how to reconnect. The corresponding wallet app must
+be installed. App opening and browser return still require physical iOS/Android
+testing with both wallets before deployment.
+
+`public/wallet-links.js` stores a temporary dapp encryption key/session in local
+storage, never a wallet signing key. Local connections expire after 12 hours and
+are removed on disconnect. Pending approvals expire after five minutes; callback
+parameters are removed from browser history and consumed once. The mobile vote
+continuation submits the original signed message to the existing `/api/vote`
+endpoint. The server's signature checks, CSV storage, 10-minute Git sync and final
+session commit are unchanged. Admin wallet behavior is unchanged.
+
+Protocol references:
+
+- [Phantom connect](https://docs.phantom.com/phantom-deeplinks/provider-methods/connect)
+- [Phantom signMessage](https://docs.phantom.com/phantom-deeplinks/provider-methods/signmessage)
+- [Solflare connect](https://docs.solflare.com/solflare/technical/deeplinks/provider-methods/connect)
+- [Solflare signMessage](https://docs.solflare.com/solflare/technical/deeplinks/provider-methods/signmessage)
+
+TweetNaCl 1.0.3 is vendored in `public/vendor/`, including its license, so wallet
+encryption does not depend on a runtime CDN or a new server dependency. Its npm
+archive was checked against the registry's SHA-512 integrity value.
+
+Run the encrypted protocol tests without installing dependencies:
+
+```sh
+node --test tests/wallet-links.test.js
+```
+
+With Playwright and its Chromium browser installed, run the simulated browser
+integration tests (both wallets, desktop selection and mobile signature return):
+
+```sh
+node tests/wallet-browser.cjs
+```
+
+If Playwright is installed elsewhere, set `PLAYWRIGHT_PATH` to its module path.
+These tests intercept all wallet/API requests; they do not start the voting
+backend or create real votes. They do not replace tests with the real mobile apps.
+
+Deployment must include the updated HTML, CSS, `app.js`, `wallet-links.js` and
+`vendor/nacl-fast-1.0.3.min.js`. No environment variables, SDK portal credentials or
+backend migrations are required. Update the remote checkout using the existing
+deployment procedure, preserving server-local proposal state and incorporating
+any CSV commits made by the running voting service; do not force-push or reset it.
+
 ## License
 
 This project is open-source under the Apache License 2.0.

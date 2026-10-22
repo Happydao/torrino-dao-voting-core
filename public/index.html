@@ -2,6 +2,7 @@
 <html lang="it">
   <head>
     <meta charset="UTF-8" />
+    <meta name="referrer" content="no-referrer" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Torrino DAO Voting</title>
     <link rel="icon" type="image/png" href="torrino-dao.png" />
@@ -256,6 +257,21 @@
       </div>
     </div>
 
+    <dialog id="walletPicker" class="wallet-picker" aria-labelledby="walletPickerTitle" aria-describedby="walletPickerHint">
+      <div class="wallet-picker__header">
+        <h3 id="walletPickerTitle" class="modal__title">Connect Wallet</h3>
+        <button id="closeWalletPicker" type="button" class="chip chip--ghost" aria-label="Close wallet selection">✕</button>
+      </div>
+      <p id="walletPickerHint" class="modal__lead">Choose Phantom or Solflare.</p>
+      <div class="wallet-picker__options">
+        <button type="button" class="wallet-picker__option" data-wallet="phantom"><strong>Phantom</strong><span>Connect with Phantom</span></button>
+        <button type="button" class="wallet-picker__option" data-wallet="solflare"><strong>Solflare</strong><span>Connect with Solflare</span></button>
+      </div>
+      <p class="wallet-picker__downloads">Need a wallet? <a href="https://phantom.com/download" target="_blank" rel="noopener noreferrer">Get Phantom</a> · <a href="https://solflare.com/download" target="_blank" rel="noopener noreferrer">Get Solflare</a></p>
+    </dialog>
+
+    <script src="vendor/nacl-fast-1.0.3.min.js"></script>
+    <script src="wallet-links.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

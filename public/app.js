@@ -49,11 +49,81 @@ const ui = {
   historyTableBody: document.getElementById("historyTableBody"),
 };
 
-initializeWalletStatus();
-initializeHistoryModal();
-initializeFeedbackModal();
-initializeProposalAndResults();
+initializeApplication();
 ui.connectButton.addEventListener("click", handleWalletButtonClick);
+
+async function initializeApplication() {
+  let callback = null;
+  let callbackError = null;
+  try { callback = WalletLinks.handleCallback(); }
+  catch (error) { callbackError = error; }
+  initializeWalletStatus();
+  initializeWalletPicker();
+  initializeHistoryModal();
+  initializeFeedbackModal();
+  await initializeProposalAndResults();
+  const provider = callback ? callback.provider : WalletLinks.restore();
+  if (provider) await connectWallet(provider);
+  if (callback && callback.vote) {
+    const vote = callback.vote;
+    await submitSignedVote(vote.proposalId, vote.voteOption, { message: vote.message, signature: vote.signature }, vote.wallet);
+  }
+  if (callbackError) setStatus(getWalletErrorMessage(callbackError));
+}
+
+// A browser may restore the pre-redirect page from its back/forward cache.
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) window.location.reload();
+});
+
+function isMobileWalletBrowser() {
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+    || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function initializeWalletPicker() {
+  const dialog = document.getElementById("walletPicker");
+  document.getElementById("closeWalletPicker").addEventListener("click", () => dialog.close());
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) dialog.close();
+  });
+  dialog.querySelectorAll("[data-wallet]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const wallet = button.dataset.wallet;
+      const provider = getInstalledWalletProviders().find((candidate) => wallet === "phantom" ? candidate.isPhantom : candidate.isSolflare);
+      if (provider) {
+        WalletLinks.forget();
+        dialog.close();
+        await connectWallet(provider);
+      } else if (isMobileWalletBrowser()) {
+        try {
+          WalletLinks.connect(wallet);
+          dialog.close();
+          setStatus("Approve the connection in your wallet app, then return to this browser. If the app did not open, check that it is installed and try again.");
+        } catch (error) {
+          dialog.close();
+          setStatus(getWalletErrorMessage(error));
+        }
+      } else {
+        document.getElementById("walletPickerHint").textContent = `Install the ${wallet === "phantom" ? "Phantom" : "Solflare"} extension using the link below, then reload this page.`;
+      }
+    });
+  });
+}
+
+function getWalletErrorMessage(error) {
+  const messages = {
+    WALLET_STORAGE_UNAVAILABLE: "Allow browser storage to connect your mobile wallet, then try again.",
+    WALLET_CRYPTO_UNAVAILABLE: "Wallet encryption could not load. Reload the page and try again.",
+    WALLET_HTTPS_REQUIRED: "Mobile wallet connections require an HTTPS website.",
+    WALLET_SESSION_EXPIRED: "The wallet connection has expired. Disconnect and reconnect your wallet.",
+    WALLET_CALLBACK_MISSING: "The wallet request could not be found. Open the site in your default browser and reconnect there; use the same browser for the wallet return.",
+    WALLET_REQUEST_EXPIRED: "The wallet request expired. Please try again and approve within five minutes.",
+    WALLET_REQUEST_REJECTED: "The wallet request was cancelled or rejected. You can try again.",
+    WALLET_LINK_INVALID: "The wallet response could not be verified. Please reconnect your wallet.",
+  };
+  return messages[error && error.message] || "Could not connect to the wallet or load its NFTs. Please try again.";
+}
 
 async function handleWalletButtonClick() {
   if (state.walletAddress && state.walletProvider) {
@@ -61,7 +131,10 @@ async function handleWalletButtonClick() {
     return;
   }
 
-  await connectWallet();
+  document.getElementById("walletPickerHint").textContent = isMobileWalletBrowser()
+    ? "Choose your wallet. Approve in the app and return to this browser. Use your default browser so the connection can be restored."
+    : "Choose the wallet extension you want to connect.";
+  document.getElementById("walletPicker").showModal();
 }
 
 async function initializeProposalAndResults() {
@@ -78,9 +151,7 @@ async function initializeProposalAndResults() {
   }, 10000);
 }
 
-async function connectWallet() {
-  const provider = getWalletProvider();
-
+async function connectWallet(provider) {
   if (!provider) {
     setStatus(getMissingWalletMessage());
     return;
@@ -102,7 +173,7 @@ async function connectWallet() {
     setStatus("NFTs loaded successfully. You can vote on every active proposal separately.");
   } catch (error) {
     console.error(error);
-    setStatus(getErrorMessage(error));
+    setStatus(getWalletErrorMessage(error));
   } finally {
     setConnectBusy(false);
     syncProposalButtons();
@@ -126,23 +197,7 @@ async function disconnectWallet() {
 
 function initializeWalletStatus() {
   updateConnectButtonLabel();
-
-  if (getWalletProvider()) {
-    setStatus("Compatible wallet detected. You can connect Phantom or Solflare.");
-    return;
-  }
-
-  setStatus("Waiting for Phantom or Solflare...");
-
-  window.addEventListener("load", () => {
-    window.setTimeout(() => {
-      setStatus(
-        getWalletProvider()
-          ? "Compatible wallet detected. You can connect Phantom or Solflare."
-          : getMissingWalletMessage()
-      );
-    }, 600);
-  });
+  setStatus("Connect your wallet and choose Phantom or Solflare.");
 }
 
 function getWalletProvider() {
@@ -392,12 +447,32 @@ async function submitVote(proposalId, voteOption) {
     setVoteButtonsBusy(true);
     setStatus(`Submitting vote "${voteOption}" for ${proposalFileName}...`);
     const signedVote = await signVoteMessage(provider, proposal, voteOption);
+    if (!signedVote) return; // Mobile signature continues after the wallet redirects back.
+    await submitSignedVote(proposalId, voteOption, signedVote, state.walletAddress);
+  } catch (error) {
+    console.error(error);
+    const message = error && typeof error.message === "string" && error.message.startsWith("WALLET_")
+      ? getWalletErrorMessage(error) : getErrorMessage(error);
+    setStatus(message);
+    showVoteFeedback(message, "error");
+  } finally {
+    state.votingProposalId = "";
+    setVoteButtonsBusy(false);
+    syncProposalButtons();
+  }
+}
+
+async function submitSignedVote(proposalId, voteOption, signedVote, walletAddress) {
+  const proposalFileName = getProposalFileNameById(proposalId);
+  try {
+    state.votingProposalId = proposalId;
+    setVoteButtonsBusy(true);
     const response = await fetch(VOTE_ENDPOINT, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         proposal_id: proposalId,
-        wallet: state.walletAddress,
+        wallet: walletAddress,
         vote: voteOption,
         signature: signedVote.signature,
         signed_message: signedVote.message,
@@ -408,9 +483,9 @@ async function submitVote(proposalId, voteOption) {
     if (response.ok && payload && payload.success === true) {
       setStatus(`Vote recorded for ${proposalFileName}. Voting power used: ${formatVotingPower(payload.voting_power)}.`);
       showVoteFeedback(`Vote for ${proposalFileName} successfully recorded.`, "success");
-      const walletData = await getWalletNfts(state.walletAddress);
+      const walletData = await getWalletNfts(walletAddress);
       state.walletData = walletData;
-      updateWalletDashboard(state.walletAddress, walletData);
+      updateWalletDashboard(walletAddress, walletData);
       await refreshProposal();
       await refreshResults();
       return;
@@ -422,9 +497,9 @@ async function submitVote(proposalId, voteOption) {
         payload.message || `All NFTs from this wallet have already been used in ${proposalFileName}.`,
         "error"
       );
-      const walletData = await getWalletNfts(state.walletAddress);
+      const walletData = await getWalletNfts(walletAddress);
       state.walletData = walletData;
-      updateWalletDashboard(state.walletAddress, walletData);
+      updateWalletDashboard(walletAddress, walletData);
       renderProposalCards();
       return;
     }
@@ -457,13 +532,20 @@ async function submitVote(proposalId, voteOption) {
 }
 
 async function signVoteMessage(provider, proposal, voteOption) {
-  if (typeof provider.signMessage !== "function") {
+  if (!provider.isDeepLink && typeof provider.signMessage !== "function") {
     throw new Error("SIGNATURE_UNAVAILABLE");
   }
 
   const proposalFileName = getProposalFileNameById(proposal.proposal_id);
   const proposalPayloadHash = await hashProposalPayload(proposal);
   const message = `Torrino DAO governance vote:proposal:${proposalFileName}:proposal_hash:${proposalPayloadHash}:option:${voteOption}:wallet:${state.walletAddress}:timestamp:${Date.now()}`;
+  if (provider.isDeepLink) {
+    provider.requestSignature(textEncoder.encode(message), {
+      proposalId: proposal.proposal_id, voteOption, message, wallet: state.walletAddress,
+    });
+    setStatus("Approve the vote signature in your wallet app, then return to this browser.");
+    return null;
+  }
   const signed = await provider.signMessage(textEncoder.encode(message), "utf8");
   const signatureBytes = extractSignatureBytes(signed);
 
